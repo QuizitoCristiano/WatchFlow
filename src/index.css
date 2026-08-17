@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  /* ==========================================
+     1. FUNDOS E SUPERFÍCIES (Layer Backgrounds)
+     ========================================== */
+  --color-bg-app: #09090b;       /* Fundo principal da aplicação (zinc-950) */
+  --color-bg-card: #18181b;      /* Cards, modais e containers (zinc-900) */
+  --color-bg-hover: #27272a;     /* Hover em tabelas, menus e cards (zinc-800) */
+
+  /* ==========================================
+     2. BORDAS E DIVISORES
+     ========================================== */
+  --color-border-subtle: #27272a;/* Bordas discretas de cards (zinc-800) */
+  --color-border-strong: #3f3f46;/* Bordas de inputs e focos (zinc-700) */
+
+  /* ==========================================
+     3. DESTAQUES E MARCA (Brand & Accent)
+     ========================================== */
+  --color-brand-primary: #f97316;/* Laranja Cyber (Botões, destaques, chamadas) */
+  --color-brand-hover: #ea580c;  /* Laranja para estado Hover */
+
+  /* ==========================================
+     4. TIPOGRAFIA (Do maior para o menor)
+     ========================================== */
+  --color-text-heading: #fafafa; /* Títulos principais, h1, h2, KPIs em destaque */
+  --color-text-body: #e4e4e7;    /* Texto corrido, parágrafos e tabelas */
+  --color-text-muted: #a1a1aa;   /* Rótulos secundários, unidades (%, Mbps) */
+  --color-text-subtle: #71717a;  /* Placeholders, datas, rodapés e metadados */
+
+  /* ==========================================
+     5. STATUS DE MONITORAMENTO (Alerts & Health)
+     ========================================== */
+  --color-status-success: #10b981;/* Verde: Online / Sistema Saudável */
+  --color-status-warning: #f59e0b;/* Amarelo: Alerta preventivo / Carga alta */
+  --color-status-danger: #ef4444; /* Vermelho: Crítico / Incidente / Offline */
+  --color-status-info: #06b6d4;   /* Azul Cyan: Logs e informações neutras */
+}
+
+/* ==========================================
+   ANIMAÇÕES DE METEOROS
+   ========================================== */
+
+/* Meteoro vindo da DIREITA para a ESQUERDA */
+@keyframes meteorRight {
+  0% {
+    transform: rotate(215deg) translateX(0);
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: rotate(215deg) translateX(-1000px);
+  }
+}
+
+/* Meteoro vindo da ESQUERDA para a DIREITA */
+@keyframes meteorLeft {
+  0% {
+    transform: rotate(-35deg) translateX(0);
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: rotate(-35deg) translateX(1000px);
+  }
+}
+
+/* Classes utilitárias das animações */
+.animate-meteor-right {
+  animation: meteorRight 5s linear infinite;
+}
+
+.animate-meteor-left {
+  animation: meteorLeft 5s linear infinite;
+}
+
+/* Rastros dos meteoros alinhados com o tom Laranja Cyber */
+.meteor-line-right {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.4), transparent);
+}
+
+.meteor-line-left {
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.4));
+}
