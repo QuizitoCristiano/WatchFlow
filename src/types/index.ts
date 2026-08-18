@@ -6,14 +6,19 @@ export type FirestoreDate = FieldValue | Timestamp | Date | string;
 // ==========================================
 // 1. USUÁRIO E PERFIL -> users/{userId}
 // ==========================================
+
+export type UserRole = 'admin' | 'developer' | 'operator' | 'viewer';
+export type UserStatus = 'active' | 'inactive';
+
 export interface UserProfile {
   uid: string;
   name: string;
   email: string;
   photoURL?: string;
-  role: 'admin' | 'operator' | 'viewer';
-  createdAt: FirestoreDate;
-  updatedAt: FirestoreDate;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: string;  // ISO 8601 string (ex: "2026-08-18T14:00:00.000Z")
+  updatedAt?: string; // ISO 8601 string
 }
 
 // ==========================================
@@ -113,20 +118,53 @@ export type AlertSeverity = 'info' | 'warning' | 'critical';
 export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
 export type AlertType = 'CPU_HIGH' | 'RAM_HIGH' | 'DISK_HIGH' | 'DEVICE_OFFLINE' | 'INTEGRATION_DOWN';
 
+export interface MetricTriggered {
+  metric: string;               // Ex: 'CPU', 'RAM', 'Heartbeat'
+  value: number | string;       // Ex: 95.4 ou '95.4%'
+  threshold: number | string;   // Ex: 90 ou '90%'
+  operator: '>' | '<' | '==';
+}
+
+// Mapeamento visual para os tipos de alerta
+export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
+  CPU_HIGH: 'Uso de CPU Elevado',
+  RAM_HIGH: 'Consumo de Memória Elevado',
+  DISK_HIGH: 'Capacidade de Disco Crítica',
+  DEVICE_OFFLINE: 'Dispositivo Inacessível',
+  INTEGRATION_DOWN: 'Coletor / Integração Offline',
+};
+
+// Mapeamento visual para status
+export const ALERT_STATUS_LABELS: Record<AlertStatus, string> = {
+  active: 'Ativo',
+  acknowledged: 'Reconhecido',
+  resolved: 'Resolvido',
+};
+
 export interface Alert {
   id?: string;
   userId: string;
   deviceId?: string;
+  deviceName?: string;          // Facilita exibição direta na tabela sem precisar fazer N queries
+  deviceIp?: string;
   integrationId?: string;
-  hostname?: string;
+  integrationType?: IntegrationType;
   type: AlertType;
   severity: AlertSeverity;
-  message: string;
-  valueDetected?: number | string;
+  title: string;
+  description: string;
   status: AlertStatus;
+  metricTriggered: MetricTriggered;
+  firstDetectedAt: FirestoreDate;
+  lastDetectedAt: FirestoreDate;
+  resolvedAt?: FirestoreDate | null;
   createdAt: FirestoreDate;
-  resolvedAt?: FirestoreDate;
+  updatedAt?: FirestoreDate;
 }
+
+
+
+
 
 // ==========================================
 // 6. DASHBOARD & KPIS GLOBAIS
@@ -143,18 +181,79 @@ export interface DashboardSummary {
   avgRamUsage: number;
 }
 
+
 // ==========================================
 // 7. RELATÓRIOS -> reports/{reportId}
 // ==========================================
+
+export type ReportType = 'performance' | 'incidents' | 'availability';
+export type ReportFormat = 'pdf' | 'csv';
+
+export interface ReportScope {
+  deviceId?: string;
+  deviceName?: string;
+}
+
+export interface ReportPeriod {
+  start: string; // ISO 8601 string
+  end: string;   // ISO 8601 string
+}
+
+export interface ReportSummary {
+  avgCpu?: number;
+  maxCpu?: number;
+  avgMemory?: number;
+  maxMemory?: number;
+  avgDisk?: number;
+  availability?: number;
+  totalAlerts?: number;
+}
+
 export interface Report {
   id?: string;
   userId: string;
-  title: string;
-  periodType: 'daily' | 'weekly' | 'monthly' | 'custom';
-  startDate: string;
-  endDate: string;
-  deviceId?: string;
-  format: 'pdf' | 'csv';
-  summary?: DashboardSummary;
+  name: string;
+  type: ReportType;
+  format: ReportFormat;
+  scope: ReportScope;
+  period: ReportPeriod;
+  summary: ReportSummary;
+  fileUrl?: string;
   createdAt: FirestoreDate;
+}
+
+
+
+
+
+
+export interface NotificationPreferences {
+  enabled: boolean;
+  critical: boolean;
+  warning: boolean;
+  info: boolean;
+  email: boolean;
+}
+
+export interface MonitoringPreferences {
+  refreshInterval: 5 | 15 | 30 | 60 | 300;
+  defaultTimeRange: '1h' | '24h' | '7d' | '30d';
+}
+
+export interface DashboardPreferences {
+  cpu: boolean;
+  memory: boolean;
+  disk: boolean;
+  network: boolean;
+  availability: boolean;
+  alerts: boolean;
+}
+
+export interface UserPreferences {
+  language: 'pt-BR' | 'en-US';
+  timezone: string;
+  theme: 'system' | 'light' | 'dark';
+  notifications: NotificationPreferences;
+  monitoring: MonitoringPreferences;
+  dashboard: DashboardPreferences;
 }

@@ -9,6 +9,10 @@ import { Integrations } from '@/pages/Integrations';
 import { DispositivosPage } from '@/pages/Dispositivos';
 import { MetricasPage } from '@/pages/Metrics';
 import { EquipePage } from '@/pages/EquipePage';
+import AlertsPage from '@/pages/Alerts';
+import ReportsPage from '@/pages/Reports';
+import SettingsPage from '@/pages/SettingsPage';
+import ProfilePage from '@/pages/Profile';
 
 
 
@@ -29,15 +33,11 @@ export function AppRoutes() {
              <Route path="/devices" element={<DispositivosPage/>} />
               <Route path="/metrics" element={<MetricasPage />} />
               <Route path='/about' element={<EquipePage/>}/>
-             {/* <Route path="/agents" element={<Agents />} />
-
-             
+               <Route path="/alerts" element={<AlertsPage />} />
+               <Route path='/reports' element={<ReportsPage/>}/>
+               <Route path='/settings' element={<SettingsPage/>}/>
+               <Route path="/profile" element={<ProfilePage />} />
             
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/profile" element={<Profile />} /> */}
-
-            {/* Redireciona a raiz '/' para o Dashboard */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Route>
