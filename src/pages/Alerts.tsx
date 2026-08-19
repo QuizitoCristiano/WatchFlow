@@ -1,4 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  doc, 
+  updateDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
 import { 
   AlertTriangle, 
   AlertCircle, 
@@ -11,113 +21,53 @@ import {
   Activity,
   ChevronRight
 } from 'lucide-react';
+import { db } from '@/services/config';
+import { useAuth } from '@/contexts/useAuth';
 
-// ==========================================
-// Tipos e Interfaces
-// ==========================================
-export interface MetricTriggered {
-  metric: string;
-  value: string;
-  threshold: string;
-}
+// Exemplo: Se na página AlertsPage você usa os labels e a interface:
+import {ALERT_STATUS_LABELS, type Alert } from '../types';
+import { formatDate, formatTime } from "../lib/formatters";
 
-export interface Alert {
-  id: string;
-  title: string;
-  description: string;
-  severity: 'critical' | 'warning' | 'info';
-  status: 'open' | 'acknowledged' | 'resolved';
-  deviceName: string;
-  deviceIp: string;
-  integrationType: string;
-  metricTriggered: MetricTriggered;
-  firstDetectedAt: string;
-  resolvedAt?: string;
-}
-
-// ==========================================
-// Dados Simulados (Mock)
-// ==========================================
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: 'ALT-1001',
-    title: 'Uso Crítico de CPU (Acima de 90%)',
-    description: 'O servidor apresentou alto processamento contínuo nos últimos 15 minutos, podendo causar lentidão nos serviços.',
-    severity: 'critical',
-    status: 'open',
-    deviceName: 'Servidor Prod-Database-01',
-    deviceIp: '192.168.1.50',
-    integrationType: 'TELEGRAF',
-    metricTriggered: {
-      metric: 'cpu_usage_user',
-      value: '94.2%',
-      threshold: '90.0%'
-    },
-    firstDetectedAt: new Date(Date.now() - 1000 * 60 * 12).toISOString()
-  },
-  {
-    id: 'ALT-1002',
-    title: 'Memória RAM Próxima do Limite',
-    description: 'Consumo de memória RAM ultrapassou a margem de segurança configurada no agente.',
-    severity: 'warning',
-    status: 'open',
-    deviceName: 'App-Server-Node-02',
-    deviceIp: '192.168.1.52',
-    integrationType: 'WATCHFLOW-AGENT',
-    metricTriggered: {
-      metric: 'mem_used_percent',
-      value: '86.5%',
-      threshold: '80.0%'
-    },
-    firstDetectedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-  },
-  {
-    id: 'ALT-1003',
-    title: 'Espaço em Disco Crítico (/var/log)',
-    description: 'O particionamento primário de logs está quase lotado, risco de interrupção de escrita.',
-    severity: 'critical',
-    status: 'acknowledged',
-    deviceName: 'Storage-Cluster-01',
-    deviceIp: '192.168.1.10',
-    integrationType: 'TELEGRAF',
-    metricTriggered: {
-      metric: 'disk_used_percent',
-      value: '98.1%',
-      threshold: '95.0%'
-    },
-    firstDetectedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString()
-  },
-  {
-    id: 'ALT-1004',
-    title: 'Reboot Detectado no Sistema',
-    description: 'Servidor foi reiniciado com sucesso após manutenção programada.',
-    severity: 'info',
-    status: 'resolved',
-    deviceName: 'Gateway-Router-Main',
-    deviceIp: '192.168.1.1',
-    integrationType: 'PING-COLLECTOR',
-    metricTriggered: {
-      metric: 'sys_uptime',
-      value: '2 min',
-      threshold: 'N/A'
-    },
-    firstDetectedAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-    resolvedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString()
-  }
-];
 
 // ==========================================
 // Componente Principal
 // ==========================================
 export const AlertsPage: React.FC = () => {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
+  const { user } = useAuth(); // Garante o acesso apenas aos alertas do usuário
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // 1. Conexão em tempo real com o Firestore
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const q = query(
+      collection(db, 'alerts'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docsData: Alert[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      })) as Alert[];
+
+      setAlerts(docsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Erro ao buscar alertas:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
   // Contadores para os Cards de Topo
-  const openCriticals = alerts.filter(a => a.status === 'open' && a.severity === 'critical').length;
+  const openCriticals = alerts.filter(a => a.status === 'active' && a.severity === 'critical').length;
   const totalWarnings = alerts.filter(a => a.status !== 'resolved' && a.severity === 'warning').length;
   const totalResolved = alerts.filter(a => a.status === 'resolved').length;
 
@@ -126,18 +76,28 @@ export const AlertsPage: React.FC = () => {
     const matchesStatus = filterStatus === 'all' || alert.status === filterStatus;
     const matchesSeverity = filterSeverity === 'all' || alert.severity === filterSeverity;
     const matchesSearch = 
-      alert.deviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alert.deviceIp.includes(searchQuery);
+      (alert.deviceName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (alert.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (alert.deviceIp || '').includes(searchQuery);
 
     return matchesStatus && matchesSeverity && matchesSearch;
   });
 
-  // Ação de Reconhecer Alerta
-  const handleAcknowledge = (id: string) => {
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'acknowledged' } : a));
-    if (selectedAlert && selectedAlert.id === id) {
-      setSelectedAlert(prev => prev ? { ...prev, status: 'acknowledged' } : null);
+  // 2. Ação de Reconhecer Alerta no Firestore
+  const handleAcknowledge = async (id?: string) => {
+    if (!id) return;
+    try {
+      const alertRef = doc(db, 'alerts', id);
+      await updateDoc(alertRef, {
+        status: 'acknowledged',
+        updatedAt: serverTimestamp()
+      });
+
+      if (selectedAlert && selectedAlert.id === id) {
+        setSelectedAlert(prev => prev ? { ...prev, status: 'acknowledged' } : null);
+      }
+    } catch (error) {
+      console.error("Erro ao reconhecer alerta:", error);
     }
   };
 
@@ -161,7 +121,7 @@ export const AlertsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Críticos Abertos</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Críticos Ativos</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-danger)] mt-1">{openCriticals}</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-danger)]/10 rounded-lg text-[var(--color-status-danger)]">
@@ -214,7 +174,7 @@ export const AlertsPage: React.FC = () => {
             className="bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-body)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
           >
             <option value="all">Todos os Status</option>
-            <option value="open">Abertos</option>
+            <option value="active">Ativos</option>
             <option value="acknowledged">Reconhecidos</option>
             <option value="resolved">Resolvidos</option>
           </select>
@@ -248,7 +208,13 @@ export const AlertsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-subtle)] text-sm">
-              {filteredAlerts.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-[var(--color-text-muted)]">
+                    Carregando alertas...
+                  </td>
+                </tr>
+              ) : filteredAlerts.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-[var(--color-text-muted)]">
                     Nenhum alerta encontrado com os filtros aplicados.
@@ -291,33 +257,31 @@ export const AlertsPage: React.FC = () => {
                     {/* Dispositivo */}
                     <td className="py-3 px-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-[var(--color-text-heading)]">{alert.deviceName}</span>
-                        <span className="text-xs text-[var(--color-text-subtle)]">{alert.deviceIp}</span>
+                        <span className="font-semibold text-[var(--color-text-heading)]">{alert.deviceName || 'N/A'}</span>
+                        <span className="text-xs text-[var(--color-text-subtle)]">{alert.deviceIp || '-'}</span>
                       </div>
                     </td>
 
                     {/* Valor da Métrica */}
                     <td className="py-3 px-4 font-mono text-xs">
-                      <span className="text-[var(--color-brand-primary)] font-bold">{alert.metricTriggered.value}</span>
-                      <span className="text-[var(--color-text-subtle)]"> (limite: {alert.metricTriggered.threshold})</span>
+                      <span className="text-[var(--color-brand-primary)] font-bold">{alert.metricTriggered?.value ?? 'N/A'}</span>
+                      <span className="text-[var(--color-text-subtle)]"> (limite: {alert.metricTriggered?.threshold ?? 'N/A'})</span>
                     </td>
 
                     {/* Status */}
                     <td className="py-3 px-4">
-                      {alert.status === 'open' && (
-                        <span className="text-xs font-semibold text-[var(--color-status-danger)] uppercase tracking-wider">Aberto</span>
-                      )}
-                      {alert.status === 'acknowledged' && (
-                        <span className="text-xs font-semibold text-[var(--color-status-warning)] uppercase tracking-wider">Reconhecido</span>
-                      )}
-                      {alert.status === 'resolved' && (
-                        <span className="text-xs font-semibold text-[var(--color-status-success)] uppercase tracking-wider">Resolvido</span>
-                      )}
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${
+                        alert.status === 'active' ? 'text-[var(--color-status-danger)]' :
+                        alert.status === 'acknowledged' ? 'text-[var(--color-status-warning)]' :
+                        'text-[var(--color-status-success)]'
+                      }`}>
+                        {ALERT_STATUS_LABELS[alert.status] || alert.status}
+                      </span>
                     </td>
 
                     {/* Data */}
                     <td className="py-3 px-4 text-xs text-[var(--color-text-subtle)]">
-                      {new Date(alert.firstDetectedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      {formatTime(alert.firstDetectedAt)}
                     </td>
 
                     {/* Ação / Seta */}
@@ -374,15 +338,17 @@ export const AlertsPage: React.FC = () => {
                     <Activity size={16} className="text-[var(--color-brand-primary)]" />
                     Métrica Analisada:
                   </span>
-                  <span className="font-semibold text-[var(--color-text-heading)]">{selectedAlert.metricTriggered.metric}</span>
+                  <span className="font-semibold text-[var(--color-text-heading)]">{selectedAlert.metricTriggered?.metric}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-[var(--color-text-muted)]">Valor Coletado:</span>
-                  <span className="font-mono font-bold text-[var(--color-status-danger)]">{selectedAlert.metricTriggered.value}</span>
+                  <span className="font-mono font-bold text-[var(--color-status-danger)]">{selectedAlert.metricTriggered?.value}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-[var(--color-text-muted)]">Limite (Threshold):</span>
-                  <span className="font-mono text-[var(--color-text-subtle)]">{selectedAlert.metricTriggered.threshold}</span>
+                  <span className="font-mono text-[var(--color-text-subtle)]">
+                    {selectedAlert.metricTriggered?.operator} {selectedAlert.metricTriggered?.threshold}
+                  </span>
                 </div>
               </div>
 
@@ -392,12 +358,16 @@ export const AlertsPage: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] flex items-center gap-2">
                     <Server size={16} /> Dispositivo:
                   </span>
-                  <span className="font-medium text-[var(--color-text-heading)]">{selectedAlert.deviceName} ({selectedAlert.deviceIp})</span>
+                  <span className="font-medium text-[var(--color-text-heading)]">
+                    {selectedAlert.deviceName || 'Desconhecido'} ({selectedAlert.deviceIp || 'Sem IP'})
+                  </span>
                 </div>
 
                 <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
-                  <span className="text-[var(--color-text-muted)]">Coletor de Origem:</span>
-                  <span className="font-mono text-xs uppercase text-[var(--color-brand-primary)]">{selectedAlert.integrationType}</span>
+                  <span className="text-[var(--color-text-muted)]">Coletor / Integração:</span>
+                  <span className="font-mono text-xs uppercase text-[var(--color-brand-primary)]">
+                    {selectedAlert.integrationType || 'N/A'}
+                  </span>
                 </div>
 
                 <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
@@ -405,7 +375,7 @@ export const AlertsPage: React.FC = () => {
                     <Clock size={16} /> Primeira Detecção:
                   </span>
                   <span className="text-[var(--color-text-subtle)]">
-                    {new Date(selectedAlert.firstDetectedAt).toLocaleString('pt-BR')}
+                    {formatDate(selectedAlert.firstDetectedAt)}
                   </span>
                 </div>
               </div>
@@ -413,7 +383,7 @@ export const AlertsPage: React.FC = () => {
 
             {/* Ações Inferiores */}
             <div className="pt-6 border-t border-[var(--color-border-subtle)] space-y-2">
-              {selectedAlert.status === 'open' && (
+              {selectedAlert.status === 'active' && (
                 <button
                   onClick={() => handleAcknowledge(selectedAlert.id)}
                   className="w-full bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -431,7 +401,7 @@ export const AlertsPage: React.FC = () => {
 
               {selectedAlert.status === 'resolved' && (
                 <div className="text-center py-2 text-xs font-semibold text-[var(--color-status-success)] bg-[var(--color-status-success)]/10 rounded-lg">
-                  Incidente resolvido em {selectedAlert.resolvedAt ? new Date(selectedAlert.resolvedAt).toLocaleTimeString('pt-BR') : 'N/A'}.
+                  Incidente resolvido em {formatTime(selectedAlert.resolvedAt)}.
                 </div>
               )}
             </div>

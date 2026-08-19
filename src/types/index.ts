@@ -52,11 +52,16 @@ export interface DeviceOS {
 }
 
 export interface LatestMetricsSummary {
-  cpu: number;        // Porcentagem de uso (ex: 42.5)
-  memory: number;     // Porcentagem de uso (ex: 63.1)
-  disk: number;       // Porcentagem de uso (ex: 71.0)
-  networkInMs?: number;
-  networkOutMs?: number;
+  cpu: number;               // Ex: 68
+  memory: number;            // Ex: 45
+  memoryUsedGb?: number;     // Ex: 14.4
+  memoryTotalGb?: number;    // Ex: 32
+  disk: number;              // Ex: 82
+  diskUsedGb?: number;       // Ex: 820
+  diskTotalGb?: number;      // Ex: 1000
+  networkInBytesSec?: number;
+  networkOutBytesSec?: number;
+  latencyMs?: number;        // Necessário para a tabela de Dispositivos (ex: 24ms)
 }
 
 export interface Device {
@@ -170,18 +175,35 @@ export interface Alert {
 // 6. DASHBOARD & KPIS GLOBAIS
 // ==========================================
 export interface DashboardSummary {
+  // KPIs do Topo
+  avgCpuUsage: number;         // 68%
+  avgRamUsage: number;         // 45%
+  ramUsedGb: number;           // 14.4
+  ramTotalGb: number;          // 32
+  avgDiskUsage: number;        // 82%
+  diskUsedGb: number;          // 820
+  diskTotalGb: number;         // 1000
+  globalSlaPercent: number;    // 99.98%
+
+  // Totais de Contagem
   totalDevices: number;
   devicesOnline: number;
   devicesWarning: number;
   devicesCritical: number;
   devicesOffline: number;
   activeAlertsCount: number;
-  globalSlaPercent: number;    // Ex: 99.85%
-  avgCpuUsage: number;
-  avgRamUsage: number;
+
+  lastUpdatedAt: FirestoreDate;
 }
 
-
+export interface DashboardMetricPoint {
+  timestamp: string;          // Ex: "11:00" ou "01/08" para o Recharts
+  cpu?: number;               // %
+  memory?: number;            // %
+  downloadMbps?: number;      // Rede (Download)
+  uploadMbps?: number;        // Rede (Upload)
+  slaPercent?: number;        // Para o gráfico de Histórico de Disponibilidade (99.98%)
+}
 // ==========================================
 // 7. RELATÓRIOS -> reports/{reportId}
 // ==========================================

@@ -13,6 +13,7 @@ import AlertsPage from '@/pages/Alerts';
 import ReportsPage from '@/pages/Reports';
 import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/Profile';
+import { NotFound } from '@/NotFound/NotFound';
 
 
 
@@ -43,7 +44,7 @@ export function AppRoutes() {
         </Route>
 
         {/* 🔄 REDIRECIONAMENTO DE SEGURANÇA (Rota não encontrada) */}
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        <Route path="*" element={<NotFound/>} />
       </Routes>
     </BrowserRouter>
   );
