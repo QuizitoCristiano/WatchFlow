@@ -6,11 +6,12 @@ export const NotFound: React.FC = () => {
     const navigate = useNavigate();
 
     const handleGoBack = () => {
-        // Se houver histórico, volta para a página anterior. Caso contrário, vai ao Dashboard.
-        if (window.history.length > 2) {
+        // navigate(-1) volta exatamente para a rota anterior da pilha do navegador.
+        // Se não houver histórico anterior no mesmo domínio, ele vai de fallback para o dashboard.
+        if (window.history.state && window.history.state.idx > 0) {
             navigate(-1);
         } else {
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         }
     };
 
@@ -65,21 +66,21 @@ export const NotFound: React.FC = () => {
 
                 {/* Botões de Ação */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full pt-2">
-                    <button
-                        onClick={handleGoBack}
-                        className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-bg-card border border-border-subtle hover:bg-bg-hover text-text-heading text-sm font-medium transition-all duration-200 cursor-pointer active:scale-95"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Voltar
-                    </button>
+                   <button
+                onClick={handleGoBack}
+                className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-bg-card border border-border-subtle hover:bg-bg-hover text-text-heading text-sm font-medium transition-all duration-200 cursor-pointer active:scale-95"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Voltar
+            </button>
 
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 text-sm font-semibold transition-all duration-200 shadow-lg shadow-brand-primary/20 cursor-pointer active:scale-95"
-                    >
-                        <LayoutDashboard className="w-4 h-4" />
-                        Dashboard
-                    </button>
+            <button
+                onClick={() => navigate('/dashboard', { replace: true })}
+                className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 text-sm font-semibold transition-all duration-200 shadow-lg shadow-brand-primary/20 cursor-pointer active:scale-95"
+            >
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+            </button>
                 </div>
             </main>
 

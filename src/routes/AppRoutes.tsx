@@ -21,30 +21,30 @@ export function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 🔓 ROTAS PÚBLICAS / AUTENTICAÇÃO */}
+        {/* 🔓 ROTAS PÚBLICAS */}
         <Route path="/auth/login" element={<Login />} />
-         <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} /> 
 
-        {/* 🛡️ ROTAS PROTEGIDAS (Exigem Login e usam o MainLayout) */}
+        {/* 🛡️ ROTAS PROTEGIDAS */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-           <Route path="/dashboard" element={<Dashboard />} />
-             <Route path="/integrations" element={<Integrations/>} />
-             <Route path="/devices" element={<DispositivosPage/>} />
-              <Route path="/metrics" element={<MetricasPage />} />
-              <Route path='/about' element={<EquipePage/>}/>
-               <Route path="/alerts" element={<AlertsPage />} />
-               <Route path='/reports' element={<ReportsPage/>}/>
-               <Route path='/settings' element={<SettingsPage/>}/>
-               <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/devices" element={<DispositivosPage />} />
+            <Route path="/metrics" element={<MetricasPage />} />
+            <Route path="/about" element={<EquipePage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Route>
 
-        {/* 🔄 REDIRECIONAMENTO DE SEGURANÇA (Rota não encontrada) */}
-        <Route path="*" element={<NotFound/>} />
+        {/* 🔄 ROTA 404 - Captura qualquer caminho não mapeado */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

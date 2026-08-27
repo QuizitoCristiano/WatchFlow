@@ -1,43 +1,39 @@
 import { useAuth } from "@/contexts/useAuth";
 import { FullPageLoading } from "@/loading/FullPageLoading";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+/**
+ * Pattern: Guard / Interceptor
+ * Conceito: Security by Design (Fail-Closed, Least Privilege)
+ */
 export const ProtectedRoute = () => {
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-  } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
-  // 0. Carregamento estilizado usando as cores do projeto
+  // Guard 1: Estado de carregamento assíncrono (Evita FOUC e redirecionamento falso)
   if (isLoading) {
     return <FullPageLoading />;
   }
 
-  // 1. Não autenticado → Login
+  // Guard 2: Autenticação principal (Fail-Closed: Bloqueia por padrão se não houver sessão válida)
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    // Redireciona para o caminho correto (/auth/login) preservando a intenção de navegação do usuário
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // 2. Identifica os métodos de autenticação
-  const providerIds = user.providerData.map(
-    (provider) => provider.providerId
+  // Guard 3: Validação de E-mail (Security Strategy)
+  // OAuth (Google/GitHub) já garante a verificação do e-mail na origem.
+  // Provedores de senha exigem validação explicita do flag 'emailVerified'.
+  const isOAuthUser = user.providerData.some(
+    (provider) => provider.providerId === "google.com" || provider.providerId === "github.com"
   );
 
-  const isGoogleUser = providerIds.includes("google.com");
-  const isGithubUser = providerIds.includes("github.com");
-  const isEmailUser = providerIds.includes("password");
+  const isEmailVerified = user.emailVerified || isOAuthUser;
 
-  // 3. Google e GitHub não precisam passar pela verificação
-  if (isGoogleUser || isGithubUser) {
-    return <Outlet />;
+  if (!isEmailVerified) {
+    return <Navigate to="/verify-email" state={{ from: location }} replace />;
   }
 
-  // 4. Conta criada com e-mail/senha precisa verificar o e-mail
-  if (isEmailUser && !user.emailVerified) {
-    return <Navigate to="/verify-email" replace />;
-  }
-
-  // 5. Tudo certo
+  // Permissão concedida
   return <Outlet />;
 };
