@@ -14,8 +14,7 @@ import ReportsPage from '@/pages/Reports';
 import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/Profile';
 import { NotFound } from '@/NotFound/NotFound';
-
-
+import { VerifyEmail } from '@/auth/VerifyEmail';
 
 export function AppRoutes() {
   return (
@@ -23,7 +22,12 @@ export function AppRoutes() {
       <Routes>
         {/* 🔓 ROTAS PÚBLICAS */}
         <Route path="/auth/login" element={<Login />} />
+        
+        {/* Alias de redirecionamento de /login para /auth/login (Atende a issue WF-6) */}
+        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} /> {/* 👈 ROTA DA VERIFICAÇÃO */}
         <Route path="/auth/forgot-password" element={<ForgotPassword />} /> 
 
         {/* 🛡️ ROTAS PROTEGIDAS */}
@@ -43,7 +47,7 @@ export function AppRoutes() {
           </Route>
         </Route>
 
-        {/* 🔄 ROTA 404 - Captura qualquer caminho não mapeado */}
+        {/* 🔄 ROTA 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
