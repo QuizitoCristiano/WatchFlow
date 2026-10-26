@@ -1,0 +1,17 @@
+ID;Camada;Rota;Acesso;O que a rota faz;Tabela Firebase;Relacionamento;Status atual;Funciona (X);Nao funciona (X);Precisa melhorar (X);O que melhorar;Quem testa;Testado em;Obs
+F01;Front;/auth/login;Publica;Login com e-mail, Google e GitHub. Entra no sistema.;Auth + users/{uid} no login social;Auth uid = users.uid;FUNCIONA;X;;;Conferir se depois do login sempre cai em /dashboard;;
+F02;Front;/register;Publica;Cria conta no Auth e documento do usuario no Firestore.;Auth + users/{uid};1 usuario Auth gera 1 doc users;PRECISA MELHORAR;;X;X;Depois do cadastro navega para /verify-email que nao existe;;
+F03;Front;/auth/forgot-password;Publica;Envia e-mail de recuperacao de senha.;Auth (nenhuma colecao);Usa o e-mail da conta Auth;PRECISA MELHORAR;;X;X;Links de voltar apontam para /login. A rota certa e /auth/login;;
+F04;Front;/verify-email;Publica (faltando);Deveria pedir para confirmar o e-mail.;Auth (emailVerified);Usuario ja criado em users/{uid};NAO FUNCIONA;;X;X;CRIAR a tela. Cadastro e ProtectedRoute ja redirecionam para ca;;
+F05;Front;/login;Publica (errada);Atalho usado no menu/logout/cadastro. Nao esta no AppRoutes.;Nenhuma;Nenhuma;NAO FUNCIONA;;X;X;Trocar todos os links /login para /auth/login OU criar um redirect;;
+F06;Front;/;Protegida;Redireciona a raiz para /dashboard.;Nenhuma;Nenhuma;FUNCIONA;X;;;;;
+F07;Front;/dashboard;Protegida;KPIs, graficos, devices e alertas recentes.;devices (raiz) e alerts (raiz). Historico e MOCK;devices <-> alerts via deviceId e userId;PRECISA MELHORAR;;X;X;Unificar path: Dashboard le devices raiz e /devices le users/{uid}/devices. Tirar mock dos graficos;;
+F08;Front;/integrations;Protegida;CRUD de coletores e teste de conexao /metrics.;users/{uid}/integrations;users 1:N integrations; integrationId liga devices;FUNCIONA;X;;X;Teste de conexao usa no-cors (nao le Prometheus de verdade). Delete nao remove devices ligados;;
+F09;Front;/devices;Protegida;Lista hosts, busca e exclui.;users/{uid}/devices;users 1:N devices; device.integrationId -> integrations;FUNCIONA;X;;X;Nao cria device no front (ok se vier do agente). Delete nao cascateia alerts/metrics;;
+F10;Front;/metrics;Protegida;Serie temporal CPU/RAM/disco/rede por host.;Lista users/{uid}/devices. Historico NAO le tabela;No modelo: device 1:N metrics;PRECISA MELHORAR;;X;X;Ligar subcolecao de metrics. Hoje o historico e fake;;
+F11;Front;/alerts;Protegida;Lista incidentes, filtra e reconhece alerta.;alerts (raiz) where userId;alert.userId -> users; deviceId -> devices; integrationId -> integrations;FUNCIONA;X;;X;Nao cria nem resolve alerta. So acknowledge. Motor de alerta ainda nao existe;;
+F12;Front;/reports;Protegida;Gerar, listar, baixar e excluir relatorios.;Modelo reports/{id}. Tela nao usa Firebase;report.userId -> users; scope.deviceId -> devices;PRECISA MELHORAR;;X;X;Persistir no Firestore. Hoje e array local MOCK;;
+F13;Front;/settings;Protegida;Preferencias de tema, idioma, notificacao e refresh.;users/{uid}.preferences;1:1 com users;PRECISA MELHORAR;;X;X;Tela simula save. Chamar settingsService de verdade;;
+F14;Front;/profile;Protegida;Editar nome, foto e reset de senha.;users/{uid} + Storage profile-images/{uid}/avatar;1:1 Auth <-> users <-> foto;PRECISA MELHORAR;;X;X;Tela inicia com usuario mock usr_001. Carregar o user logado;;
+F15;Front;/about;Protegida;Pagina da equipe do TCC.;Nenhuma;Nenhuma;FUNCIONA;X;;X;Conteudo ainda tem placeholder de integrantes;;
+F16;Front;*;Publica;Tela 404 para URL inexistente.;Nenhuma;Nenhuma;FUNCIONA;X;;;;;
