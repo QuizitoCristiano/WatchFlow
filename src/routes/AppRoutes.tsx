@@ -15,6 +15,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/Profile';
 import { NotFound } from '@/NotFound/NotFound';
 import { VerifyEmail } from '@/auth/VerifyEmail';
+import { CollectorDemo } from '@/pages/CollectorDemo';
 
 export function AppRoutes() {
   return (
@@ -42,6 +43,7 @@ export function AppRoutes() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            {import.meta.env.DEV && <Route path="/collector-demo" element={<CollectorDemo />} />}
             
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>

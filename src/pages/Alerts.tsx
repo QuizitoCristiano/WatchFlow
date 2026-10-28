@@ -33,21 +33,36 @@ import { formatDate, formatTime } from "../lib/formatters";
 // Componente Principal
 // ==========================================
 export const AlertsPage: React.FC = () => {
-  const { user } = useAuth(); // Garante o acesso apenas aos alertas do usuário
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { user, isLoading: authLoading } = useAuth();
+  const [alertState, setAlertState] = useState<{
+    userId: string;
+    alerts: Alert[];
+    loading: boolean;
+    error: string | null;
+  } | null>(null);
+  const [isAcknowledging, setIsAcknowledging] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const userId = user?.uid ?? null;
+  const currentAlertState = userId && alertState?.userId === userId
+    ? alertState
+    : null;
+  const alerts = currentAlertState?.alerts ?? [];
+  const loading = authLoading || (!!userId && (!currentAlertState || currentAlertState.loading));
+  const error = !authLoading && !userId
+    ? 'Não foi possível identificar o usuário autenticado.'
+    : currentAlertState?.error ?? null;
+
   // 1. Conexão em tempo real com o Firestore
   useEffect(() => {
-    if (!user?.uid) return;
+    if (authLoading || !userId) return;
 
     const q = query(
       collection(db, 'alerts'),
-      where('userId', '==', user.uid)
+      where('userId', '==', userId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -56,15 +71,19 @@ export const AlertsPage: React.FC = () => {
         ...docSnap.data(),
       })) as Alert[];
 
-      setAlerts(docsData);
-      setLoading(false);
+      setAlertState({ userId, alerts: docsData, loading: false, error: null });
     }, (error) => {
       console.error("Erro ao buscar alertas:", error);
-      setLoading(false);
+      setAlertState((previous) => ({
+        userId,
+        alerts: previous?.userId === userId ? previous.alerts : [],
+        loading: false,
+        error: error.message || 'Não foi possível carregar os alertas.',
+      }));
     });
 
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [authLoading, userId]);
 
   // Contadores para os Cards de Topo
   const openCriticals = alerts.filter(a => a.status === 'active' && a.severity === 'critical').length;
@@ -83,9 +102,27 @@ export const AlertsPage: React.FC = () => {
     return matchesStatus && matchesSeverity && matchesSearch;
   });
 
+  const setAlertError = (message: string | null) => {
+    if (!userId) return;
+
+    setAlertState((previous) => ({
+      userId,
+      alerts: previous?.userId === userId ? previous.alerts : [],
+      loading: previous?.userId === userId ? previous.loading : false,
+      error: message,
+    }));
+  };
+
   // 2. Ação de Reconhecer Alerta no Firestore
   const handleAcknowledge = async (id?: string) => {
-    if (!id) return;
+    const alert = alerts.find((item) => item.id === id);
+    if (!id || !user?.uid || !alert || alert.userId !== user.uid || alert.status !== 'active') {
+      setAlertError('Não foi possível reconhecer este alerta: usuário ou status inválido.');
+      return;
+    }
+
+    setIsAcknowledging(true);
+    setAlertError(null);
     try {
       const alertRef = doc(db, 'alerts', id);
       await updateDoc(alertRef, {
@@ -98,6 +135,9 @@ export const AlertsPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Erro ao reconhecer alerta:", error);
+      setAlertError(error instanceof Error ? error.message : 'Não foi possível reconhecer o alerta.');
+    } finally {
+      setIsAcknowledging(false);
     }
   };
 
@@ -116,6 +156,12 @@ export const AlertsPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-[var(--color-status-danger)]/30 bg-[var(--color-status-danger)]/10 p-3 text-sm text-[var(--color-status-danger)]" role="alert">
+          {error}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -212,6 +258,12 @@ export const AlertsPage: React.FC = () => {
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-[var(--color-text-muted)]">
                     Carregando alertas...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-[var(--color-status-danger)]" role="alert">
+                    Não foi possível carregar ou atualizar os alertas: {error}
                   </td>
                 </tr>
               ) : filteredAlerts.length === 0 ? (
@@ -383,13 +435,19 @@ export const AlertsPage: React.FC = () => {
 
             {/* Ações Inferiores */}
             <div className="pt-6 border-t border-[var(--color-border-subtle)] space-y-2">
+              {error && (
+                <p className="text-sm text-[var(--color-status-danger)]" role="alert">
+                  {error}
+                </p>
+              )}
               {selectedAlert.status === 'active' && (
                 <button
                   onClick={() => handleAcknowledge(selectedAlert.id)}
+                  disabled={isAcknowledging}
                   className="w-full bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  <CheckCircle2 size={18} />
-                  Reconhecer Alerta
+                  {isAcknowledging ? <Activity size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                  {isAcknowledging ? 'Reconhecendo...' : 'Reconhecer Alerta'}
                 </button>
               )}
 
