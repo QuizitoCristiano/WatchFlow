@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { subscribeToDevices } from '@/services/deviceService';
-import type { Device } from '@/types';
+import { subscribeToDeviceMetrics } from '@/services/metricService';
+import type { Device, MetricPayload } from '@/types';
 import { 
   Activity, 
   Cpu, 
@@ -16,17 +17,17 @@ import {
   ArrowUpRight,
   Filter
 } from 'lucide-react';
-
-// Tipagem local para o histórico de métricas
-interface MetricRecord {
-  id: string;
-  collectedAt: string;
-  cpu: number;
-  memory: number;
-  disk: number;
-  networkIn: string;
-  networkOut: string;
-}
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts';
 
 export const MetricasPage: React.FC = () => {
   const { user } = useAuth();
@@ -37,10 +38,10 @@ export const MetricasPage: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'disk' | 'network'>('cpu');
-  const [metricsHistory, setMetricsHistory] = useState<MetricRecord[]>([]);
+  const [metricsHistory, setMetricsHistory] = useState<MetricPayload[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
-  // RN-MET-01 & RN-MET-02: Busca dispositivos do usuário e garante a seleção padrão
+  // Busca dispositivos do usuário e garante a seleção padrão
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = subscribeToDevices(userId, (data) => {
@@ -52,43 +53,45 @@ export const MetricasPage: React.FC = () => {
     return () => unsubscribe();
   }, [userId, selectedDeviceId]);
 
-  // RN-MET-03: Simulação/Busca do histórico com base no dispositivo e período selecionados
-// RN-MET-03: Busca do histórico com base no dispositivo e período selecionados
-useEffect(() => {
-  if (!selectedDeviceId) return;
+  // Escuta histórico de métricas reais em tempo real
+  useEffect(() => {
+    if (!userId || !selectedDeviceId) {
+      setMetricsHistory([]);
+      return;
+    }
 
-  let isMounted = true;
+    setLoadingHistory(true);
+    const unsubscribe = subscribeToDeviceMetrics(userId, selectedDeviceId, 20, (records) => {
+      setMetricsHistory(records);
+      setLoadingHistory(false);
+    });
 
-  // Em produção / Firestore real:
-  // O listener/busca assíncrona altera o estado quando os dados chegam.
-  const timer = setTimeout(() => {
-    if (!isMounted) return;
-
-    const mockHistory: MetricRecord[] = [
-      { id: '1', collectedAt: '12:00:00', cpu: 42, memory: 63, disk: 71, networkIn: '1.2 MB/s', networkOut: '850 KB/s' },
-      { id: '2', collectedAt: '11:59:00', cpu: 40, memory: 62, disk: 71, networkIn: '1.1 MB/s', networkOut: '800 KB/s' },
-      { id: '3', collectedAt: '11:58:00', cpu: 55, memory: 65, disk: 71, networkIn: '2.4 MB/s', networkOut: '1.5 MB/s' },
-      { id: '4', collectedAt: '11:57:00', cpu: 38, memory: 61, disk: 70, networkIn: '950 KB/s', networkOut: '500 KB/s' },
-    ];
-
-    setMetricsHistory(mockHistory);
-    setLoadingHistory(false);
-  }, 400);
-
-  return () => {
-    isMounted = false;
-    clearTimeout(timer);
-  };
-}, [selectedDeviceId, timeRange]);
+    return () => unsubscribe();
+  }, [userId, selectedDeviceId, timeRange]);
 
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId);
 
-  // RN-MET-04: Os cards de resumo usam latestMetricsSummary
+  // Cards de resumo com latestMetricsSummary
   const currentCpu = selectedDevice?.latestMetricsSummary?.cpu ?? 0;
   const currentRam = selectedDevice?.latestMetricsSummary?.memory ?? 0;
   const currentDisk = selectedDevice?.latestMetricsSummary?.disk ?? 0;
 
-  // Formatação da última visualização
+  // Formatação de data/hora
+  const formatMetricTime = (val: any) => {
+    if (!val) return '--:--';
+    if (typeof val === 'object' && 'toDate' in val && typeof val.toDate === 'function') {
+      return val.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    if (typeof val === 'string') {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      return val;
+    }
+    return '--:--';
+  };
+
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
     if (!lastSeen) return 'N/A';
     if (typeof lastSeen === 'object' && 'toDate' in lastSeen && typeof lastSeen.toDate === 'function') {
@@ -97,13 +100,43 @@ useEffect(() => {
     return 'Agora mesmo';
   };
 
-  // RN-MET-06: Exportação dos dados
+  // Prepara os dados para o Recharts
+  const chartData = useMemo(() => {
+    return metricsHistory.map((m) => {
+      const timeStr = formatMetricTime(m.collectedAt);
+      return {
+        timestamp: timeStr,
+        cpu: m.cpu?.usagePercent || 0,
+        ram: m.memory?.usedPercent || 0,
+        disk: m.disk?.usedPercent || 0,
+        networkInKb: m.network?.bytesInSec ? Number((m.network.bytesInSec / 1024).toFixed(1)) : 0,
+        networkOutKb: m.network?.bytesOutSec ? Number((m.network.bytesOutSec / 1024).toFixed(1)) : 0,
+      };
+    });
+  }, [metricsHistory]);
+
   const handleExportCSV = () => {
-    alert(`Exportando CSV para o dispositivo: ${selectedDevice?.hostname} (Período: ${timeRange})`);
+    if (metricsHistory.length === 0) {
+      alert('Não há dados suficientes para exportar.');
+      return;
+    }
+    const headers = 'Data/Hora,CPU(%),RAM(%),Disco(%),Rede_In(Bytes/s),Rede_Out(Bytes/s)\n';
+    const rows = metricsHistory.map(m => 
+      `${formatMetricTime(m.collectedAt)},${m.cpu?.usagePercent || 0},${m.memory?.usedPercent || 0},${m.disk?.usedPercent || 0},${m.network?.bytesInSec || 0},${m.network?.bytesOutSec || 0}`
+    ).join('\n');
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `metricas_${selectedDevice?.hostname || 'dispositivo'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleExportPDF = () => {
-    alert(`Gerando relatório PDF do dispositivo: ${selectedDevice?.hostname}`);
+    alert(`Gerando relatório PDF de telemetria do host: ${selectedDevice?.hostname}`);
   };
 
   return (
@@ -153,7 +186,6 @@ useEffect(() => {
               <option value="1h" className="bg-zinc-900">Última 1 hora</option>
               <option value="6h" className="bg-zinc-900">Últimas 6 horas</option>
               <option value="24h" className="bg-zinc-900">Últimas 24 horas</option>
-              <option value="7d" className="bg-zinc-900">Últimos 7 dias</option>
             </select>
           </div>
 
@@ -167,13 +199,12 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* RN-MET-05: Verificação de dispositivo nulo */}
       {!selectedDevice ? (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">Nenhum dispositivo cadastrado</h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            Conecte o agente de monitoramento ou cadastre um dispositivo para liberar o painel de métricas.
+            Inicie o agente coletor local para registrar este computador no WatchFlow e visualizar gráficos em tempo real.
           </p>
         </div>
       ) : (
@@ -185,13 +216,22 @@ useEffect(() => {
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
                 <span className="flex items-center gap-1.5"><Cpu className="w-4 h-4 text-orange-500"/> CPU</span>
-                <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Normal</span>
+                <span className={`px-2 py-0.5 rounded-full border text-xs ${
+                  currentCpu > 80 
+                    ? 'text-red-400 bg-red-500/10 border-red-500/20' 
+                    : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                }`}>
+                  {currentCpu > 80 ? 'Elevado' : 'Normal'}
+                </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold">{currentCpu}%</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-orange-500 h-full" style={{ width: `${currentCpu}%` }} />
+                <div 
+                  className={`h-full transition-all duration-500 ${currentCpu > 80 ? 'bg-red-500' : 'bg-orange-500'}`} 
+                  style={{ width: `${Math.min(currentCpu, 100)}%` }} 
+                />
               </div>
             </div>
 
@@ -199,13 +239,15 @@ useEffect(() => {
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
                 <span className="flex items-center gap-1.5"><Activity className="w-4 h-4 text-blue-500"/> Memória</span>
-                <span className="text-gray-400">10.2 GB / 16 GB</span>
+                <span className="text-gray-400">
+                  {selectedDevice.latestMetricsSummary?.memoryUsedGb ?? '-'} GB / {selectedDevice.latestMetricsSummary?.memoryTotalGb ?? '-'} GB
+                </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold">{currentRam}%</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-blue-500 h-full" style={{ width: `${currentRam}%` }} />
+                <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${Math.min(currentRam, 100)}%` }} />
               </div>
             </div>
 
@@ -213,13 +255,15 @@ useEffect(() => {
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
                 <span className="flex items-center gap-1.5"><HardDrive className="w-4 h-4 text-purple-500"/> Disco</span>
-                <span className="text-gray-400">355 GB / 500 GB</span>
+                <span className="text-gray-400">
+                  {selectedDevice.latestMetricsSummary?.diskUsedGb ?? '-'} GB / {selectedDevice.latestMetricsSummary?.diskTotalGb ?? '-'} GB
+                </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold">{currentDisk}%</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-purple-500 h-full" style={{ width: `${currentDisk}%` }} />
+                <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${Math.min(currentDisk, 100)}%` }} />
               </div>
             </div>
 
@@ -230,22 +274,32 @@ useEffect(() => {
                 <div className="flex items-center gap-1 text-xs">
                   <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="text-gray-400">Down:</span>
-                  <span className="font-semibold text-white">1.2 MB/s</span>
+                  <span className="font-semibold text-white">
+                    {selectedDevice.latestMetricsSummary?.networkInBytesSec 
+                      ? `${(selectedDevice.latestMetricsSummary.networkInBytesSec / (1024 * 1024)).toFixed(1)} MB/s` 
+                      : '0.0 MB/s'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
                   <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
                   <span className="text-gray-400">Up:</span>
-                  <span className="font-semibold text-white">850 KB/s</span>
+                  <span className="font-semibold text-white">
+                    {selectedDevice.latestMetricsSummary?.networkOutBytesSec 
+                      ? `${(selectedDevice.latestMetricsSummary.networkOutBytesSec / (1024 * 1024)).toFixed(1)} MB/s` 
+                      : '0.0 MB/s'}
+                  </span>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* ────────────── ÁREA DO GRÁFICO PRINCIPAL ────────────── */}
+          {/* ────────────── ÁREA DO GRÁFICO RECHARTS REAL ────────────── */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-3">
-              <h3 className="text-sm font-semibold text-gray-200">Análise Temporal</h3>
+              <h3 className="text-sm font-semibold text-gray-200">
+                Análise Temporal em Tempo Real
+              </h3>
               
               {/* Seleção do tipo de gráfico */}
               <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs">
@@ -255,7 +309,7 @@ useEffect(() => {
                     activeChartMetric === 'cpu' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  CPU (Linha)
+                  CPU (%)
                 </button>
                 <button
                   onClick={() => setActiveChartMetric('ram')}
@@ -263,7 +317,7 @@ useEffect(() => {
                     activeChartMetric === 'ram' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  RAM (Linha)
+                  RAM (%)
                 </button>
                 <button
                   onClick={() => setActiveChartMetric('disk')}
@@ -271,7 +325,7 @@ useEffect(() => {
                     activeChartMetric === 'disk' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Disco (Área)
+                  Disco (%)
                 </button>
                 <button
                   onClick={() => setActiveChartMetric('network')}
@@ -279,35 +333,79 @@ useEffect(() => {
                     activeChartMetric === 'network' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Rede (Área Dual)
+                  Rede (KB/s)
                 </button>
               </div>
             </div>
 
-            {/* Container do Gráfico */}
-            <div className="h-64 bg-zinc-950/60 rounded-lg border border-zinc-800/60 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-              <div className="absolute top-3 right-3 text-xs text-gray-500 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Intervalo: {timeRange}
-              </div>
-              
-              <Activity className="w-10 h-10 text-zinc-700 mb-2 animate-pulse" />
-              <span className="text-sm font-medium text-gray-400">
-                Gráfico de {activeChartMetric.toUpperCase()} ({timeRange})
-              </span>
-              <span className="text-xs text-gray-600 mt-1">
-                Ponto de montagem para Recharts / Chart.js
-              </span>
+            {/* Container do Gráfico com Recharts */}
+            <div className="h-72 w-full pt-2">
+              {chartData.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                  <Activity className="w-8 h-8 mb-2 animate-spin text-zinc-600" />
+                  <p className="text-sm">Aguardando dados de telemetria do coletor...</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {activeChartMetric === 'cpu' ? (
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="timestamp" stroke="#71717a" fontSize={11} />
+                      <YAxis domain={[0, 100]} stroke="#71717a" fontSize={11} unit="%" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }} 
+                        labelStyle={{ color: '#a1a1aa' }}
+                      />
+                      <Line type="monotone" dataKey="cpu" name="Uso de CPU" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3 }} />
+                    </LineChart>
+                  ) : activeChartMetric === 'ram' ? (
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="timestamp" stroke="#71717a" fontSize={11} />
+                      <YAxis domain={[0, 100]} stroke="#71717a" fontSize={11} unit="%" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }} 
+                        labelStyle={{ color: '#a1a1aa' }}
+                      />
+                      <Line type="monotone" dataKey="ram" name="Uso de RAM" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} />
+                    </LineChart>
+                  ) : activeChartMetric === 'disk' ? (
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="timestamp" stroke="#71717a" fontSize={11} />
+                      <YAxis domain={[0, 100]} stroke="#71717a" fontSize={11} unit="%" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }} 
+                        labelStyle={{ color: '#a1a1aa' }}
+                      />
+                      <Area type="monotone" dataKey="disk" name="Uso de Disco" stroke="#a855f7" fill="#a855f7" fillOpacity={0.2} />
+                    </AreaChart>
+                  ) : (
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="timestamp" stroke="#71717a" fontSize={11} />
+                      <YAxis stroke="#71717a" fontSize={11} unit=" KB/s" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }} 
+                        labelStyle={{ color: '#a1a1aa' }}
+                      />
+                      <Area type="monotone" dataKey="networkInKb" name="Download" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
+                      <Area type="monotone" dataKey="networkOutKb" name="Upload" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           {/* ────────────── HISTÓRICO DAS COLETAS + INFO DO PAINEL LATERAL ────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Tabela de Histórico (2 Colunas no desktop) */}
+            {/* Tabela de Histórico Real */}
             <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-semibold text-gray-200">Histórico de Coletas</h3>
-                <span className="text-xs text-gray-500">{metricsHistory.length} registros no período</span>
+                <h3 className="text-sm font-semibold text-gray-200">Amostras Recentes de Telemetria</h3>
+                <span className="text-xs text-gray-500">{metricsHistory.length} registros recebidos</span>
               </div>
 
               <div className="overflow-x-auto">
@@ -325,26 +423,30 @@ useEffect(() => {
                     {metricsHistory.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="p-6 text-center text-gray-500">
-                          Nenhum registro encontrado para este período.
+                          Nenhum registro encontrado no Firestore para este dispositivo.
                         </td>
                       </tr>
                     ) : (
-                      metricsHistory.map((m) => (
-                        <tr key={m.id} className="hover:bg-zinc-800/30 transition">
-                          <td className="p-3 font-mono text-gray-400">{m.collectedAt}</td>
-                          <td className="p-3 font-medium">{m.cpu}%</td>
-                          <td className="p-3 font-medium">{m.memory}%</td>
-                          <td className="p-3 font-medium">{m.disk}%</td>
-                          <td className="p-3 text-gray-400">{m.networkIn} / {m.networkOut}</td>
-                        </tr>
-                      ))
+                      metricsHistory.map((m) => {
+                        const inKb = m.network?.bytesInSec ? (m.network.bytesInSec / 1024).toFixed(1) : '0';
+                        const outKb = m.network?.bytesOutSec ? (m.network.bytesOutSec / 1024).toFixed(1) : '0';
+                        return (
+                          <tr key={m.id} className="hover:bg-zinc-800/30 transition">
+                            <td className="p-3 font-mono text-gray-400">{formatMetricTime(m.collectedAt)}</td>
+                            <td className="p-3 font-medium text-orange-400">{m.cpu?.usagePercent}%</td>
+                            <td className="p-3 font-medium text-blue-400">{m.memory?.usedPercent}%</td>
+                            <td className="p-3 font-medium text-purple-400">{m.disk?.usedPercent}%</td>
+                            <td className="p-3 text-gray-400">{inKb} KB/s / {outKb} KB/s</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Coluna Lateral: Informações do Host, Ações e Alertas */}
+            {/* Coluna Lateral: Informações do Host e Alertas */}
             <div className="space-y-6">
               
               {/* Informações do Dispositivo */}
@@ -364,7 +466,7 @@ useEffect(() => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Sistema:</span>
-                    <span className="text-white">{selectedDevice.os?.distro ?? 'Linux'}</span>
+                    <span className="text-white">{selectedDevice.os?.distro ?? 'Local Windows/Linux'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Status:</span>
@@ -383,40 +485,40 @@ useEffect(() => {
                 <div className="pt-3 border-t border-zinc-800 flex gap-2">
                   <button 
                     onClick={handleExportCSV}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs py-2 rounded-lg font-medium transition"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs py-2 rounded-lg font-medium transition cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" /> CSV
                   </button>
                   <button 
                     onClick={handleExportPDF}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 text-xs py-2 rounded-lg font-medium transition"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 text-xs py-2 rounded-lg font-medium transition cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5" /> Relatório PDF
                   </button>
                 </div>
               </div>
 
-              {/* Painel de Alertas Relacionados */}
+              {/* Painel de Alertas Rápidos */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
                 <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" /> Alertas Recentes
+                  <AlertTriangle className="w-4 h-4 text-amber-500" /> Limiares de Alerta
                 </h3>
                 
-                <div className="space-y-2">
-                  <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs space-y-1">
+                <div className="space-y-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>CPU acima de 90%</span>
-                      <span className="text-gray-500 font-normal">Ontem</span>
+                      <span>Threshold CPU: &gt; 80%</span>
+                      <span className="text-emerald-400">Ativo</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Pico mantido por mais de 5 minutos.</p>
+                    <p className="text-gray-400 text-[11px]">Gera incidente caso consumo ultrapasse 80%.</p>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs space-y-1">
+                  <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>Disco acima de 80%</span>
-                      <span className="text-gray-500 font-normal">Hoje</span>
+                      <span>Threshold RAM: &gt; 85%</span>
+                      <span className="text-emerald-400">Ativo</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Uso da partição principal em 82%.</p>
+                    <p className="text-gray-400 text-[11px]">Notifica saturação de memória física.</p>
                   </div>
                 </div>
               </div>

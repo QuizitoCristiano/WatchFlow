@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToDevices, deleteDevice } from '@/services/deviceService';
+import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 
 export const DispositivosPage: React.FC = () => {
@@ -10,12 +10,29 @@ export const DispositivosPage: React.FC = () => {
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [search, setSearch] = useState('');
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = subscribeToDevices(userId, setDevices);
     return () => unsubscribe();
   }, [userId]);
+
+  const handleRegisterLocal = async () => {
+    if (!userId) {
+      alert('Você precisa estar autenticado.');
+      return;
+    }
+    try {
+      setRegistering(true);
+      await registerLocalDevice(userId, 'srv-local-pc');
+    } catch (error) {
+      console.error('Erro ao registrar dispositivo local:', error);
+      alert('Erro ao registrar máquina local no Firestore.');
+    } finally {
+      setRegistering(false);
+    }
+  };
 
   // Busca segura evitando erros se hostname ou ip forem undefined
   const filteredDevices = devices.filter(
@@ -29,12 +46,12 @@ export const DispositivosPage: React.FC = () => {
     if (typeof lastSeen === 'object' && 'toDate' in lastSeen && typeof lastSeen.toDate === 'function') {
       return lastSeen.toDate().toLocaleTimeString();
     }
-    return 'N/A';
+    return 'Agora mesmo';
   };
 
   return (
     <div className="p-6 text-white max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Server className="text-orange-500" /> Dispositivos Monitorados
@@ -44,15 +61,31 @@ export const DispositivosPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Buscar por host ou IP..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange-500"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Buscar por host ou IP..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange-500"
+            />
+          </div>
+
+          <button
+            onClick={handleRegisterLocal}
+            disabled={registering}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer disabled:opacity-50"
+            title="Registra a máquina local no Firestore para demonstrar monitoramento"
+          >
+            {registering ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Laptop className="w-4 h-4" />
+            )}
+            <span>Conectar Máquina Local</span>
+          </button>
         </div>
       </div>
 
@@ -63,11 +96,18 @@ export const DispositivosPage: React.FC = () => {
           <h3 className="text-lg font-medium text-white mb-1">
             {search ? 'Nenhum dispositivo encontrado' : 'Nenhum dispositivo monitorado'}
           </h3>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
             {search
               ? `Nenhum host ou IP corresponde à busca "${search}".`
-              : 'Conecte o agente de monitoramento em um servidor para visualizar as métricas em tempo real.'}
+              : 'Conecte o agente de monitoramento ou clique no botão acima para registrar este computador no WatchFlow.'}
           </p>
+          <button
+            onClick={handleRegisterLocal}
+            disabled={registering}
+            className="inline-flex items-center gap-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 px-5 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Registrar Meu Computador Agora
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -109,7 +149,7 @@ export const DispositivosPage: React.FC = () => {
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-orange-500 h-full transition-all duration-500"
-                        style={{ width: `${cpu}%` }}
+                        style={{ width: `${Math.min(cpu, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -122,7 +162,7 @@ export const DispositivosPage: React.FC = () => {
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-blue-500 h-full transition-all duration-500"
-                        style={{ width: `${memory}%` }}
+                        style={{ width: `${Math.min(memory, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -135,7 +175,7 @@ export const DispositivosPage: React.FC = () => {
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-purple-500 h-full transition-all duration-500"
-                        style={{ width: `${disk}%` }}
+                        style={{ width: `${Math.min(disk, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -145,7 +185,7 @@ export const DispositivosPage: React.FC = () => {
                   <span>Último visto: {formatLastSeen(device.lastSeen)}</span>
                   <button
                     onClick={() => userId && device.id && deleteDevice(userId, device.id)}
-                    className="text-gray-400 hover:text-red-400 p-1 transition"
+                    className="text-gray-400 hover:text-red-400 p-1 transition cursor-pointer"
                     title="Remover Dispositivo"
                   >
                     <Trash2 className="w-4 h-4" />
