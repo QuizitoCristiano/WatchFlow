@@ -26,6 +26,7 @@ export interface UserProfile {
 // ==========================================
 export type IntegrationType = 'node_exporter' | 'telegraf' | 'zabbix_agent';
 export type IntegrationStatus = 'online' | 'offline' | 'error' | 'syncing';
+export type IntegrationLifecycleStatus = IntegrationStatus | 'pending';
 
 export interface Integration {
   id?: string;
@@ -33,15 +34,21 @@ export interface Integration {
   name: string;
   type: IntegrationType;
   baseUrl: string; // Ex: http://192.168.0.15:9100 ou IP do Zabbix/Telegraf
-  status: IntegrationStatus;
+  status: IntegrationLifecycleStatus;
   version?: string;
-  lastSync: FirestoreDate;
+  lastSync?: FirestoreDate | null;
   createdAt: FirestoreDate;
   updatedAt?: FirestoreDate;
+  lastAttemptAt?: FirestoreDate | null;
+  lastSuccessAt?: FirestoreDate | null;
+  lastError?: string | null;
+  attemptsLast24h?: number;
+  successesLast24h?: number;
+  collectorAttemptBuckets?: Record<string, { attempts: number; successes: number }>;
 }
 
 // ==========================================
-// 3. DISPOSITIVOS DESCOBERTOS (Auto-Discovery) -> devices/{deviceId}
+// 3. DISPOSITIVOS DESCOBERTOS (Auto-Discovery) -> users/{userId}/devices/{deviceId}
 // ==========================================
 export type DeviceStatus = 'online' | 'warning' | 'critical' | 'offline';
 
@@ -52,11 +59,11 @@ export interface DeviceOS {
 }
 
 export interface LatestMetricsSummary {
-  cpu: number;               // Ex: 68
-  memory: number;            // Ex: 45
+  cpu?: number;              // Ex: 68
+  memory?: number;           // Ex: 45
   memoryUsedGb?: number;     // Ex: 14.4
   memoryTotalGb?: number;    // Ex: 32
-  disk: number;              // Ex: 82
+  disk?: number;             // Ex: 82
   diskUsedGb?: number;       // Ex: 820
   diskTotalGb?: number;      // Ex: 1000
   networkInBytesSec?: number;
@@ -73,13 +80,14 @@ export interface Device {
   os?: DeviceOS;
   status: DeviceStatus;
   latestMetricsSummary?: LatestMetricsSummary;
+  isDemoData?: boolean;
   lastSeen: FirestoreDate;
   createdAt: FirestoreDate;
   updatedAt?: FirestoreDate;
 }
 
 // ==========================================
-// 4. SÉRIE TEMPORAL DE MÉTRICAS -> devices/{deviceId}/metrics/{metricId}
+// 4. SÉRIE TEMPORAL DE MÉTRICAS -> users/{userId}/devices/{deviceId}/metrics/{metricId}
 // ==========================================
 export interface CpuMetric {
   usagePercent: number;
@@ -159,6 +167,7 @@ export interface Alert {
   title: string;
   description: string;
   status: AlertStatus;
+  isDemoData?: boolean;
   metricTriggered: MetricTriggered;
   firstDetectedAt: FirestoreDate;
   lastDetectedAt: FirestoreDate;
@@ -176,14 +185,14 @@ export interface Alert {
 // ==========================================
 export interface DashboardSummary {
   // KPIs do Topo
-  avgCpuUsage: number;         // 68%
-  avgRamUsage: number;         // 45%
-  ramUsedGb: number;           // 14.4
-  ramTotalGb: number;          // 32
-  avgDiskUsage: number;        // 82%
-  diskUsedGb: number;          // 820
-  diskTotalGb: number;         // 1000
-  globalSlaPercent: number;    // 99.98%
+  avgCpuUsage: number | null;
+  avgRamUsage: number | null;
+  ramUsedGb: number | null;
+  ramTotalGb: number | null;
+  avgDiskUsage: number | null;
+  diskUsedGb: number | null;
+  diskTotalGb: number | null;
+  globalSlaPercent: number | null;
 
   // Totais de Contagem
   totalDevices: number;
@@ -191,13 +200,14 @@ export interface DashboardSummary {
   devicesWarning: number;
   devicesCritical: number;
   devicesOffline: number;
-  activeAlertsCount: number;
+  activeAlertsCount: number | null;
 
   lastUpdatedAt: FirestoreDate;
 }
 
 export interface DashboardMetricPoint {
   timestamp: string;          // Ex: "11:00" ou "01/08" para o Recharts
+  isDemoData?: boolean;
   cpu?: number;               // %
   memory?: number;            // %
   downloadMbps?: number;      // Rede (Download)

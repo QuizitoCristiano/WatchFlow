@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, CheckCircle2, ArrowLeft, RefreshCw, AlertCircle, Bird } from "lucide-react";
 import { toast } from "sonner";
+import { FirebaseError } from "firebase/app";
 import { sendVerificationEmail, logoutUser } from "@/services/auth.service";
 import { HeroVisual } from "./HeroVisual";
 
@@ -37,10 +38,10 @@ export const VerifyEmail = () => {
 
       // Ativa 60s de cooldown para travar o botão contra cliques repetidos
       setCooldown(60);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao reenviar e-mail de verificação:", error);
 
-      if (error?.code === "auth/too-many-requests") {
+      if (error instanceof FirebaseError && error.code === "auth/too-many-requests") {
         toast.error("Muitas tentativas de reenvio.", {
           description: "Aguarde alguns minutos antes de solicitar um novo e-mail.",
         });
