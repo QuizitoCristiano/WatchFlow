@@ -1,174 +1,74 @@
-Aqui está o conteúdo do seu `README.md` **100% limpo, corrigido e formatado em Markdown puro**, sem misturar com textos do chat. Adicionei os desenvolvedores que você pediu (**Quizito, Cristiano**) no cabeçalho.
+# WatchFlow
 
-Você pode usar o botão **"Copiar"** no canto superior do bloco de código abaixo para colar diretamente no seu arquivo sem quebrar linhas:
+WatchFlow é um projeto acadêmico para monitoramento de infraestrutura e apresentação de métricas e informações operacionais. O repositório contém uma aplicação web React, funções serverless Vercel para ingestão e um coletor local Node.js.
 
-```markdown
-# 🛡️ WatchFlow — Plataforma Unificada de Observabilidade e Telemetria
+> O pipeline de ingestão está implementado localmente, mas não foi publicado nem validado com Firebase real. Não considere a coleta contínua ativa até configurar e executar a API e o coletor.
 
-> **Projeto Acadêmico & Sistema Prático de Monitoramento**  
-> **Área:** Engenharia de Software / Infraestrutura & Observabilidade  
-> **Desenvolvedores:** Quizito, Cristiano  
-> **Metodologia:** Alinhado aos Princípios do PMBOK 7ª Edição e Metodologias Ágeis  
+## Tecnologias confirmadas
 
----
+- React 19, TypeScript 6 e Vite 8 para o frontend.
+- Firebase Authentication e Cloud Firestore no frontend; Firebase Admin somente nas funções server-side.
+- Recharts 3, Tailwind CSS 4 e React Router 7.
+- Coletor Node.js independente, usando `fetch`, `node:test` e strip de tipos experimental nativo do Node.
+- Node Exporter 1.9.0 observado no ambiente local de validação. Telegraf, Zabbix, Sentry, Datadog e Better Stack são opções mencionadas/consideradas, não integrações implementadas no coletor.
 
-## 📌 1. Visão Geral do Projeto
+## Pré-requisitos
 
-O **WatchFlow** é uma solução moderna de monitoramento e observabilidade desenvolvida para resolver a fragmentação de ferramentas no gerenciamento de infraestruturas de TI.
+- Node.js 22.6 ou superior e npm para frontend, API e coletor.
+- Para testar a coleta real, acesso de rede ao endpoint Node Exporter configurado. O endereço da VM local não é fixo.
 
-Em vez de exigir cadastros manuais e repetitivos de servidores, CPUs ou bancos de dados, o WatchFlow opera sob o conceito de **Auto-Discovery (Descoberta Automática)**, onde os próprios agentes de telemetria (como **Node Exporter**, **Telegraf** e **Zabbix Agent**) enviam os dados e alimentam o ecossistema automaticamente.
+O pacote não declara uma versão mínima de Node para o frontend. O coletor foi validado no ambiente com Node 22.17.1.
 
-### 🎯 Problema que o Sistema Resolve
+## Início rápido
 
-1. **Fim do Cadastro Manual:** O usuário não precisa cadastrar cada IP ou servidor na mão. O sistema identifica e cria o recurso na primeira coleta.
-2. **Centralização de Agentes:** Unifica métricas de diferentes ferramentas (Prometheus/Node Exporter, Telegraf, Zabbix) em um único painel.
-3. **Visibilidade Executiva de SLA:** Transforma métricas de hardware (CPU, RAM, Disco, Rede) em indicadores claros de saúde e SLA.
-4. **Agilidade na Resolução de Incidentes (MTTR):** Central de alertas que notifica gargalos de capacidade antes da queda dos serviços.
+Instale as dependências do projeto:
 
----
-
-## 🏛️ 2. Alinhamento com o PMBOK (Gestão de Projetos)
-
-Como um projeto acadêmico de alta maturidade, o WatchFlow adota os **Domínios de Desempenho do PMBOK**:
-
-| Domínio PMBOK | Aplicação Prática no WatchFlow |
-| :--- | :--- |
-| **Partes Interessadas (Stakeholders)** | Atende necessidades de SysAdmins, DevOps, Gestores de TI e a Banca Examinadora. |
-| **Escopo do Projeto** | Mapeamento delimitado em 9 telas funcionais focadas em observabilidade. |
-| **Entrega de Valor** | Redução do tempo de diagnóstico e monitoramento unificado e proativo. |
-| **Medição e Desempenho** | Acompanhamento contínuo de indicadores de disponibilidade e SLA global. |
-| **Gestão de Incertezas e Riscos** | Otimização de custos de banco NoSQL utilizando subcoleções e retenção temporal no Firestore. |
-
----
-
-## 🔄 3. Arquitetura de Telemetria e Auto-Discovery
-
-```text
-┌────────────────┐     ┌──────────────┐     ┌──────────────┐
-│ Node Exporter  │     │   Telegraf   │     │ Zabbix Agent │
-└───────┬────────┘     └──────┬───────┘     └──────┬───────┘
-        │                     │                    │
-        └─────────────────────┼────────────────────┘
-                              │
-                              ▼
-                     ┌──────────────────┐
-                     │ Backend WatchFlow│ (Polling / Ingestion)
-                     └────────┬─────────┘
-                              │ Auto-discovery / Upsert
-                              ▼
-                     ┌──────────────────┐
-                     │Firebase Firestore│
-                     └────────┬─────────┘
-                              │ Realtime Subscriptions
-                              ▼
-                     ┌──────────────────┐
-                     │ Dashboard React  │
-                     └──────────────────┘
-
+```bash
+npm install
 ```
 
-**Fluxo de Dados:**
+Configure as variáveis de cliente Firebase usadas em `src/services/config.tsx` no ambiente local, sem incluir credenciais administrativas. Inicie o frontend com o script existente:
 
-1. O usuário cadastra apenas as Integrações (endpoints dos agentes).
-2. O Backend obtém o payload de telemetria.
-3. O sistema faz o upsert automático no `devices` (se for a primeira vez, cria o dispositivo).
-4. Grava o histórico na subcoleção `metrics` e gera `alerts` se os thresholds forem violados.
-
----
-
-## 🗄️ 4. Modelagem do Banco de Dados NoSQL (Firestore Schema)
-
-Estruturado para suportar gravações frequentes de séries temporais com alto desempenho de leitura.
-
-```text
-users/{userId}                           (Coleção Raiz: Usuários)
- └── integrations/{integrationId}        (Subcoleção: Conexões de Coleta)
-
-devices/{deviceId}                       (Coleção Raiz: Servidores Descobertos)
- ├── metrics/{metricId}                  (Subcoleção: Série Temporal de Métricas)
- └── alerts/{alertId}                    (Subcoleção: Alertas do Dispositivo)
-
-alerts/{alertId}                         (Coleção Raiz: Central Global de Incidentes)
-reports/{reportId}                       (Coleção Raiz: Relatórios Gerados)
-
+```bash
+npm run dev
 ```
 
-### Exemplos dos Documentos JSON:
+`npm run build` também valida TypeScript da API. Scripts adicionais: `npm run api:check`, `npm run api:test`, `npm run collector:check` e `npm run collector:test`. Não há suíte de testes de interface configurada.
 
-#### `users/{userId}/integrations/{integrationId}`
+## Coletor local
 
-```json
-{
-  "id": "int_node_exp_01",
-  "type": "node_exporter",
-  "name": "Servidores de Produção",
-  "baseUrl": "[http://192.168.0.15:9100](http://192.168.0.15:9100)",
-  "status": "online",
-  "lastSync": "2026-08-15T19:14:10Z",
-  "version": "1.9.0"
-}
+Sem token de ingestão, o coletor executa uma coleta local e imprime JSON, sem persistir:
 
+```powershell
+$env:NODE_EXPORTER_URL = "http://IP_DA_VM:9100/metrics"
+npm run collector:start
 ```
 
-#### `devices/{deviceId}`
+Para fluxo persistente, crie integração na tela Integrações, gere a credencial de coletor e execute o comando seguro apresentado uma única vez. Isso requer as variáveis server-side `FIREBASE_SERVICE_ACCOUNT_JSON` e `COLLECTOR_TOKEN_PEPPER` na Vercel e um deployment da API. A coleta configurada usa `COLLECTOR_INTERVAL_MS` (padrão 60 s), envia via HTTPS, e exige TTL Firestore habilitado conforme [documentação do coletor](docs/architecture/monitoring-collector.md). Não exponha a porta 9100.
 
-```json
-{
-  "id": "dev_srv_api_01",
-  "userId": "usr_99812a",
-  "integrationId": "int_node_exp_01",
-  "hostname": "srv-api-01",
-  "ip": "192.168.0.10",
-  "os": { "distro": "Ubuntu 24.04 LTS" },
-  "status": "online",
-  "latestMetricsSummary": { "cpu": 42, "memory": 63, "disk": 71 }
-}
+Se `NODE_EXPORTER_URL` não for definida, o código usa `http://192.168.1.2:9100/metrics`, endereço específico do ambiente local e sujeito a mudança. Para verificações sem acessar a VM:
 
+```bash
+npm run collector:test
+npm run collector:check
+npm run api:test
+npm run api:check
 ```
 
-#### `devices/{deviceId}/metrics/{metricId}`
+O Node pode exibir `ExperimentalWarning` por causa de `--experimental-strip-types`; isso indica o status experimental do recurso e não significa, por si só, falha do coletor. Testes automatizados usam fakes e não confirmam gravação no Firebase de produção.
 
-```json
-{
-  "collectedAt": "2026-08-15T19:14:13Z",
-  "cpu": { "usagePercent": 42.5 },
-  "memory": { "usedPercent": 63.1 },
-  "disk": { "usedPercent": 71.0 },
-  "network": { "bytesInSec": 1200, "bytesOutSec": 980 }
-}
+## Limitações atuais
 
-```
+- O fluxo autenticado exige configurar Vercel/Firebase, habilitar TTL e validar as Rules de leitura para os caminhos do Dashboard.
+- Não há configuração de Firebase Emulator nem Rules versionadas; integração ponta a ponta permanece pendente.
+- A tela de métricas e outros recursos podem conter comportamentos demonstrativos, identificados separadamente.
+- Uma execução anterior de `npm run lint` no repositório reportou erros em arquivos do frontend fora do coletor; não representa aprovação do lint integral.
 
----
+## Documentação
 
-## 🖥️ 5. Mapeamento das 9 Telas do Sistema
-
-| # | Tela | Função Principal | Fonte de Dados (Firestore) |
-| --- | --- | --- | --- |
-| **1** | Login | Autenticação do usuário | Firebase Auth |
-| **2** | Cadastro | Criação de conta | Firebase Auth + `users` |
-| **3** | Dashboard | Visão geral de KPIs, SLA e incidentes | `devices`, `alerts`, `metrics` |
-| **4** | Integrações | Status de conexão do Node Exporter, Telegraf e Zabbix | `users/{id}/integrations` |
-| **5** | Dispositivos | Lista dos servidores descobertos automaticamente | `devices` |
-| **6** | Métricas | Gráficos detalhados temporais por dispositivo | `devices/{id}/metrics` |
-| **7** | Alertas | Central de incidentes e regras disparadas | `alerts` |
-| **8** | Relatórios | Geração de PDFs e CSVs de disponibilidade/SLA | `reports` |
-| **9** | Perfil | Configurações de conta e alertas | `users` |
-
----
-
-## 📋 6. Checklist de Desenvolvimento do Projeto
-
-* [x] **Etapa 1:** Definição da Arquitetura & Troca para Auto-discovery
-* [x] **Etapa 2:** Modelagem de Dados NoSQL e Schemas do Firestore
-* [x] **Etapa 3:** Protótipo / Código do Dashboard de Alta Fidelidade (Visão Geral)
-* [ ] **Etapa 4:** Desenvolvimento da Tela 4 — Integrações (Próximo Passo)
-* [ ] **Etapa 5:** Desenvolvimento da Tela 5 — Dispositivos Descobertos
-* [ ] **Etapa 6:** Desenvolvimento da Tela 6 — Métricas Detalhadas
-* [ ] **Etapa 7:** Central de Alertas
-* [ ] **Etapa 8:** Módulo de Relatórios (PDF/CSV)
-* [ ] **Etapa 9:** Conexão em tempo real com Firebase SDK
-
-```
-
-```
+- [Visão geral da arquitetura](docs/architecture/overview.md)
+- [Especificação do coletor](docs/architecture/monitoring-collector.md)
+- [Contrato e retenção de dados de métricas](docs/architecture/metrics-data-contract.md)
+- [Análise histórica da arquitetura de ingestão](docs/architecture/metrics-ingestion-architecture.md)
+- [Viabilidade técnica e financeira da ingestão](docs/architecture/ingestion-feasibility.md)
+- [Roadmap e pendências](docs/development/roadmap.md)

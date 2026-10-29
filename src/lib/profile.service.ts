@@ -1,34 +1,58 @@
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile, sendPasswordResetEmail, type UserProfile } from 'firebase/auth';
+import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db, storage } from '@/services/config';
+import type { UserProfile } from '@/types';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+const getAuthenticatedUser = (uid: string) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('Nenhum usuário autenticado.');
+  }
+  if (user.uid !== uid) {
+    throw new Error('Não é permitido acessar o perfil de outro usuário.');
+  }
+
+  return user;
+};
+
 export const profileService = {
   async getProfile(uid: string): Promise<UserProfile | null> {
+    getAuthenticatedUser(uid);
     const docRef = doc(db, 'users', uid);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return snap.data() as UserProfile;
+      const data = snap.data();
+      const createdAt = data.createdAt instanceof Timestamp
+        ? data.createdAt.toDate().toISOString()
+        : data.createdAt instanceof Date
+          ? data.createdAt.toISOString()
+          : typeof data.createdAt === 'string'
+            ? data.createdAt
+            : '';
+
+      return { ...data, uid, createdAt } as UserProfile;
     }
     return null;
   },
 
   async updateProfileData(uid: string, data: { name: string }): Promise<void> {
+    const user = getAuthenticatedUser(uid);
     const docRef = doc(db, 'users', uid);
     await updateDoc(docRef, {
       name: data.name,
       updatedAt: serverTimestamp(),
     });
 
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { displayName: data.name });
-    }
+    await updateProfile(user, { displayName: data.name });
   },
 
   async uploadAvatar(uid: string, file: File): Promise<string> {
+    const user = getAuthenticatedUser(uid);
     // RN-PERFIL-05
     if (!ALLOWED_TYPES.includes(file.type)) {
       throw new Error('Formato de imagem inválido. Use JPEG, PNG ou WEBP.');
@@ -45,9 +69,7 @@ export const profileService = {
     const docRef = doc(db, 'users', uid);
     await updateDoc(docRef, { photoURL, updatedAt: serverTimestamp() });
 
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { photoURL });
-    }
+    await updateProfile(user, { photoURL });
 
     return photoURL;
   },

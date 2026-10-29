@@ -3,11 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.6.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "collector:start": "node --experimental-strip-types collector/src/cli.ts",
+    "collector:test": "node --experimental-strip-types --test collector/test/collector.test.ts",
+    "collector:check": "tsc --noEmit -p collector/tsconfig.json",
+    "api:test": "node --experimental-strip-types --test api/test/collector-api.test.ts",
+    "api:check": "tsc --noEmit -p api/tsconfig.json"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -15,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.17.1",
+    "firebase-admin": "^14.5.0",
     "lucide-react": "^1.31.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
