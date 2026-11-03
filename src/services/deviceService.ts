@@ -35,6 +35,7 @@ export const getDevicesRef = (userId: string) => {
 
 /**
  * Escuta os dispositivos do usuário em tempo real (Firestore ou Local)
+ * No modo local, atualiza continuamente as métricas do card consultando o sistema!
  */
 export const subscribeToDevices = (
   userId: string,
@@ -51,18 +52,45 @@ export const subscribeToDevices = (
     });
   }
 
-  // Fallback Local
-  const emitLocal = () => {
-    callback(getStoredLocalDevices());
+  // Fallback Local com atualização contínua em tempo real
+  const updateAndEmitLocal = async () => {
+    let devices = getStoredLocalDevices();
+
+    // Se temos o dispositivo local cadastrado, atualiza os dados dele em tempo real
+    const localDevIndex = devices.findIndex(d => d.id === 'dev-local-machine');
+    if (localDevIndex !== -1) {
+      try {
+        const res = await fetch('/api/system-metrics');
+        if (res.ok) {
+          const m = await res.json();
+          devices[localDevIndex].latestMetricsSummary = {
+            cpu: m.cpu.usagePercent,
+            memory: m.memory.usedPercent,
+            memoryUsedGb: m.memory.usedGb,
+            memoryTotalGb: m.memory.totalGb,
+            disk: m.disk.usedPercent,
+            diskUsedGb: m.disk.usedGb,
+            diskTotalGb: m.disk.totalGb,
+            networkInBytesSec: m.network.bytesInSec,
+            networkOutBytesSec: m.network.bytesOutSec,
+            latencyMs: 1
+          };
+          devices[localDevIndex].lastSeen = m.collectedAt;
+          saveStoredLocalDevices(devices);
+        }
+      } catch {
+        // mantém o anterior se falhar
+      }
+    }
+
+    callback(devices);
   };
 
-  emitLocal();
-  const interval = setInterval(emitLocal, 3000);
-  window.addEventListener('storage', emitLocal);
+  updateAndEmitLocal();
+  const interval = setInterval(updateAndEmitLocal, 2000); // Atualiza a cada 2 segundos
 
   return () => {
     clearInterval(interval);
-    window.removeEventListener('storage', emitLocal);
   };
 };
 
@@ -91,7 +119,7 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
       realHardware = await res.json();
     }
   } catch (err) {
-    console.warn('Erro ao consultar /api/system-metrics, usando telemetria estimada', err);
+    console.warn('Erro ao consultar /api/system-metrics', err);
   }
 
   const deviceId = 'dev-local-machine';
@@ -175,7 +203,6 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
         bytesOutSec: deviceData.latestMetricsSummary!.networkOutBytesSec
       }
     });
-    // Guarda os últimos 30 pontos
     localStorage.setItem(histKey, JSON.stringify(history.slice(-30)));
     window.dispatchEvent(new Event('storage'));
   }

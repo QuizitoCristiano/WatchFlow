@@ -5,11 +5,7 @@ import {
   query, 
   orderBy, 
   limit, 
-  onSnapshot, 
-  addDoc, 
-  serverTimestamp,
-  doc,
-  updateDoc
+  onSnapshot
 } from 'firebase/firestore';
 
 export const getDeviceMetricsRef = (userId: string, deviceId: string) => {
@@ -56,7 +52,7 @@ export const subscribeToDeviceMetrics = (
     );
   }
 
-  // Coleta Real Contínua via API Local (/api/system-metrics)
+  // Coleta Real Contínua via API Local (/api/system-metrics) a cada 2 segundos
   const histKey = `wf_metrics_${deviceId}`;
   
   const pollRealMetrics = async () => {
@@ -90,7 +86,7 @@ export const subscribeToDeviceMetrics = (
   };
 
   pollRealMetrics();
-  const timer = setInterval(pollRealMetrics, 3000);
+  const timer = setInterval(pollRealMetrics, 2000); // 2 segundos
 
   return () => clearInterval(timer);
 };
