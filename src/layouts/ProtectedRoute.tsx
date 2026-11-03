@@ -17,14 +17,12 @@ export const ProtectedRoute = () => {
 
   // Guard 2: Autenticação principal (Fail-Closed: Bloqueia por padrão se não houver sessão válida)
   if (!isAuthenticated || !user) {
-    // Redireciona para o caminho correto (/auth/login) preservando a intenção de navegação do usuário
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // Guard 3: Validação de E-mail (Security Strategy)
-  // OAuth (Google/GitHub) já garante a verificação do e-mail na origem.
-  // Provedores de senha exigem validação explicita do flag 'emailVerified'.
-  const isOAuthUser = user.providerData.some(
+  const providerData = user.providerData || [];
+  const isOAuthUser = providerData.some(
     (provider) => provider.providerId === "google.com" || provider.providerId === "github.com"
   );
 
