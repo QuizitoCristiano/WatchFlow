@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/react";
  * Projeto: watchflow-app (Organização: watchflow)
  */
 export function initSentry() {
-  const dsn = import.meta.env.VITE_SENTRY_DSN || "https://e0f60973d14ecee78fdbdbb743c5967d@o4512403331481600.ingest.de.sentry.io/4512403371917392";
+  const dsn = import.meta.env.VITE_SENTRY_DSN || "https://e8f60973d14ecee78fdbdbb743c5967d:8e4519e9b907d75b17e4af845ee4bbc1@o4512403331481600.ingest.de.sentry.io/4512403371917392";
 
   try {
     Sentry.init({
@@ -13,7 +13,6 @@ export function initSentry() {
       integrations: [
         Sentry.browserTracingIntegration(),
       ],
-      // 100% das transações capturadas para a apresentação acadêmica
       tracesSampleRate: 1.0,
       tracePropagationTargets: ["localhost", /^https:\/\/.*\.vercel\.app/],
       environment: import.meta.env.MODE || "development",
@@ -43,6 +42,5 @@ export function triggerTestErrorForAPM() {
     throw new Error("WatchFlow APM Test Error: Simulação de falha controlada para validação na banca UTP");
   } catch (err) {
     Sentry.captureException(err);
-    console.log("Erro disparado com sucesso para o Sentry!");
   }
 }
