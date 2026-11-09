@@ -3,6 +3,8 @@ import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/service
 import type { Device } from '@/types';
 import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
+import { triggerTestErrorForAPM } from '@/lib/sentry';
+import { Zap } from 'lucide-react';
 
 export const DispositivosPage: React.FC = () => {
   const { user } = useAuth();
@@ -72,6 +74,18 @@ export const DispositivosPage: React.FC = () => {
               className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
+
+          <button
+            onClick={() => {
+              triggerTestErrorForAPM();
+              alert('🚀 Evento enviado para a APM Sentry com sucesso!');
+            }}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
+            title="Dispara um evento de teste para o dashboard do Sentry"
+          >
+            <Zap className="w-4 h-4 text-purple-200" />
+            <span>Disparar Evento Sentry</span>
+          </button>
 
           <button
             onClick={handleRegisterLocal}
