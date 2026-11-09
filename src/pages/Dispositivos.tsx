@@ -3,8 +3,7 @@ import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/service
 import type { Device } from '@/types';
 import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor, Flame } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
-import { triggerTestErrorForAPM } from '@/lib/sentry';
-import { Zap } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const DispositivosPage: React.FC = () => {
   const { user } = useAuth();
@@ -22,7 +21,7 @@ export const DispositivosPage: React.FC = () => {
 
   const handleRegisterLocal = async () => {
     if (!userId) {
-      alert('Você precisa estar autenticado.');
+      toast.warning('Você precisa estar autenticado.');
       return;
     }
     try {
@@ -30,7 +29,7 @@ export const DispositivosPage: React.FC = () => {
       await registerLocalDevice(userId, 'srv-local-pc');
     } catch (error) {
       console.error('Erro ao registrar dispositivo local:', error);
-      alert('Erro ao registrar máquina local no Firestore.');
+      toast.error('Erro ao registrar máquina local.');
     } finally {
       setRegistering(false);
     }
@@ -79,7 +78,7 @@ export const DispositivosPage: React.FC = () => {
             onClick={async () => {
               try {
                 await fetch('/api/trigger-stress');
-                alert('⚡ Teste de Sobrecarga Ativado! A CPU/RAM/GPU vão ultrapassar 90% por 12s para disparar os alertas.');
+                toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% para acionar o Sentry.');
               } catch (e) {
                 console.error(e);
               }
@@ -236,3 +235,4 @@ export const DispositivosPage: React.FC = () => {
     </div>
   );
 };
+export default DispositivosPage;

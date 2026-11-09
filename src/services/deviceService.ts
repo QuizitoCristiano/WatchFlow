@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   addDoc 
 } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 const LOCAL_STORAGE_KEY = 'wf_local_devices';
 
@@ -32,6 +33,19 @@ export const getDevicesRef = (userId: string) => {
   if (!userId) throw new Error('Usuário não autenticado.');
   if (!isFirebaseConfigured || !db) return null;
   return collection(db, 'users', userId, 'devices');
+};
+
+// Controle de cooldown e transições de estado para APM e Alertas
+const lastAlertSentTimes: Record<string, number> = {
+  CPU_HIGH: 0,
+  RAM_HIGH: 0,
+  GPU_HIGH: 0,
+};
+
+const wasAlertActive: Record<string, boolean> = {
+  CPU_HIGH: false,
+  RAM_HIGH: false,
+  GPU_HIGH: false,
 };
 
 /**
@@ -107,22 +121,29 @@ export const subscribeToDevices = (
           try {
             const alertsRaw = localStorage.getItem('wf_local_alerts');
             let alertsList = alertsRaw ? JSON.parse(alertsRaw) : [];
+            const now = Date.now();
 
             for (const cond of conditions) {
               if (cond.isTriggered) {
                 isAnyCritical = true;
-                const hasRecent = alertsList.some((a: any) => a.type === cond.type && a.status === 'active');
-                if (!hasRecent) {
-                  alertsList.unshift({
-                    id: `alt_${Date.now()}_${cond.metric}`,
+                const lastSent = lastAlertSentTimes[cond.type] || 0;
+                const isNewSpike = !wasAlertActive[cond.type];
+                const isCooldownElapsed = now - lastSent > 45000; // 45s de cooldown
+
+                if (isNewSpike || isCooldownElapsed) {
+                  lastAlertSentTimes[cond.type] = now;
+                  wasAlertActive[cond.type] = true;
+
+                  const newAlert = {
+                    id: `alt_${now}_${cond.metric}`,
                     userId,
                     deviceId: devices[localDevIndex].id,
                     deviceName: devices[localDevIndex].hostname,
                     type: cond.type,
-                    severity: 'critical',
+                    severity: 'critical' as const,
                     title: cond.title,
-                    description: `O recurso atingiu nível de saturação no host ${devices[localDevIndex].hostname}.`,
-                    status: 'active',
+                    description: `O recurso ${cond.metric} atingiu nível crítico (${cond.val}) no host ${devices[localDevIndex].hostname}.`,
+                    status: 'active' as const,
                     metricTriggered: {
                       metric: cond.metric,
                       value: cond.val,
@@ -132,6 +153,14 @@ export const subscribeToDevices = (
                     firstDetectedAt: new Date().toISOString(),
                     lastDetectedAt: new Date().toISOString(),
                     createdAt: new Date().toISOString()
+                  };
+
+                  alertsList.unshift(newAlert);
+
+                  // Notificação Toast visual no topo da tela do WatchFlow
+                  toast.error(`🔥 Alerta Crítico: ${cond.title}`, {
+                    description: `Incidente registrado e enviado ao Sentry APM em tempo real!`,
+                    duration: 6000,
                   });
 
                   // Dispara Issue individual no Sentry para cada recurso em sobrecarga
@@ -142,10 +171,22 @@ export const subscribeToDevices = (
                     details: m
                   });
                 }
+              } else {
+                // Se não está mais em alerta crítico, mas estava antes, normalizou! (Auto-recovery)
+                if (wasAlertActive[cond.type]) {
+                  wasAlertActive[cond.type] = false;
+                  alertsList = alertsList.map((a: any) =>
+                    a.type === cond.type && a.status === 'active'
+                      ? { ...a, status: 'resolved', resolvedAt: new Date().toISOString() }
+                      : a
+                  );
+                  toast.success(`✅ Uso de ${cond.metric} normalizou (${cond.val}). Incidente resolvido.`);
+                }
               }
             }
 
             localStorage.setItem('wf_local_alerts', JSON.stringify(alertsList));
+            window.dispatchEvent(new Event('wf_alerts_updated'));
           } catch (err) {
             console.error('Erro na engine de alertas:', err);
           }
@@ -193,6 +234,7 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
       hostname: host
     });
     console.log('📡 [Sentry] Evento de desconexão despachado!');
+    toast.info(`🔌 Dispositivo ${host} desconectado. Evento enviado ao Sentry.`);
   } catch (e) {
     console.error(e);
   }
@@ -217,9 +259,10 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
   }
 
   const deviceId = 'dev-local-machine';
+  const host = customName || realHardware?.hostname || 'DESKTOP-LOCAL';
+
   // Notifica o Sentry sobre o evento de CONEXÃO do dispositivo
   try {
-    const host = customName || realHardware?.hostname || 'DESKTOP-LOCAL';
     captureAppException(new Error(`[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${host}`), {
       action: 'device_connected',
       hostname: host,
@@ -228,6 +271,7 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
       ramTotalGb: realHardware?.memory?.totalGb
     });
     console.log('📡 [Sentry] Evento de conexão de dispositivo despachado!');
+    toast.success(`💻 Dispositivo ${host} conectado com sucesso! Evento enviado ao Sentry.`);
   } catch (e) {
     console.error(e);
   }

@@ -14,46 +14,22 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Search, 
-  Filter, 
-  X, 
-  Server, 
-  Clock, 
-  Activity,
-  ChevronRight
+  Flame,
+  CheckCheck,
+  Trash2
 } from 'lucide-react';
 import { db, isFirebaseConfigured } from '@/services/config';
 import { useAuth } from '@/contexts/useAuth';
+import { toast } from 'sonner';
 
 import { ALERT_STATUS_LABELS, type Alert } from '../types';
-import { formatDate, formatTime } from "../lib/formatters";
 
 const LOCAL_STORAGE_KEY = 'wf_local_alerts';
 
 const getStoredLocalAlerts = (): Alert[] => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [
-      {
-        id: 'alt_001',
-        userId: 'usr_local_dev_001',
-        deviceId: 'dev-local-machine',
-        deviceName: 'srv-local-host',
-        type: 'RAM_HIGH',
-        title: 'Threshold de Memória RAM Elevado',
-        description: 'Uso de memória física ultrapassou 70% na máquina local.',
-        severity: 'warning',
-        status: 'active',
-        metricTriggered: {
-          metric: 'RAM',
-          value: '75%',
-          threshold: '70%',
-          operator: '>'
-        },
-        firstDetectedAt: new Date().toISOString() as any,
-        lastDetectedAt: new Date().toISOString() as any,
-        createdAt: new Date().toISOString() as any,
-      }
-    ];
+    return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
@@ -62,11 +38,14 @@ const getStoredLocalAlerts = (): Alert[] => {
 export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const refreshAlerts = () => {
+    setAlerts(getStoredLocalAlerts());
+  };
 
   useEffect(() => {
     if (isFirebaseConfigured && db && user?.uid) {
@@ -92,8 +71,16 @@ export const AlertsPage: React.FC = () => {
     }
 
     // Modo Local
-    setAlerts(getStoredLocalAlerts());
+    refreshAlerts();
     setLoading(false);
+
+    // Ouve atualizações em tempo real disparadas pelo polling de telemetria
+    window.addEventListener('wf_alerts_updated', refreshAlerts);
+    window.addEventListener('storage', refreshAlerts);
+    return () => {
+      window.removeEventListener('wf_alerts_updated', refreshAlerts);
+      window.removeEventListener('storage', refreshAlerts);
+    };
   }, [user?.uid]);
 
   // Contadores para os Cards de Topo
@@ -112,7 +99,7 @@ export const AlertsPage: React.FC = () => {
     return matchStatus && matchSeverity && matchQuery;
   });
 
-  // Ação de Reconhecer / Resolver
+  // Ação de Reconhecer
   const handleAcknowledge = async (id: string) => {
     if (isFirebaseConfigured && db) {
       try {
@@ -131,6 +118,43 @@ export const AlertsPage: React.FC = () => {
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
     setAlerts(updated);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    toast.info('Alerta reconhecido pela equipe de monitoramento.');
+  };
+
+  // Ação de Resolver individualmente
+  const handleResolve = (id: string) => {
+    const updated = alerts.map(a => a.id === id ? { ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() } : a);
+    setAlerts(updated);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('wf_alerts_updated'));
+    toast.success('Alerta resolvido com sucesso!');
+  };
+
+  // Resolver Todos
+  const handleResolveAll = () => {
+    const updated = alerts.map(a => ({ ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() }));
+    setAlerts(updated);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('wf_alerts_updated'));
+    toast.success('Todos os incidentes foram marcados como resolvidos.');
+  };
+
+  // Limpar Histórico
+  const handleClearHistory = () => {
+    setAlerts([]);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    window.dispatchEvent(new Event('wf_alerts_updated'));
+    toast.info('Histórico de alertas foi limpo.');
+  };
+
+  // Simular Carga Extrema
+  const handleTriggerStress = async () => {
+    try {
+      await fetch('/api/trigger-stress');
+      toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% em instantes.');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -143,8 +167,39 @@ export const AlertsPage: React.FC = () => {
             Central de Incidentes & Alertas
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Acompanhe proativamente anomalias e problemas detectados pelo motor do WatchFlow.
+            Monitoramento proativo e integração em tempo real com o Sentry APM.
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleTriggerStress}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shadow-lg shadow-red-900/30"
+            title="Gera carga simulada >90% por 12s para testar o Sentry"
+          >
+            <Flame className="w-4 h-4 animate-pulse" />
+            <span>Simular Sobrecarga</span>
+          </button>
+
+          {alerts.length > 0 && (
+            <>
+              <button
+                onClick={handleResolveAll}
+                className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>Resolver Todos</span>
+              </button>
+
+              <button
+                onClick={handleClearHistory}
+                className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Limpar Histórico</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -194,6 +249,30 @@ export const AlertsPage: React.FC = () => {
               className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
             />
           </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-orange-500"
+            >
+              <option value="all">Todos os Status</option>
+              <option value="active">Ativos</option>
+              <option value="acknowledged">Reconhecidos</option>
+              <option value="resolved">Resolvidos</option>
+            </select>
+
+            <select
+              value={filterSeverity}
+              onChange={(e) => setFilterSeverity(e.target.value)}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-orange-500"
+            >
+              <option value="all">Todas as Severidades</option>
+              <option value="critical">Crítico</option>
+              <option value="warning">Warning</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -204,14 +283,14 @@ export const AlertsPage: React.FC = () => {
                 <th className="p-3">Título / Descrição</th>
                 <th className="p-3">Origem</th>
                 <th className="p-3">Status</th>
-                <th className="p-3">Ação</th>
+                <th className="p-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
               {filteredAlerts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-6 text-center text-gray-500">
-                    Nenhum alerta registrado no momento. Sistema operando normalmente.
+                    Nenhum alerta registrado no momento. Sistema operando em parâmetros seguros.
                   </td>
                 </tr>
               ) : (
@@ -232,17 +311,33 @@ export const AlertsPage: React.FC = () => {
                     </td>
                     <td className="p-3 font-mono text-zinc-400">{a.deviceName || 'Agente Local'}</td>
                     <td className="p-3">
-                      <span className="text-zinc-300">{ALERT_STATUS_LABELS[a.status] || a.status}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        a.status === 'active' ? 'text-red-400 bg-red-950/40' :
+                        a.status === 'acknowledged' ? 'text-amber-400 bg-amber-950/40' :
+                        'text-emerald-400 bg-emerald-950/40'
+                      }`}>
+                        {ALERT_STATUS_LABELS[a.status] || a.status}
+                      </span>
                     </td>
-                    <td className="p-3">
-                      {a.status === 'active' && (
-                        <button 
-                          onClick={() => handleAcknowledge(a.id!)}
-                          className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-xs transition cursor-pointer"
-                        >
-                          Reconhecer
-                        </button>
-                      )}
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {a.status === 'active' && (
+                          <button 
+                            onClick={() => handleAcknowledge(a.id!)}
+                            className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs transition cursor-pointer"
+                          >
+                            Reconhecer
+                          </button>
+                        )}
+                        {a.status !== 'resolved' && (
+                          <button 
+                            onClick={() => handleResolve(a.id!)}
+                            className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-xs transition cursor-pointer"
+                          >
+                            Resolver
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
