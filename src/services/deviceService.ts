@@ -78,59 +78,80 @@ export const subscribeToDevices = (
             latencyMs: 1
           };
 
-          // ENGINE DE ALERTAS E SENTRY AUTOMÁTICOS
-          const isGpuOverload = m.gpu && m.gpu.usagePercent >= 90;
-          const isRamOverload = m.memory.usedPercent >= 90;
-          const isCpuOverload = m.cpu.usagePercent >= 90;
-
-          if (isGpuOverload || isRamOverload || isCpuOverload) {
-            devices[localDevIndex].status = 'critical';
-
-            // Registra alerta local se não existir
-            try {
-              const alertsRaw = localStorage.getItem('wf_local_alerts');
-              const alertsList = alertsRaw ? JSON.parse(alertsRaw) : [];
-              const alertKey = isGpuOverload ? 'GPU_HIGH' : isRamOverload ? 'RAM_HIGH' : 'CPU_HIGH';
-              const alertTitle = isGpuOverload 
-                ? `Sobrecarga Crítica de GPU (${m.gpu.usagePercent}%)` 
-                : isRamOverload 
-                ? `Esgotamento Crítico de RAM (${m.memory.usedPercent}%)` 
-                : `Uso Excessivo de CPU (${m.cpu.usagePercent}%)`;
-
-              const hasRecent = alertsList.some((a: any) => a.type === alertKey && a.status === 'active');
-              if (!hasRecent) {
-                alertsList.unshift({
-                  id: `alt_${Date.now()}`,
-                  userId,
-                  deviceId: devices[localDevIndex].id,
-                  deviceName: devices[localDevIndex].hostname,
-                  type: alertKey,
-                  severity: 'critical',
-                  title: alertTitle,
-                  description: `O recurso atingiu nível de saturação no host ${devices[localDevIndex].hostname}.`,
-                  status: 'active',
-                  metricTriggered: {
-                    metric: isGpuOverload ? 'GPU' : isRamOverload ? 'RAM' : 'CPU',
-                    value: `${isGpuOverload ? m.gpu.usagePercent : isRamOverload ? m.memory.usedPercent : m.cpu.usagePercent}%`,
-                    threshold: '90%',
-                    operator: '>'
-                  },
-                  firstDetectedAt: new Date().toISOString(),
-                  lastDetectedAt: new Date().toISOString(),
-                  createdAt: new Date().toISOString()
-                });
-                localStorage.setItem('wf_local_alerts', JSON.stringify(alertsList));
-
-                // DESPACHA PARA O SENTRY APM
-                captureAppException(new Error(`[WatchFlow Alert] ${alertTitle}`), {
-                  host: devices[localDevIndex].hostname,
-                  metric: isGpuOverload ? 'GPU' : isRamOverload ? 'RAM' : 'CPU',
-                  details: m
-                });
-              }
-            } catch (err) {
-              console.error('Erro na engine de alertas:', err);
+          // ENGINE DE ALERTAS E SENTRY AUTOMÁTICOS (GPU, RAM e CPU individualmente)
+          const conditions = [
+            {
+              isTriggered: m.cpu.usagePercent >= 90,
+              type: 'CPU_HIGH',
+              metric: 'CPU',
+              val: `${m.cpu.usagePercent}%`,
+              title: `Uso Excessivo de CPU (${m.cpu.usagePercent}%)`
+            },
+            {
+              isTriggered: m.memory.usedPercent >= 90,
+              type: 'RAM_HIGH',
+              metric: 'RAM',
+              val: `${m.memory.usedPercent}%`,
+              title: `Esgotamento Crítico de Memória RAM (${m.memory.usedPercent}%)`
+            },
+            {
+              isTriggered: m.gpu && m.gpu.usagePercent >= 90,
+              type: 'GPU_HIGH',
+              metric: 'GPU',
+              val: `${m.gpu?.usagePercent ?? 0}%`,
+              title: `Sobrecarga Crítica de GPU (${m.gpu?.usagePercent ?? 0}%)`
             }
+          ];
+
+          let isAnyCritical = false;
+          try {
+            const alertsRaw = localStorage.getItem('wf_local_alerts');
+            let alertsList = alertsRaw ? JSON.parse(alertsRaw) : [];
+
+            for (const cond of conditions) {
+              if (cond.isTriggered) {
+                isAnyCritical = true;
+                const hasRecent = alertsList.some((a: any) => a.type === cond.type && a.status === 'active');
+                if (!hasRecent) {
+                  alertsList.unshift({
+                    id: `alt_${Date.now()}_${cond.metric}`,
+                    userId,
+                    deviceId: devices[localDevIndex].id,
+                    deviceName: devices[localDevIndex].hostname,
+                    type: cond.type,
+                    severity: 'critical',
+                    title: cond.title,
+                    description: `O recurso atingiu nível de saturação no host ${devices[localDevIndex].hostname}.`,
+                    status: 'active',
+                    metricTriggered: {
+                      metric: cond.metric,
+                      value: cond.val,
+                      threshold: '90%',
+                      operator: '>'
+                    },
+                    firstDetectedAt: new Date().toISOString(),
+                    lastDetectedAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                  });
+
+                  // Dispara Issue individual no Sentry para cada recurso em sobrecarga
+                  captureAppException(new Error(`[WatchFlow Alert] ${cond.title}`), {
+                    host: devices[localDevIndex].hostname,
+                    metric: cond.metric,
+                    value: cond.val,
+                    details: m
+                  });
+                }
+              }
+            }
+
+            localStorage.setItem('wf_local_alerts', JSON.stringify(alertsList));
+          } catch (err) {
+            console.error('Erro na engine de alertas:', err);
+          }
+
+          if (isAnyCritical) {
+            devices[localDevIndex].status = 'critical';
           } else {
             devices[localDevIndex].status = m.cpu.usagePercent > 75 || m.memory.usedPercent > 80 ? 'warning' : 'online';
           }
@@ -162,6 +183,20 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
     return await deleteDoc(docRef);
   }
 
+  // Notifica o Sentry sobre o evento de DESCONEXÃO do dispositivo
+  try {
+    const target = getStoredLocalDevices().find(d => d.id === deviceId);
+    const host = target?.hostname || deviceId;
+    captureAppException(new Error(`[WatchFlow Lifecycle] Dispositivo Desconectado/Removido: ${host}`), {
+      action: 'device_disconnected',
+      deviceId,
+      hostname: host
+    });
+    console.log('📡 [Sentry] Evento de desconexão despachado!');
+  } catch (e) {
+    console.error(e);
+  }
+
   const list = getStoredLocalDevices().filter(d => d.id !== deviceId);
   saveStoredLocalDevices(list);
   window.dispatchEvent(new Event('storage'));
@@ -182,6 +217,20 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
   }
 
   const deviceId = 'dev-local-machine';
+  // Notifica o Sentry sobre o evento de CONEXÃO do dispositivo
+  try {
+    const host = customName || realHardware?.hostname || 'DESKTOP-LOCAL';
+    captureAppException(new Error(`[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${host}`), {
+      action: 'device_connected',
+      hostname: host,
+      cpu: realHardware?.cpu?.model,
+      gpu: realHardware?.gpu?.name,
+      ramTotalGb: realHardware?.memory?.totalGb
+    });
+    console.log('📡 [Sentry] Evento de conexão de dispositivo despachado!');
+  } catch (e) {
+    console.error(e);
+  }
   const now = new Date().toISOString();
 
   const deviceData: Device = {
