@@ -39,5 +39,10 @@ export function captureAppException(error: Error | unknown, context?: Record<str
  * Dispara um evento real no dashboard do Sentry!
  */
 export function triggerTestErrorForAPM() {
-  Sentry.captureMessage("WatchFlow APM Conectado: Validação de telemetria e integridade para a banca UTP", "info");
+  try {
+    throw new Error("WatchFlow APM Test Error: Simulação de falha controlada para validação na banca UTP");
+  } catch (err) {
+    Sentry.captureException(err);
+    console.log("Erro disparado com sucesso para o Sentry!");
+  }
 }
