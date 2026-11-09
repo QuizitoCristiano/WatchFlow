@@ -77,14 +77,13 @@ export const DispositivosPage: React.FC = () => {
 
           <button
             onClick={() => {
-              triggerTestErrorForAPM();
-              alert('🚀 Evento enviado para a APM Sentry com sucesso!');
+              throw new Error("This is your first error!");
             }}
             className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
-            title="Dispara um evento de teste para o dashboard do Sentry"
+            title="Dispara o primeiro erro exato esperado pelo Sentry"
           >
             <Zap className="w-4 h-4 text-purple-200" />
-            <span>Disparar Evento Sentry</span>
+            <span>Break the world (Sentry Test)</span>
           </button>
 
           <button
