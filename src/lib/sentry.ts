@@ -27,15 +27,28 @@ export function initSentry() {
 
 /**
  * Envia uma mensagem ou exceção manual para o dashboard do Sentry
+ * Garante nível de severidade e fingerprint para aparecer como Issue separada
  */
-export function captureAppException(error: Error | unknown, context?: Record<string, any>) {
+export function captureAppException(error: Error | string | unknown, context?: Record<string, any>) {
   console.warn("📡 [WatchFlow APM] Despachando evento ao Sentry:", error, context);
-  Sentry.captureException(error, { extra: context });
+
+  const errorObj = typeof error === 'string' ? new Error(error) : (error instanceof Error ? error : new Error(String(error)));
+  const metricTag = context?.metric || 'General';
+
+  Sentry.withScope((scope) => {
+    scope.setLevel('fatal');
+    scope.setFingerprint([errorObj.message, metricTag]);
+    if (context) {
+      scope.setExtras(context);
+      if (context.host) scope.setTag('host', context.host);
+      if (context.metric) scope.setTag('resource', context.metric);
+    }
+    Sentry.captureException(errorObj);
+  });
 }
 
 /**
  * Função de demonstração ao vivo para a banca e para o professor:
- * Dispara um evento real no dashboard do Sentry!
  */
 export function triggerTestErrorForAPM() {
   try {
