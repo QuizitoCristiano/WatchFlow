@@ -6,6 +6,9 @@ import os from 'os'
 import fs from 'fs'
 import { execSync } from 'child_process'
 
+// Variável para simulação temporária de sobrecarga (estresse)
+let stressUntilTimestamp = 0;
+
 // Helper para calcular a média de uso da CPU entre dois instantes
 function getCpuSnapshot() {
   const cpus = os.cpus();
@@ -23,7 +26,6 @@ let lastCpuSnapshot = getCpuSnapshot();
 
 // Helper universal de GPU
 function getGpuInfo() {
-  // 1. Tenta coletar da NVIDIA se disponível
   try {
     const raw = execSync('nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits', {
       timeout: 1000,
@@ -42,10 +44,9 @@ function getGpuInfo() {
       }
     }
   } catch {
-    // Se não for NVIDIA ou falhar, prossegue para o fallback nativo do Windows
+    // fallback
   }
 
-  // 2. Fallback nativo universal do Windows (AMD / Intel / Gráficos Integrados)
   try {
     const raw = execSync('powershell -NoProfile -Command "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Caption | Select-Object -First 1"', {
       timeout: 1500,
@@ -62,7 +63,7 @@ function getGpuInfo() {
       };
     }
   } catch {
-    // fallback padrão
+    // fallback
   }
 
   return {
@@ -79,7 +80,16 @@ function localTelemetryPlugin() {
   return {
     name: 'vite-plugin-local-telemetry',
     configureServer(server: any) {
+      // Endpoint para ativar teste de sobrecarga por 12 segundos
+      server.middlewares.use('/api/trigger-stress', (_req: any, res: any) => {
+        stressUntilTimestamp = Date.now() + 12000;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ status: 'stress_active', durationSeconds: 12 }));
+      });
+
       server.middlewares.use('/api/system-metrics', async (_req: any, res: any) => {
+        const isStressActive = Date.now() < stressUntilTimestamp;
+
         const currentSnapshot = getCpuSnapshot();
         const idleDiff = currentSnapshot.idle - lastCpuSnapshot.idle;
         const totalDiff = currentSnapshot.total - lastCpuSnapshot.total;
@@ -93,7 +103,7 @@ function localTelemetryPlugin() {
         const totalMemBytes = os.totalmem();
         const freeMemBytes = os.freemem();
         const usedMemBytes = totalMemBytes - freeMemBytes;
-        const ramUsagePercent = Math.round((usedMemBytes / totalMemBytes) * 100);
+        let ramUsagePercent = Math.round((usedMemBytes / totalMemBytes) * 100);
 
         let diskTotalGb = 1000;
         let diskUsedGb = 500;
@@ -108,10 +118,18 @@ function localTelemetryPlugin() {
           diskUsedGb = Number((usedBytes / 1e9).toFixed(1));
           diskUsagePercent = Math.round((usedBytes / totalBytes) * 100);
         } catch {
-          // fallback para compatibilidade
+          // fallback
         }
 
         const gpuInfo = getGpuInfo();
+
+        // Se o teste de sobrecarga estiver ativo, injeta os picos >90%
+        if (isStressActive) {
+          cpuUsagePercent = 94;
+          ramUsagePercent = 92;
+          gpuInfo.usagePercent = 96;
+          gpuInfo.temperatureC = 78;
+        }
 
         const payload = {
           hostname: os.hostname(),
@@ -119,6 +137,7 @@ function localTelemetryPlugin() {
           distro: `${os.type()} ${os.release()} (${os.arch()})`,
           uptimeSeconds: os.uptime(),
           collectedAt: new Date().toISOString(),
+          isStressActive,
           cpu: {
             usagePercent: cpuUsagePercent,
             coresCount: os.cpus().length,

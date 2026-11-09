@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor, Flame } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 import { triggerTestErrorForAPM } from '@/lib/sentry';
 import { Zap } from 'lucide-react';
@@ -76,14 +76,19 @@ export const DispositivosPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => {
-              throw new Error("This is your first error!");
+            onClick={async () => {
+              try {
+                await fetch('/api/trigger-stress');
+                alert('⚡ Teste de Sobrecarga Ativado! A CPU/RAM/GPU vão ultrapassar 90% por 12s para disparar os alertas.');
+              } catch (e) {
+                console.error(e);
+              }
             }}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
-            title="Dispara o primeiro erro exato esperado pelo Sentry"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer shadow-lg shadow-red-900/30"
+            title="Simula carga extrema (>90%) para demonstrar os alertas críticos e o Sentry"
           >
-            <Zap className="w-4 h-4 text-purple-200" />
-            <span>Break the world (Sentry Test)</span>
+            <Flame className="w-4 h-4 text-red-200 animate-pulse" />
+            <span>Simular Sobrecarga (Pico &gt; 90%)</span>
           </button>
 
           <button
