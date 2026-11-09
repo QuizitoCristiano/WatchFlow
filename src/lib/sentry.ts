@@ -1,50 +1,43 @@
+import * as Sentry from "@sentry/react";
+
 /**
- * Módulo de Inicialização e Instrumentação do Sentry APM (Application Performance Monitoring)
- * 
- * Atende ao requisito acadêmico de APM do projeto WatchFlow (Documento UTP ADS 2026).
- * Rastreia exceções em tempo de execução, métricas de performance e transações do React.
+ * Inicialização oficial da APM Sentry no WatchFlow
+ * Projeto: watchflow-app (Organização: watchflow)
  */
-
-interface SentryConfig {
-  dsn?: string;
-  environment?: string;
-  release?: string;
-}
-
-export function initSentry(config?: SentryConfig) {
-  const dsn = config?.dsn || import.meta.env.VITE_SENTRY_DSN;
-
-  if (!dsn) {
-    console.info(
-      'ℹ️ [WatchFlow APM] Sentry configurado em modo local/desenvolvimento. Defina VITE_SENTRY_DSN no .env para enviar eventos ao dashboard Sentry em nuvem.'
-    );
-    return;
-  }
+export function initSentry() {
+  const dsn = import.meta.env.VITE_SENTRY_DSN || "https://e0f60973d14ecee78fdbdbb743c5967d@o4512403331481600.ingest.de.sentry.io/4512403371917392";
 
   try {
-    // Caso @sentry/react esteja instalado ou disponível via runtime
-    console.log('🚀 [WatchFlow APM] Sentry inicializado com sucesso para o ambiente:', config?.environment || 'development');
-  } catch (error) {
-    console.error('Falha ao inicializar APM Sentry:', error);
+    Sentry.init({
+      dsn,
+      integrations: [
+        Sentry.browserTracingIntegration(),
+      ],
+      // 100% das transações capturadas para a apresentação acadêmica
+      tracesSampleRate: 1.0,
+      tracePropagationTargets: ["localhost", /^https:\/\/.*\.vercel\.app/],
+      environment: import.meta.env.MODE || "development",
+      release: "watchflow@1.0.0",
+    });
+
+    console.log("🚀 [APM] Sentry inicializado com sucesso no WatchFlow!");
+  } catch (err) {
+    console.error("Falha ao inicializar o Sentry:", err);
   }
 }
 
 /**
- * Função utilitária para capturar exceções manuais no APM
+ * Envia uma mensagem ou exceção manual para o dashboard do Sentry
  */
 export function captureAppException(error: Error | unknown, context?: Record<string, any>) {
-  console.warn('📡 [WatchFlow APM] Exceção registrada no APM:', error, context);
-  // Se o SDK do Sentry estiver ativo, despacha o evento
-  if (typeof window !== 'undefined' && (window as any).Sentry) {
-    (window as any).Sentry.captureException(error, { extra: context });
-  }
+  console.warn("📡 [WatchFlow APM] Despachando evento ao Sentry:", error, context);
+  Sentry.captureException(error, { extra: context });
 }
 
 /**
- * Função utilitária para testar o envio de exceções à APM (para demonstração ao professor)
+ * Função de demonstração ao vivo para a banca e para o professor:
+ * Dispara um evento real no dashboard do Sentry!
  */
 export function triggerTestErrorForAPM() {
-  const testError = new Error('WatchFlow APM Test Error: Simulação de falha controlada para validação na banca');
-  captureAppException(testError, { timestamp: new Date().toISOString(), userAction: 'demo_test_apm' });
-  throw testError;
+  Sentry.captureMessage("WatchFlow APM Conectado: Validação de telemetria e integridade para a banca UTP", "info");
 }
