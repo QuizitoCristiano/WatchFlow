@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2 } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 import { triggerTestErrorForAPM } from '@/lib/sentry';
 import { Zap } from 'lucide-react';
@@ -192,6 +192,25 @@ export const DispositivosPage: React.FC = () => {
                       />
                     </div>
                   </div>
+
+                  {device.latestMetricsSummary?.gpu && (
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary.gpu.name}>
+                          <Monitor className="w-3 h-3 text-emerald-400"/> GPU ({device.latestMetricsSummary.gpu.name.split(' ')[0]})
+                        </span>
+                        <span className={device.latestMetricsSummary.gpu.usagePercent >= 90 ? 'text-red-400 font-bold' : ''}>
+                          {device.latestMetricsSummary.gpu.usagePercent}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${device.latestMetricsSummary.gpu.usagePercent >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${Math.min(device.latestMetricsSummary.gpu.usagePercent, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs text-gray-500">

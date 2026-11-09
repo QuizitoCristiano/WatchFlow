@@ -4,6 +4,7 @@ import type { AlertSeverity, AlertStatus, AlertType } from "@/types";
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   CPU_HIGH: 'Uso de CPU Elevado',
   RAM_HIGH: 'Consumo de Memória Elevado',
+  GPU_HIGH: 'Sobrecarga Crítica de GPU',
   DISK_HIGH: 'Capacidade de Disco Crítica',
   DEVICE_OFFLINE: 'Dispositivo Inacessível',
   INTEGRATION_DOWN: 'Coletor / Integração Offline',

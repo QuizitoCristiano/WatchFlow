@@ -69,6 +69,7 @@ export const subscribeToDeviceMetrics = (
           cpu: { usagePercent: m.cpu.usagePercent },
           memory: { usedPercent: m.memory.usedPercent },
           disk: { usedPercent: m.disk.usedPercent },
+          gpu: m.gpu,
           network: { 
             bytesInSec: m.network.bytesInSec, 
             bytesOutSec: m.network.bytesOutSec 

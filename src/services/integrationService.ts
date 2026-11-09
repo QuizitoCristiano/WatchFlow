@@ -1,3 +1,4 @@
+import { registerLocalDevice } from '@/services/deviceService';
 import { db, isFirebaseConfigured } from '@/services/config';
 import type { Integration, IntegrationStatus } from '@/types';
 import { 
@@ -154,7 +155,7 @@ export const testAndSyncIntegration = async (
     }
   }
 
-  // Local
+  // Local (Auto-Discovery em Ação!)
   const list = getStoredLocalIntegrations();
   const item = list.find(i => i.id === integrationId);
   if (item) {
@@ -162,6 +163,14 @@ export const testAndSyncIntegration = async (
     item.lastSync = new Date().toISOString() as any;
     saveStoredLocalIntegrations(list);
     window.dispatchEvent(new Event('storage'));
+
+    // AUTO-DISCOVERY: Registra e conecta o host descoberto na tela de Dispositivos!
+    try {
+      await registerLocalDevice(userId);
+      console.log('✨ [Auto-Discovery] Host detectado e registrado com sucesso a partir da integração:', item.name);
+    } catch (e) {
+      console.error('Erro no auto-discovery:', e);
+    }
   }
   return true;
 };

@@ -1,3 +1,4 @@
+import { captureAppException } from '@/lib/sentry';
 import { db, isFirebaseConfigured } from '@/services/config';
 import type { Device } from '@/types';
 import { 
@@ -71,10 +72,68 @@ export const subscribeToDevices = (
             disk: m.disk.usedPercent,
             diskUsedGb: m.disk.usedGb,
             diskTotalGb: m.disk.totalGb,
+            gpu: m.gpu,
             networkInBytesSec: m.network.bytesInSec,
             networkOutBytesSec: m.network.bytesOutSec,
             latencyMs: 1
           };
+
+          // ENGINE DE ALERTAS E SENTRY AUTOMÁTICOS
+          const isGpuOverload = m.gpu && m.gpu.usagePercent >= 90;
+          const isRamOverload = m.memory.usedPercent >= 90;
+          const isCpuOverload = m.cpu.usagePercent >= 90;
+
+          if (isGpuOverload || isRamOverload || isCpuOverload) {
+            devices[localDevIndex].status = 'critical';
+
+            // Registra alerta local se não existir
+            try {
+              const alertsRaw = localStorage.getItem('wf_local_alerts');
+              const alertsList = alertsRaw ? JSON.parse(alertsRaw) : [];
+              const alertKey = isGpuOverload ? 'GPU_HIGH' : isRamOverload ? 'RAM_HIGH' : 'CPU_HIGH';
+              const alertTitle = isGpuOverload 
+                ? `Sobrecarga Crítica de GPU (${m.gpu.usagePercent}%)` 
+                : isRamOverload 
+                ? `Esgotamento Crítico de RAM (${m.memory.usedPercent}%)` 
+                : `Uso Excessivo de CPU (${m.cpu.usagePercent}%)`;
+
+              const hasRecent = alertsList.some((a: any) => a.type === alertKey && a.status === 'active');
+              if (!hasRecent) {
+                alertsList.unshift({
+                  id: `alt_${Date.now()}`,
+                  userId,
+                  deviceId: devices[localDevIndex].id,
+                  deviceName: devices[localDevIndex].hostname,
+                  type: alertKey,
+                  severity: 'critical',
+                  title: alertTitle,
+                  description: `O recurso atingiu nível de saturação no host ${devices[localDevIndex].hostname}.`,
+                  status: 'active',
+                  metricTriggered: {
+                    metric: isGpuOverload ? 'GPU' : isRamOverload ? 'RAM' : 'CPU',
+                    value: `${isGpuOverload ? m.gpu.usagePercent : isRamOverload ? m.memory.usedPercent : m.cpu.usagePercent}%`,
+                    threshold: '90%',
+                    operator: '>'
+                  },
+                  firstDetectedAt: new Date().toISOString(),
+                  lastDetectedAt: new Date().toISOString(),
+                  createdAt: new Date().toISOString()
+                });
+                localStorage.setItem('wf_local_alerts', JSON.stringify(alertsList));
+
+                // DESPACHA PARA O SENTRY APM
+                captureAppException(new Error(`[WatchFlow Alert] ${alertTitle}`), {
+                  host: devices[localDevIndex].hostname,
+                  metric: isGpuOverload ? 'GPU' : isRamOverload ? 'RAM' : 'CPU',
+                  details: m
+                });
+              }
+            } catch (err) {
+              console.error('Erro na engine de alertas:', err);
+            }
+          } else {
+            devices[localDevIndex].status = m.cpu.usagePercent > 75 || m.memory.usedPercent > 80 ? 'warning' : 'online';
+          }
           devices[localDevIndex].lastSeen = m.collectedAt;
           saveStoredLocalDevices(devices);
         }
@@ -145,6 +204,7 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
       disk: realHardware?.disk?.usedPercent ?? 85,
       diskUsedGb: realHardware?.disk?.usedGb ?? 800,
       diskTotalGb: realHardware?.disk?.totalGb ?? 930,
+      gpu: realHardware?.gpu,
       networkInBytesSec: realHardware?.network?.bytesInSec || 1200000,
       networkOutBytesSec: realHardware?.network?.bytesOutSec || 600000,
       latencyMs: 1

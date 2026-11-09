@@ -51,6 +51,14 @@ export interface DeviceOS {
   hostname?: string;
 }
 
+export interface GpuMetric {
+  name: string;
+  usagePercent: number;
+  memoryUsedMb?: number;
+  memoryTotalMb?: number;
+  temperatureC?: number;
+}
+
 export interface LatestMetricsSummary {
   cpu: number;               // Ex: 68
   memory: number;            // Ex: 45
@@ -59,6 +67,7 @@ export interface LatestMetricsSummary {
   disk: number;              // Ex: 82
   diskUsedGb?: number;       // Ex: 820
   diskTotalGb?: number;      // Ex: 1000
+  gpu?: GpuMetric;
   networkInBytesSec?: number;
   networkOutBytesSec?: number;
   latencyMs?: number;        // Necessário para a tabela de Dispositivos (ex: 24ms)
@@ -113,6 +122,7 @@ export interface MetricPayload {
   cpu: CpuMetric;
   memory: MemoryMetric;
   disk: DiskMetric;
+  gpu?: GpuMetric;
   network?: NetworkMetric;
 }
 
@@ -121,7 +131,7 @@ export interface MetricPayload {
 // ==========================================
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
-export type AlertType = 'CPU_HIGH' | 'RAM_HIGH' | 'DISK_HIGH' | 'DEVICE_OFFLINE' | 'INTEGRATION_DOWN';
+export type AlertType = 'CPU_HIGH' | 'RAM_HIGH' | 'GPU_HIGH' | 'DISK_HIGH' | 'DEVICE_OFFLINE' | 'INTEGRATION_DOWN';
 
 export interface MetricTriggered {
   metric: string;               // Ex: 'CPU', 'RAM', 'Heartbeat'
@@ -134,6 +144,7 @@ export interface MetricTriggered {
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   CPU_HIGH: 'Uso de CPU Elevado',
   RAM_HIGH: 'Consumo de Memória Elevado',
+  GPU_HIGH: 'Sobrecarga Crítica de GPU',
   DISK_HIGH: 'Capacidade de Disco Crítica',
   DEVICE_OFFLINE: 'Dispositivo Inacessível',
   INTEGRATION_DOWN: 'Coletor / Integração Offline',

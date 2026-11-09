@@ -13,6 +13,7 @@ import {
   Download, 
   FileText, 
   AlertTriangle,
+  Monitor,
   ArrowDownLeft,
   ArrowUpRight,
   Filter
@@ -37,7 +38,7 @@ export const MetricasPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [timeRange, setTimeRange] = useState<string>('1h');
-  const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'disk' | 'network'>('cpu');
+  const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'gpu' | 'disk' | 'network'>('cpu');
   const [metricsHistory, setMetricsHistory] = useState<MetricPayload[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
@@ -109,6 +110,7 @@ export const MetricasPage: React.FC = () => {
         cpu: m.cpu?.usagePercent || 0,
         ram: m.memory?.usedPercent || 0,
         disk: m.disk?.usedPercent || 0,
+        gpu: m.gpu?.usagePercent || 0,
         networkInKb: m.network?.bytesInSec ? Number((m.network.bytesInSec / 1024).toFixed(1)) : 0,
         networkOutKb: m.network?.bytesOutSec ? Number((m.network.bytesOutSec / 1024).toFixed(1)) : 0,
       };
@@ -210,7 +212,7 @@ export const MetricasPage: React.FC = () => {
       ) : (
         <>
           {/* ────────────── CARDS DE RESUMO (LATEST METRICS) ────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             
             {/* CPU */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
@@ -248,6 +250,32 @@ export const MetricasPage: React.FC = () => {
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${Math.min(currentRam, 100)}%` }} />
+              </div>
+            </div>
+
+                        {/* GPU */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
+              <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
+                <span className="flex items-center gap-1.5"><Monitor className="w-4 h-4 text-emerald-400"/> GPU</span>
+                <span className={`px-2 py-0.5 rounded-full border text-xs ${
+                  (selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90
+                    ? 'text-red-400 bg-red-500/10 border-red-500/20 font-bold'
+                    : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                }`}>
+                  {(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'Crítico' : 'Normal'}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-bold">{selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0}%</span>
+                <span className="text-xs text-zinc-500 font-mono truncate max-w-[110px]" title={selectedDevice?.latestMetricsSummary?.gpu?.name}>
+                  {selectedDevice?.latestMetricsSummary?.gpu?.name || 'N/A'}
+                </span>
+              </div>
+              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                  style={{ width: `${Math.min(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0, 100)}%` }} 
+                />
               </div>
             </div>
 
@@ -319,6 +347,14 @@ export const MetricasPage: React.FC = () => {
                 >
                   RAM (%)
                 </button>
+                                <button
+                  onClick={() => setActiveChartMetric('gpu')}
+                  className={`px-3 py-1.5 rounded-md font-medium transition ${
+                    activeChartMetric === 'gpu' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  GPU (%)
+                </button>
                 <button
                   onClick={() => setActiveChartMetric('disk')}
                   className={`px-3 py-1.5 rounded-md font-medium transition ${
@@ -368,6 +404,17 @@ export const MetricasPage: React.FC = () => {
                         labelStyle={{ color: '#a1a1aa' }}
                       />
                       <Line type="monotone" dataKey="ram" name="Uso de RAM" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} />
+                    </LineChart>
+                                    ) : activeChartMetric === 'gpu' ? (
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="timestamp" stroke="#71717a" fontSize={11} />
+                      <YAxis domain={[0, 100]} stroke="#71717a" fontSize={11} unit="%" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '8px' }} 
+                        labelStyle={{ color: '#a1a1aa' }}
+                      />
+                      <Line type="monotone" dataKey="gpu" name="Uso de GPU" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
                     </LineChart>
                   ) : activeChartMetric === 'disk' ? (
                     <AreaChart data={chartData}>
