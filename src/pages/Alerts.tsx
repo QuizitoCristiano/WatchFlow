@@ -16,13 +16,19 @@ import {
   Search, 
   Flame,
   CheckCheck,
-  Trash2
+  Trash2,
+  X,
+  Server,
+  Clock,
+  Activity,
+  ChevronRight
 } from 'lucide-react';
 import { db, isFirebaseConfigured } from '@/services/config';
 import { useAuth } from '@/contexts/useAuth';
 import { toast } from 'sonner';
 
 import { ALERT_STATUS_LABELS, type Alert } from '../types';
+import { formatDate, formatTime } from '../lib/formatters';
 
 const LOCAL_STORAGE_KEY = 'wf_local_alerts';
 
@@ -37,8 +43,10 @@ const getStoredLocalAlerts = (): Alert[] => {
 
 export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
+  const userId = user?.uid ?? 'usr_local_dev_001';
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [, setLoading] = useState<boolean>(true);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -295,7 +303,11 @@ export const AlertsPage: React.FC = () => {
                 </tr>
               ) : (
                 filteredAlerts.map(a => (
-                  <tr key={a.id} className="hover:bg-zinc-800/30">
+                  <tr 
+                    key={a.id} 
+                    className="hover:bg-zinc-800/30 cursor-pointer"
+                    onClick={() => setSelectedAlert(a)}
+                  >
                     <td className="p-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
                         a.severity === 'critical' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
@@ -319,7 +331,7 @@ export const AlertsPage: React.FC = () => {
                         {ALERT_STATUS_LABELS[a.status] || a.status}
                       </span>
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         {a.status === 'active' && (
                           <button 
@@ -346,6 +358,76 @@ export const AlertsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Drawer / Modal de Detalhes do Alerta */}
+      {selectedAlert && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end animate-fade-in">
+          <div className="bg-[var(--color-bg-card)] border-l border-[var(--color-border-subtle)] w-full max-w-md h-full p-6 flex flex-col justify-between overflow-y-auto animate-slide-left">
+            <div>
+              <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-4 mb-6">
+                <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                  selectedAlert.severity === 'critical' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                  selectedAlert.severity === 'warning' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                  'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                }`}>
+                  {selectedAlert.severity}
+                </span>
+                <button 
+                  onClick={() => setSelectedAlert(null)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <h2 className="text-xl font-bold text-white mb-2">{selectedAlert.title}</h2>
+              <p className="text-sm text-zinc-400 mb-6">{selectedAlert.description}</p>
+
+              <div className="space-y-4 bg-zinc-950/50 p-4 rounded-xl border border-zinc-800 mb-6">
+                <div className="flex items-center gap-3 text-sm">
+                  <Server size={16} className="text-orange-500" />
+                  <span className="text-zinc-400">Origem:</span>
+                  <span className="font-semibold text-white ml-auto">{selectedAlert.deviceName || 'Local'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <Activity size={16} className="text-blue-500" />
+                  <span className="text-zinc-400">Métrica:</span>
+                  <span className="font-semibold text-white ml-auto">
+                    {selectedAlert.metricTriggered ? `${selectedAlert.metricTriggered.metric} (${selectedAlert.metricTriggered.value})` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <Clock size={16} className="text-emerald-500" />
+                  <span className="text-zinc-400">Primeira Ocorrência:</span>
+                  <span className="font-mono text-xs text-zinc-300 ml-auto">
+                    {formatDate(selectedAlert.firstDetectedAt)} {formatTime(selectedAlert.firstDetectedAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-4 border-t border-zinc-800">
+              {selectedAlert.status !== 'resolved' && (
+                <button
+                  onClick={() => {
+                    handleResolve(selectedAlert.id!);
+                    setSelectedAlert(null);
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-xs transition"
+                >
+                  Marcar como Resolvido
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedAlert(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

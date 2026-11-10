@@ -1,4 +1,4 @@
-import React, { useState, useRef, type ChangeEvent,  } from 'react';
+import React, { useEffect, useState, useRef, type ChangeEvent } from 'react';
 import {
   User,
   Mail,
@@ -14,42 +14,87 @@ import {
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { profileService } from '@/lib/profile.service';
+import { useAuth } from '@/contexts/useAuth';
 
-interface ProfilePageProps {
-  // Para fins de demonstração ou injeção via AuthContext
-  currentUser?: UserProfile;
-}
-
-export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
-  // Estado inicial simulado ou vindo de prop
-  const [profile, setProfile] = useState<UserProfile>(currentUser || {
-    uid: 'usr_001',
-    name: 'Kizito Cristiano',
-    email: 'kizito@email.com',
-    photoURL: '',
-    role: 'developer',
-    status: 'active',
-    createdAt: '2026-01-15T10:00:00Z'
-  });
-
-  const [name, setName] = useState(profile.name);
+export const ProfilePage: React.FC = () => {
+  const { user, isLoading: authLoading } = useAuth();
+  const [profileState, setProfileState] = useState<{
+    userId: string;
+    profile: UserProfile | null;
+    error: string | null;
+  } | null>(null);
+  const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const currentProfileState = user && profileState?.userId === user.uid
+    ? profileState
+    : null;
+  const profile = currentProfileState?.profile ?? null;
+  const profileLoading = authLoading || (!!user && !currentProfileState);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    let active = true;
+
+    void profileService.getProfile(user.uid)
+      .then((storedProfile) => {
+        if (!active) return;
+
+        const nextProfile: UserProfile = {
+          uid: user.uid,
+          name: user.displayName || storedProfile?.name || user.email || '',
+          email: user.email || storedProfile?.email || '',
+          photoURL: user.photoURL || storedProfile?.photoURL || '',
+          role: storedProfile?.role ?? 'viewer',
+          status: storedProfile?.status ?? 'active',
+          createdAt: storedProfile?.createdAt || user.metadata.creationTime || '',
+        };
+        setProfileState({ userId: user.uid, profile: nextProfile, error: null });
+        setName(nextProfile.name);
+        setFeedback(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+
+        console.error('Erro ao carregar perfil do usuário autenticado:', error);
+        setProfileState({
+          userId: user.uid,
+          profile: null,
+          error: error instanceof Error ? error.message : 'Erro ao carregar perfil.',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || !profile || profile.uid !== user.uid) {
+      setFeedback({ type: 'error', message: 'É necessário estar autenticado para salvar o perfil.' });
+      return;
+    }
+
     setIsSaving(true);
     setFeedback(null);
 
     try {
-      await profileService.updateProfileData(profile.uid, { name });
-      setProfile(prev => ({ ...prev, name }));
+      await profileService.updateProfileData(user.uid, { name });
+      setProfileState(prev => prev?.userId === user.uid && prev.profile
+        ? { ...prev, profile: { ...prev.profile, name } }
+        : prev);
       setFeedback({ type: 'success', message: 'Nome atualizado com sucesso!' });
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao atualizar perfil.' });
+    } catch (error: unknown) {
+      setFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Erro ao atualizar perfil.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -58,16 +103,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!user || !profile || profile.uid !== user.uid) {
+      setFeedback({ type: 'error', message: 'É necessário estar autenticado para alterar a foto do perfil.' });
+      return;
+    }
 
     setIsUploading(true);
     setFeedback(null);
 
     try {
-      const newPhotoURL = await profileService.uploadAvatar(profile.uid, file);
-      setProfile(prev => ({ ...prev, photoURL: newPhotoURL }));
+      const newPhotoURL = await profileService.uploadAvatar(user.uid, file);
+      setProfileState(prev => prev?.userId === user.uid && prev.profile
+        ? { ...prev, profile: { ...prev.profile, photoURL: newPhotoURL } }
+        : prev);
       setFeedback({ type: 'success', message: 'Foto de perfil atualizada com sucesso!' });
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao enviar imagem.' });
+    } catch (error: unknown) {
+      setFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Erro ao enviar imagem.',
+      });
     } finally {
       setIsUploading(false);
     }
@@ -76,15 +130,42 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
   const handleResetPassword = async () => {
     setFeedback(null);
     try {
+      if (!profile?.email) {
+        throw new Error('A conta autenticada não possui um e-mail cadastrado.');
+      }
       await profileService.sendPasswordReset(profile.email);
       setFeedback({
         type: 'success',
         message: `E-mail de redefinição de senha enviado para ${profile.email}`
       });
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: 'Erro ao solicitar troca de senha.' });
+    } catch (error: unknown) {
+      setFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Erro ao solicitar troca de senha.',
+      });
     }
   };
+
+  const createdAt = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString('pt-BR')
+    : '—';
+
+  if (authLoading || profileLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center gap-3 text-[var(--color-text-muted)]">
+        <Loader2 size={20} className="animate-spin" />
+        Carregando perfil...
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return (
+      <div className="mx-auto max-w-4xl p-6 text-sm text-rose-400" role="alert">
+        {currentProfileState?.error ?? feedback?.message ?? 'É necessário autenticar-se para acessar o perfil.'}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-app)] text-[var(--color-text-body)] p-6 max-w-4xl mx-auto space-y-6">
@@ -124,7 +205,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || !user}
             className="absolute bottom-0 right-0 p-2 bg-[var(--color-brand-primary)] text-white rounded-full hover:bg-[var(--color-brand-hover)] transition-colors shadow-lg disabled:opacity-50"
             title="Alterar foto"
           >
@@ -216,7 +297,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
               <Calendar size={18} className="absolute left-3 top-2.5 text-[var(--color-text-muted)]" />
               <input
                 type="text"
-                value={new Date(profile.createdAt).toLocaleDateString('pt-BR')}
+                value={createdAt}
                 disabled
                 className="w-full bg-[var(--color-bg-app)]/50 border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] rounded-lg pl-10 pr-3 py-2 text-sm cursor-not-allowed"
               />
@@ -227,7 +308,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser }) => {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={isSaving || name === profile.name}
+            disabled={isSaving || !user || name === profile.name}
             className="inline-flex items-center gap-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors shadow-md disabled:opacity-50"
           >
             {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}

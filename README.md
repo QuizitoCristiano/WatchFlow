@@ -19,7 +19,7 @@ Diferente de ferramentas tradicionais que exigem cadastros manuais e lentos de I
 1. **Fim do Cadastro Manual:** O sistema identifica e registra os recursos de hardware automaticamente ao iniciar a telemetria.
 2. **Telemetria Completa com Suporte a GPU:** Monitoramento direto de CPU, Memória RAM física, Disco e GPU (NVIDIA via `nvidia-smi`) em tempo real a cada 2 segundos.
 3. **Gestão Inteligente de Incidentes com Auto-Recovery:** Transições de estado automáticas (`Normal` ➡️ `Crítico` ➡️ `Resolvido`) com emissão de alertas na interface e despacho para o Sentry APM.
-4. **Resiliência e Arquitetura Híbrida:** Suporte a execução distribuída (Firebase Firestore) e operação local autônoma e segura, garantindo alta disponibilidade mesmo sem conexão externa.
+4. **Resiliência e Arquitetura Híbrida:** Suporte a execução distribuída (Firebase Firestore / Coletor Local) e operação local autônoma e segura, garantindo alta disponibilidade mesmo sem conexão externa.
 
 ---
 
@@ -30,7 +30,7 @@ O WatchFlow adota os Domínios de Desempenho do Guia PMBOK:
 | Domínio PMBOK | Aplicação Prática no WatchFlow |
 | :--- | :--- |
 | **Partes Interessadas (Stakeholders)** | Atende requisitos operacionais de Engenheiros DevOps, SysAdmins, Gestores de TI e a Banca Avaliadora. |
-| **Escopo do Projeto** | Mapeamento e entrega de 9 módulos integrados: Dashboard, Integrações, Dispositivos, Métricas, Alertas, Relatórios, Configurações, Perfil e Sobre Nós. |
+| **Escopo do Projeto** | Mapeamento e entrega de módulos integrados: Dashboard, Integrações, Dispositivos, Métricas, Alertas, Relatórios, Configurações, Perfil e Sobre Nós. |
 | **Entrega de Valor** | Redução drástica do MTTR (Mean Time to Resolution) através de alertas proativos com Sentry APM. |
 | **Medição e Desempenho** | Coleta contínua de telemetria a cada 2000ms com gráficos interativos e rastreamento de SLA. |
 | **Gestão de Incertezas e Riscos** | Tolerância a falhas na camada de nuvem (fallback local resiliente) e prevenção contra estouro de quotas. |
@@ -139,3 +139,14 @@ Acesse no navegador: `http://localhost:5173`.
    - Demonstrar o recebimento dos eventos com detalhes completos do hardware e tags de recurso;
 5. **Auto-Recovery:**
    - Observar que, ao normalizar a carga, a notificação de resolução é emitida e o dispositivo retorna para `ONLINE`.
+
+---
+
+## 📚 8. Documentação Técnica Detalhada
+
+- [Visão Geral da Arquitetura](docs/architecture/overview.md)
+- [Especificação do Coletor](docs/architecture/monitoring-collector.md)
+- [Contrato e Retenção de Dados de Métricas](docs/architecture/metrics-data-contract.md)
+- [Análise Histórica da Arquitetura de Ingestão](docs/architecture/metrics-ingestion-architecture.md)
+- [Viabilidade Técnica e Financeira da Ingestão](docs/architecture/ingestion-feasibility.md)
+- [Roadmap e Pendências](docs/development/roadmap.md)

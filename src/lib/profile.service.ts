@@ -1,7 +1,8 @@
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile, type UserProfile } from 'firebase/auth';
+import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db, storage, isFirebaseConfigured } from '@/services/config';
+import type { UserProfile } from '@/types';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -17,34 +18,60 @@ const DEFAULT_LOCAL_PROFILE: UserProfile = {
   createdAt: '2026-08-18T14:00:00.000Z',
 };
 
+const getAuthenticatedUser = (uid: string) => {
+  if (!isFirebaseConfigured || !auth) return null;
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('Nenhum usuário autenticado.');
+  }
+  if (user.uid !== uid) {
+    throw new Error('Não é permitido acessar o perfil de outro usuário.');
+  }
+
+  return user;
+};
+
 export const profileService = {
   async getProfile(uid: string): Promise<UserProfile | null> {
     if (isFirebaseConfigured && db) {
       try {
+        getAuthenticatedUser(uid);
         const docRef = doc(db, 'users', uid);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-          return snap.data() as UserProfile;
+          const data = snap.data();
+          const createdAt = data.createdAt instanceof Timestamp
+            ? data.createdAt.toDate().toISOString()
+            : data.createdAt instanceof Date
+              ? data.createdAt.toISOString()
+              : typeof data.createdAt === 'string'
+                ? data.createdAt
+                : '';
+
+          return { ...data, uid, createdAt } as UserProfile;
         }
       } catch (err) {
         console.warn('Erro ao carregar perfil do Firestore:', err);
       }
     }
 
+    // Modo Local
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     return raw ? JSON.parse(raw) : DEFAULT_LOCAL_PROFILE;
   },
 
   async updateProfileData(uid: string, data: { name: string }): Promise<void> {
     if (isFirebaseConfigured && db) {
+      const user = getAuthenticatedUser(uid);
       const docRef = doc(db, 'users', uid);
       await updateDoc(docRef, {
         name: data.name,
         updatedAt: serverTimestamp(),
       });
 
-      if (auth?.currentUser) {
-        await updateProfile(auth.currentUser, { displayName: data.name });
+      if (user) {
+        await updateProfile(user, { displayName: data.name });
       }
       return;
     }
@@ -63,6 +90,7 @@ export const profileService = {
     }
 
     if (isFirebaseConfigured && storage && db) {
+      const user = getAuthenticatedUser(uid);
       const storageRef = ref(storage, `profile-images/${uid}/avatar`);
       await uploadBytes(storageRef, file);
       const photoURL = await getDownloadURL(storageRef);
@@ -70,8 +98,8 @@ export const profileService = {
       const docRef = doc(db, 'users', uid);
       await updateDoc(docRef, { photoURL, updatedAt: serverTimestamp() });
 
-      if (auth?.currentUser) {
-        await updateProfile(auth.currentUser, { photoURL });
+      if (user) {
+        await updateProfile(user, { photoURL });
       }
       return photoURL;
     }
@@ -92,7 +120,6 @@ export const profileService = {
 
   async sendPasswordReset(email: string): Promise<void> {
     if (isFirebaseConfigured && auth) {
-      const { sendPasswordResetEmail } = await import('firebase/auth');
       await sendPasswordResetEmail(auth, email);
     } else {
       console.log(`[Modo Local] E-mail de redefinição de senha enviado para: ${email}`);

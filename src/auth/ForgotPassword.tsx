@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bird, Mail, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { FirebaseError } from "firebase/app";
 import { HeroVisual } from "./HeroVisual";
 import { useAuth } from "@/contexts/useAuth";
 
@@ -29,10 +30,12 @@ export const ForgotPassword = () => {
             await sendResetPasswordEmail(email.trim());
             setIsSubmitted(true);
             toast.success("E-mail de recuperação enviado!");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Erro ao solicitar redefinição:", err);
 
-            switch (err.code) {
+            const errorCode = err instanceof FirebaseError ? err.code : null;
+
+            switch (errorCode) {
                 case "auth/user-not-found":
                 case "auth/invalid-email":
                     setError("E-mail não encontrado ou inválido.");

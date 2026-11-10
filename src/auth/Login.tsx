@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { FirebaseError } from "firebase/app";
 
 import { loginSchema } from "./LogSchema";
 import { useAuth } from "@/contexts/useAuth";
@@ -59,10 +60,12 @@ export const Login = () => {
             // Direto para o dashboard sem travar por e-mail não verificado
             toast.success("Login realizado com sucesso!");
             navigate("/dashboard");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Erro de login:", err);
 
-            switch (err.code) {
+            const errorCode = err instanceof FirebaseError ? err.code : null;
+
+            switch (errorCode) {
                 case "auth/invalid-credential":
                 case "auth/user-not-found":
                 case "auth/wrong-password":
@@ -92,7 +95,7 @@ export const Login = () => {
             await loginWithGoogle();
             toast.success("Autenticado com o Google!");
             navigate("/dashboard");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Erro de autenticação Google:", err);
             toast.error("Não foi possível autenticar com o Google.");
         } finally {
@@ -107,7 +110,7 @@ export const Login = () => {
             await loginWithGithub();
             toast.success("Autenticado com o GitHub!");
             navigate("/dashboard");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Erro de autenticação GitHub:", err);
             toast.error("Não foi possível autenticar com o GitHub.");
         } finally {

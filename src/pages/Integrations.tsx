@@ -9,25 +9,37 @@ import {
   Globe, 
   Server,
   Zap,
-  X
+  X,
+  Copy,
 } from 'lucide-react';
 import { 
   subscribeToIntegrations, 
   addIntegration, 
-  deleteIntegration, 
-  testAndSyncIntegration 
+  deleteIntegration,
+  provisionCollectorCredential,
 } from '../services/integrationService';
 import type { Integration, IntegrationType } from '@/types';
 import { useAuth } from '@/contexts/useAuth';
 
 export const Integrations: React.FC = () => {
-  const { user } = useAuth(); // Obtém o usuário diretamente pelo contexto
+  const { user, isLoading: authLoading } = useAuth();
   const userId = user?.uid || '';
 
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<{
+    userId: string;
+    integrations: Integration[];
+    loading: boolean;
+    error: string | null;
+  } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [testingId, setTestingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [provisioningId, setProvisioningId] = useState<string | null>(null);
+  const [provisionedConfig, setProvisionedConfig] = useState<{
+    integrationId: string;
+    command: string;
+  } | null>(null);
+  const [rateWindowNow, setRateWindowNow] = useState<number | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -37,55 +49,169 @@ export const Integrations: React.FC = () => {
 
   // Escuta no Firestore em Tempo Real
   useEffect(() => {
+    if (authLoading) return;
     if (!userId) return;
 
     const unsubscribe = subscribeToIntegrations(userId, (data) => {
-      setIntegrations(data);
-      setLoading(false);
+      setSubscription({ userId, integrations: data, loading: false, error: null });
+    }, (subscriptionError) => {
+      console.error('Erro ao carregar integrações:', subscriptionError);
+      setSubscription((current) => ({
+        userId,
+        integrations: current?.userId === userId ? current.integrations : [],
+        loading: false,
+        error: `Falha ao carregar integrações: ${subscriptionError.message}`,
+      }));
     });
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [authLoading, userId]);
+
+  useEffect(() => {
+    const updateTime = () => setRateWindowNow(Date.now());
+    const frame = window.requestAnimationFrame(updateTime);
+    const interval = window.setInterval(updateTime, 60_000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Handler de Criação
   const handleCreateIntegration = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !baseUrl) return;
+    if (!userId) {
+      setError('Faça login antes de cadastrar uma integração.');
+      return;
+    }
 
     try {
       setSubmitting(true);
+      setError(null);
       await addIntegration(userId, { name, type, baseUrl });
       setName('');
       setBaseUrl('');
       setType('node_exporter');
       setIsModalOpen(false);
-    } catch (err) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro inesperado ao cadastrar integração.';
       console.error('Erro ao adicionar integração:', err);
+      setError(message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handler de Teste de Conexão Manual
-  const handleTestConnection = async (integration: Integration) => {
-    if (!integration.id) return;
-    setTestingId(integration.id);
-    await testAndSyncIntegration(userId, integration.id, integration.baseUrl);
-    setTestingId(null);
-  };
-
   // Handler de Exclusão
   const handleDelete = async (integrationId: string) => {
     if (confirm('Tem certeza que deseja remover esta integração?')) {
-      await deleteIntegration(userId, integrationId);
+      try {
+        await deleteIntegration(userId, integrationId);
+      } catch (deleteError: unknown) {
+        const message = deleteError instanceof Error ? deleteError.message : 'Erro ao remover integração.';
+        console.error('Erro ao remover integração:', deleteError);
+        setError(message);
+      }
     }
   };
 
-  // Métricas de KPIs
+  const currentSubscription = subscription?.userId === userId ? subscription : null;
+  const integrations = currentSubscription?.integrations ?? [];
+  const actualIntegrations = integrations.map((integration) => ({
+    ...integration,
+    status: integration.status === 'online' && !integration.lastSuccessAt
+      ? 'pending' as const
+      : integration.status,
+  }));
   const totalIntegrations = integrations.length;
-  const onlineCount = integrations.filter((i) => i.status === 'online').length;
-  const offlineCount = integrations.filter((i) => i.status === 'offline' || i.status === 'error').length;
-  const syncRate = totalIntegrations > 0 ? Math.round((onlineCount / totalIntegrations) * 100) : 100;
+  const onlineCount = actualIntegrations.filter((i) => i.status === 'online').length;
+  const offlineCount = actualIntegrations.filter((i) =>
+    i.status === 'offline' || i.status === 'error' || Boolean(i.lastError)
+  ).length;
+  const bucketCutoff = rateWindowNow === null
+    ? Number.POSITIVE_INFINITY
+    : Math.floor(rateWindowNow / (60 * 60_000)) - 23;
+  const collectionCounts = integrations.reduce((total, item) => {
+    const buckets = item.collectorAttemptBuckets;
+    if (!buckets) {
+      return {
+        attempts: total.attempts + (item.attemptsLast24h ?? 0),
+        successes: total.successes + (item.successesLast24h ?? 0),
+      };
+    }
+
+    const recent = Object.entries(buckets)
+      .filter(([hour]) => Number.isSafeInteger(Number(hour)) && Number(hour) >= bucketCutoff)
+      .reduce((counts, [, bucket]) => ({
+        attempts: counts.attempts + bucket.attempts,
+        successes: counts.successes + bucket.successes,
+      }), { attempts: 0, successes: 0 });
+    return {
+      attempts: total.attempts + recent.attempts,
+      successes: total.successes + recent.successes,
+    };
+  }, { attempts: 0, successes: 0 });
+  const { attempts, successes } = collectionCounts;
+  const syncRate = attempts > 0 ? `${Math.round((successes / attempts) * 100)}%` : '—';
+  const isLoading = authLoading || (!!userId && (currentSubscription?.loading ?? true));
+  const visibleError = error ?? currentSubscription?.error
+    ?? (!authLoading && !userId ? 'Faça login para visualizar integrações.' : null);
+
+  const formatDate = (value: Integration['lastSuccessAt'] | Integration['lastAttemptAt']) => {
+    if (!value) return 'Nunca';
+    const date = typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function'
+      ? value.toDate()
+      : value instanceof Date
+        ? value
+        : typeof value === 'string'
+          ? new Date(value)
+          : null;
+    return date && Number.isFinite(date.getTime()) ? date.toLocaleString('pt-BR') : 'Nunca';
+  };
+
+  const handleProvisionCollector = async (integration: Integration) => {
+    if (!userId || !integration.id) {
+      setError('É necessário estar autenticado e selecionar uma integração válida.');
+      return;
+    }
+
+    setProvisioningId(integration.id);
+    setError(null);
+    setProvisionedConfig(null);
+    try {
+      const credential = await provisionCollectorCredential(userId, integration.id);
+      const command = [
+        `$env:NODE_EXPORTER_URL = "${integration.baseUrl}"`,
+        `$env:WATCHFLOW_INTEGRATION_ID = "${integration.id}"`,
+        `$env:WATCHFLOW_DEVICE_ID = "${credential.deviceId}"`,
+        `$env:WATCHFLOW_INGEST_URL = "${credential.ingestUrl}"`,
+        `$env:WATCHFLOW_INGEST_TOKEN = "${credential.token}"`,
+        '$env:COLLECTOR_INTERVAL_MS = "60000"',
+        'npm run collector:start',
+      ].join('\n');
+      setProvisionedConfig({ integrationId: integration.id, command });
+    } catch (provisionError: unknown) {
+      const message = provisionError instanceof Error
+        ? provisionError.message
+        : 'Falha inesperada ao provisionar o coletor.';
+      console.error('Falha ao provisionar credencial do coletor:', provisionError);
+      setError(message);
+    } finally {
+      setProvisioningId(null);
+    }
+  };
+
+  const copyProvisionedCommand = async () => {
+    if (!provisionedConfig) return;
+    try {
+      await navigator.clipboard.writeText(provisionedConfig.command);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (copyError: unknown) {
+      console.error('Não foi possível copiar o comando com credencial:', copyError);
+      setError('Não foi possível copiar automaticamente; copie o comando exibido manualmente.');
+    }
+  };
 
   // Helper de Cores e Badges do Agente
   const getAgentBadge = (agentType: IntegrationType) => {
@@ -109,7 +235,7 @@ export const Integrations: React.FC = () => {
             Integrações & Agentes
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Gerencie os pontos de coleta de telemetria automática do WatchFlow.
+            Cadastre configurações e execute uma verificação local; o envio ao Firestore ainda não está disponível.
           </p>
         </div>
         <button
@@ -156,7 +282,7 @@ export const Integrations: React.FC = () => {
         <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between">
           <div>
             <span className="text-xs text-zinc-400 uppercase font-semibold">Taxa de Coleta</span>
-            <p className="text-2xl font-bold text-orange-400 mt-1">{syncRate}%</p>
+            <p className="text-2xl font-bold text-orange-400 mt-1">{syncRate}</p>
           </div>
           <div className="p-3 bg-orange-500/10 rounded-lg text-orange-400">
             <Zap className="w-6 h-6" />
@@ -164,8 +290,76 @@ export const Integrations: React.FC = () => {
         </div>
       </div>
 
+      <p className="text-xs text-zinc-500">
+        Taxa de coleta = sucessos ÷ tentativas nos 24 buckets horários mais recentes (aproximadamente 24 horas). Sem tentativas reportadas pelo coletor, a taxa é indisponível (—).
+      </p>
+
+      {visibleError && (
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300" role="alert">
+          {visibleError}
+        </div>
+      )}
+
+      {actualIntegrations.some((integration) => integration.type === 'node_exporter') && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+          <h2 className="font-semibold text-zinc-100">Coleta local do Node Exporter</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            O Vercel não alcança IPs privados. Gere uma credencial de dispositivo e execute o coletor em um host da rede do agente. A credencial é exibida uma única vez; gerar outra revoga a anterior.
+          </p>
+          <p className="mt-2 text-xs text-amber-300">
+            Gerar credencial grava somente o hash em <code>collectorCredentials</code> e seu vínculo de rotação em <code>collectorCredentialState</code>, após validar a sessão Firebase e a propriedade da integração. A primeira amostra válida cria <code>users/{'{uid}'}/devices/{'{deviceId}'}</code> e <code>metrics/{'{sampleId}'}</code>; não haverá gravação de métricas até executar o coletor.
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Credenciais expiram em 90 dias. Cada amostra válida atualiza o dispositivo e o status/tentativas da integração.
+          </p>
+          {actualIntegrations.filter((integration) => integration.type === 'node_exporter').map((integration) => (
+            <div key={integration.id} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <code className="overflow-auto rounded bg-zinc-950 p-2 text-xs text-zinc-300">
+                $env:NODE_EXPORTER_URL = &quot;{integration.baseUrl}&quot;<br />
+                $env:WATCHFLOW_INTEGRATION_ID = &quot;{integration.id ?? ''}&quot;<br />
+                npm run collector:start <span className="text-zinc-500">(one-shot local)</span>
+              </code>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={provisioningId === integration.id}
+                  onClick={() => void handleProvisionCollector(integration)}
+                  className="inline-flex items-center justify-center gap-2 rounded bg-orange-600 px-3 py-2 text-xs text-white hover:bg-orange-500 disabled:opacity-50"
+                >
+                  {provisioningId === integration.id
+                    ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    : <Server className="h-3.5 w-3.5" />}
+                  Gerar credencial do coletor
+                </button>
+              </div>
+              {provisionedConfig && provisionedConfig.integrationId === integration.id && (
+                <div className="w-full space-y-2">
+                  <p className="text-xs text-amber-300">
+                    Copie e execute em sessão segura. O token aparece somente nesta tela e não é recuperável depois de fechar ou recarregar.
+                  </p>
+                  <textarea
+                    readOnly
+                    value={provisionedConfig.command}
+                    rows={7}
+                    aria-label="Comando do coletor com credencial de uso único"
+                    className="w-full resize-y rounded bg-zinc-950 p-2 font-mono text-xs text-zinc-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copyProvisionedCommand()}
+                    className="inline-flex items-center justify-center gap-2 rounded bg-zinc-800 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-700"
+                  >
+                    <Copy className="h-3.5 w-3.5" />{copied ? 'Copiado' : 'Copiar comando seguro'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* GRID DE CARDS DAS INTEGRAÇÕES */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center items-center py-20 text-zinc-500 gap-3">
           <RefreshCw className="w-6 h-6 animate-spin text-orange-500" />
           Carregando integrações em tempo real...
@@ -178,7 +372,7 @@ export const Integrations: React.FC = () => {
           </div>
           <h3 className="text-lg font-bold text-white mb-2">Nenhuma integração configurada</h3>
           <p className="text-zinc-400 text-sm mb-6">
-            Cadastre o endpoint do seu Node Exporter, Telegraf ou Zabbix para iniciar a descoberta automática de servidores.
+            Registre a configuração do Node Exporter, Telegraf ou Zabbix. A coleta automática ainda depende de um serviço de ingestão.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -191,7 +385,7 @@ export const Integrations: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {integrations.map((item) => {
             const badge = getAgentBadge(item.type);
-            const isTesting = testingId === item.id;
+            const displayStatus = actualIntegrations.find((integration) => integration.id === item.id)?.status ?? 'pending';
 
             return (
               <div
@@ -205,22 +399,27 @@ export const Integrations: React.FC = () => {
                       {badge.label}
                     </span>
                     <div className="flex items-center gap-2">
-                      {item.status === 'online' && (
+                      {displayStatus === 'online' && (
                         <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           Online
                         </span>
                       )}
-                      {item.status === 'offline' && (
+                      {(displayStatus === 'offline' || displayStatus === 'error') && (
                         <span className="flex items-center gap-1.5 text-xs text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-rose-500" />
                           Offline
                         </span>
                       )}
-                      {item.status === 'syncing' && (
+                      {displayStatus === 'syncing' && (
                         <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md font-medium">
                           <RefreshCw className="w-3 h-3 animate-spin" />
                           Sincronizando
+                        </span>
+                      )}
+                      {displayStatus === 'pending' && (
+                        <span className="text-xs text-zinc-400 rounded-md bg-zinc-800 px-2 py-0.5 font-medium">
+                          Aguardando coleta
                         </span>
                       )}
                     </div>
@@ -237,23 +436,21 @@ export const Integrations: React.FC = () => {
                 {/* Métricas e Detalhes */}
                 <div className="border-t border-zinc-800/80 pt-3 space-y-2 text-xs text-zinc-400">
                   <div className="flex justify-between">
-                    <span>Última sincronização:</span>
-                    <span className="text-zinc-300 font-mono">
-                      {item.lastSync ? 'Agora mesmo' : 'Pendente'}
-                    </span>
+                    <span>Última tentativa:</span>
+                    <span className="text-zinc-300 font-mono">{formatDate(item.lastAttemptAt)}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Última coleta bem-sucedida:</span>
+                    <span className="text-zinc-300 font-mono">{formatDate(item.lastSuccessAt)}</span>
+                  </div>
+                  {item.lastError && <p className="text-rose-300">{item.lastError}</p>}
+                  {item.type !== 'node_exporter' && (
+                    <p className="text-amber-300">Coletor para este agente ainda não implementado.</p>
+                  )}
                 </div>
 
                 {/* Ações do Card */}
                 <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/80">
-                  <button
-                    onClick={() => handleTestConnection(item)}
-                    disabled={isTesting}
-                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-orange-400' : ''}`} />
-                    {isTesting ? 'Testando...' : 'Sincronizar'}
-                  </button>
                   <button
                     onClick={() => item.id && handleDelete(item.id)}
                     className="p-2 bg-zinc-800/60 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 rounded-lg transition"
@@ -284,7 +481,7 @@ export const Integrations: React.FC = () => {
               Adicionar Integração
             </h2>
             <p className="text-zinc-400 text-xs mb-6">
-              O WatchFlow iniciará a descoberta de hosts instantaneamente após a conexão.
+              A configuração será salva como pendente. A conexão será confirmada somente por uma coleta real a partir da rede do agente.
             </p>
 
             <form onSubmit={handleCreateIntegration} className="space-y-4">
@@ -318,7 +515,7 @@ export const Integrations: React.FC = () => {
                 <input
                   type="url"
                   required
-                  placeholder="http://192.168.0.15:9100"
+                  placeholder="http://192.168.1.2:9100/metrics"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-orange-500 transition"
@@ -338,7 +535,7 @@ export const Integrations: React.FC = () => {
                   disabled={submitting}
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Conectar'}
+                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Cadastrar'}
                 </button>
               </div>
             </form>
