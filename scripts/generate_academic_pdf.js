@@ -331,6 +331,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 3: RESUMO ==================== -->
   <div class="page">
+    <div class="page-number">1</div>
     <h1 class="primary-title" style="text-align: center; margin-bottom: 20pt;">RESUMO</h1>
     <p>
       O presente trabalho apresenta a especificação técnica, a arquitetura e os resultados práticos da validação de uma plataforma de monitoramento e observabilidade voltada à inspeção contínua de hardware e rastreamento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). A indisponibilidade de sistemas e o diagnóstico tardio de sobrecargas de hardware motivaram o desenvolvimento de uma arquitetura híbrida e distribuída. O sistema combina coletores locais baseados no padrão Prometheus Node Exporter, WMI (<em>Windows Management Instrumentation</em>) e utilitário de leitura direta de aceleradores gráficos com a plataforma em nuvem Sentry APM. Para comprovar a eficácia prática da solução em laboratório, foram realizados ensaios empíricos no computador de desenvolvimento, validando o comportamento sob condições nominais (CPU 10%, RAM 73%, Disco 79%, GPU 37%) e sob sobrecarga crítica (>90% de GPU e RAM). Os testes demonstraram a precisão dos gráficos temporais, a sensibilidade da máquina de estados com trava de resfriamento (<em>cooldown</em> de 45 segundos) e o registro forense das ocorrências no Sentry, cumprindo integralmente os objetivos estabelecidos na proposta inicial.
@@ -342,21 +343,22 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 4: LISTAS ==================== -->
   <div class="page">
+    <div class="page-number">2</div>
     <h1 class="primary-title" style="text-align: center;">LISTA DE ILUSTRAÇÕES</h1>
     <br />
-    <div class="toc-item"><span>FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item"><span>FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item"><span>FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item"><span>FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item"><span>FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</span><span class="toc-dots"></span><span>14</span></div>
-    <div class="toc-item"><span>FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</span><span class="toc-dots"></span><span>15</span></div>
-    <div class="toc-item"><span>FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</span><span class="toc-dots"></span><span>16</span></div>
+    <div class="toc-item"><span>FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</span><span class="toc-dots"></span><span>5</span></div>
+    <div class="toc-item"><span>FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item"><span>FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item"><span>FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item"><span>FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</span><span class="toc-dots"></span><span>12</span></div>
+    <div class="toc-item"><span>FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</span><span class="toc-dots"></span><span>13</span></div>
+    <div class="toc-item"><span>FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</span><span class="toc-dots"></span><span>14</span></div>
 
     <br /><br />
     <h1 class="primary-title" style="text-align: center;">LISTA DE QUADROS E TABELAS</h1>
     <br />
-    <div class="toc-item"><span>QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item"><span>QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</span><span class="toc-dots"></span><span>17</span></div>
+    <div class="toc-item"><span>QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item"><span>QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</span><span class="toc-dots"></span><span>15</span></div>
 
     <br /><br />
     <h1 class="primary-title" style="text-align: center;">LISTA DE ABREVIATURAS E SIGLAS</h1>
@@ -377,36 +379,37 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 5: SUMÁRIO ==================== -->
   <div class="page">
+    <div class="page-number">3</div>
     <h1 class="primary-title" style="text-align: center;">SUMÁRIO</h1>
     <br />
-    <div class="toc-item bold"><span>1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item bold"><span>2 OBJETIVOS DO PROJETO</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>2.1 Objetivo Geral</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>2.2 Objetivos Específicos</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item bold"><span>3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.1 Topologia Distribuída e Auto-Discovery</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 Protocolos e Coletores de Hardware (WMI e Utilitários de GPU)</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.3 Infraestrutura Física e Configuração do Laboratório</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 Estudo Comparativo de Mercado (Sentry vs. Datadog vs. Better Stack)</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.2 Decisão Técnica pelo Sentry APM</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 Implementação do Algoritmo de Resfriamento</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 Ensaio 1: Descoberta e Telemetria em Repouso</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</span><span class="toc-dots"></span><span>14</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</span><span class="toc-dots"></span><span>15</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</span><span class="toc-dots"></span><span>16</span></div>
-    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>17</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>17</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros</span><span class="toc-dots"></span><span>18</span></div>
-    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>19</span></div>
+    <div class="toc-item bold"><span>1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</span><span class="toc-dots"></span><span>4</span></div>
+    <div class="toc-item bold"><span>2 OBJETIVOS DO PROJETO</span><span class="toc-dots"></span><span>4</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>2.1 Objetivo Geral</span><span class="toc-dots"></span><span>4</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>2.2 Objetivos Específicos</span><span class="toc-dots"></span><span>4</span></div>
+    <div class="toc-item bold"><span>3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</span><span class="toc-dots"></span><span>5</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.1 Topologia Distribuída e Auto-Discovery</span><span class="toc-dots"></span><span>5</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 Protocolos e Coletores de Hardware (WMI e Utilitários de GPU)</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.3 Infraestrutura Física e Configuração do Laboratório</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 Estudo Comparativo de Mercado (Sentry vs. Datadog vs. Better Stack)</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.2 Decisão Técnica pelo Sentry APM</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 Implementação do Algoritmo de Resfriamento</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 Ensaio 1: Descoberta e Telemetria em Repouso</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</span><span class="toc-dots"></span><span>12</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</span><span class="toc-dots"></span><span>13</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</span><span class="toc-dots"></span><span>14</span></div>
+    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>15</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>15</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros</span><span class="toc-dots"></span><span>16</span></div>
+    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>17</span></div>
   </div>
 
   <!-- ==================== PÁGINA 6: INTRODUÇÃO E OBJETIVOS ==================== -->
   <div class="page">
-    <div class="page-number">6</div>
+    <div class="page-number">4</div>
     <h1 class="primary-title">1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</h1>
     <p>
       O monitoramento contínuo de infraestrutura e de aplicações é um pilar estratégico na engenharia de software e na administração de ambientes computacionais corporativos. Em sistemas modernos, a degradação de recursos físicos como processamento (CPU), memória principal (RAM) ou aceleração gráfica (GPU) pode interromper serviços críticos e comprometer os acordos de nível de serviço (SLA) antes de uma intervenção manual.
@@ -438,7 +441,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 7: TOPOLOGIA E ARQUITETURA (HTML DIAGRAM) ==================== -->
   <div class="page">
-    <div class="page-number">7</div>
+    <div class="page-number">5</div>
     <h1 class="primary-title">3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</h1>
     <h2 class="secondary-title">3.1 Topologia Distribuída e Auto-Discovery</h2>
     <p>
@@ -457,7 +460,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 8: PROTOCOLOS E INFRAESTRUTURA ==================== -->
   <div class="page">
-    <div class="page-number">8</div>
+    <div class="page-number">6</div>
     <h2 class="secondary-title">3.2 Protocolos e Coletores de Hardware</h2>
     <p>
       A camada de ingestão de telemetria estrutura-se a partir de três mecanismos complementares:
@@ -484,7 +487,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 9: JUSTIFICATIVA APM E QUADRO 1 ==================== -->
   <div class="page">
-    <div class="page-number">9</div>
+    <div class="page-number">7</div>
     <h1 class="primary-title">4 JUSTIFICATIVA DA ESCOLHA DA APM</h1>
     <h2 class="secondary-title">4.1 Estudo Comparativo de Mercado</h2>
     <p>
@@ -544,7 +547,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 10: MÁQUINA DE ESTADOS (HTML DIAGRAM) ==================== -->
   <div class="page">
-    <div class="page-number">10</div>
+    <div class="page-number">8</div>
     <h2 class="secondary-title">4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</h2>
     <p>
       Um obstáculo prático identificado durante os primeiros ensaios foi o risco de saturação da API do Sentry. Como o coletor consulta o nó a cada 2000 milissegundos, caso a máquina sofresse uma sobrecarga sustentada de 5 minutos, seriam enviados 150 chamados sucessivos, gerando bloqueio por taxa de requisição (<em>rate-limit</em>) e esgotamento da cota gratuita da conta.
@@ -565,7 +568,7 @@ const htmlContent = `<!DOCTYPE html>
 
   <!-- ==================== PÁGINA 11: IMPLEMENTAÇÃO DO CÓDIGO ==================== -->
   <div class="page">
-    <div class="page-number">11</div>
+    <div class="page-number">9</div>
     <h2 class="secondary-title">4.4 Implementação do Algoritmo de Resfriamento</h2>
     <p>
       A implementação em TypeScript no módulo <code>src/services/deviceService.ts</code> evidencia a lógica de controle de concorrência e etiquetagem dos eventos:
@@ -614,7 +617,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 12: ENSAIO 1 (ONLINE) ==================== -->
   <div class="page">
-    <div class="page-number">12</div>
+    <div class="page-number">10</div>
     <h1 class="primary-title">5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</h1>
     <p>
       Apresentam-se a seguir os registros empíricos obtidos diretamente na execução prática do sistema no computador do laboratório, cobrindo todos os módulos da plataforma.
@@ -638,7 +641,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 13: ENSAIO 2 (MÉTRICAS) ==================== -->
   <div class="page">
-    <div class="page-number">13</div>
+    <div class="page-number">11</div>
     <h2 class="secondary-title">5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</h2>
     <p>
       No módulo analítico de Métricas (<code>/metrics</code>), o sistema oferece gráficos contínuos de séries temporais desenvolvidos com a biblioteca Recharts, exibindo os dados históricos de desempenho do host selecionado:
@@ -657,7 +660,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 14: ENSAIO 3 (SOBRECARGA CRÍTICA) ==================== -->
   <div class="page">
-    <div class="page-number">14</div>
+    <div class="page-number">12</div>
     <h2 class="secondary-title">5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</h2>
     <p>
       Para avaliar o comportamento da plataforma sob estresse severo de hardware, acionou-se a rotina de sobrecarga operacional, elevando a demanda sobre a memória RAM e a placa de vídeo:
@@ -676,7 +679,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 15: ENSAIO 4 (CENTRAL DE ALERTAS) ==================== -->
   <div class="page">
-    <div class="page-number">15</div>
+    <div class="page-number">13</div>
     <h2 class="secondary-title">5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</h2>
     <p>
       No módulo de Alertas (<code>/alerts</code>), a aplicação gerencia os chamados operacionais gerados pelas violações de limiares de segurança:
@@ -695,7 +698,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 16: ENSAIO 5 (SENTRY APM) ==================== -->
   <div class="page">
-    <div class="page-number">16</div>
+    <div class="page-number">14</div>
     <h2 class="secondary-title">5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</h2>
     <p>
       Para certificar a entrega ponta a ponta da telemetria de incidentes para a nuvem, inspecionou-se o painel oficial do projeto no Sentry (<code>watchflow.sentry.io/issues</code>):
@@ -719,7 +722,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 17: CONCLUSÃO E CONFRONTO DE OBJETIVOS ==================== -->
   <div class="page">
-    <div class="page-number">17</div>
+    <div class="page-number">15</div>
     <h1 class="primary-title">6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</h1>
     <h2 class="secondary-title">6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</h2>
     <p>
@@ -767,7 +770,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 18: TRABALHOS FUTUROS ==================== -->
   <div class="page">
-    <div class="page-number">18</div>
+    <div class="page-number">16</div>
     <h2 class="secondary-title">6.2 Trabalhos Futuros</h2>
     <p>
       Como propostas de expansão e evolução em etapas futuras do curso de Análise e Desenvolvimento de Sistemas, sugerem-se as seguintes frentes de pesquisa:
@@ -784,7 +787,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
   <!-- ==================== PÁGINA 19: REFERÊNCIAS ==================== -->
   <div class="page">
-    <div class="page-number">19</div>
+    <div class="page-number">17</div>
     <h1 class="primary-title">REFERÊNCIAS</h1>
     <br />
 
