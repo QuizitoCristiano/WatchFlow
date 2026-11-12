@@ -44,48 +44,56 @@ const htmlContent = `<!DOCTYPE html>
       print-color-adjust: exact;
     }
 
+    /* Padrão UTP 3ª Edição (p. 47-49): Papel A4, Fonte Arial 12, Entrelinhas 1.5 */
     body {
       margin: 0;
       padding: 0;
       font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-      font-size: 11pt;
-      line-height: 1.45;
-      color: #111111;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #000000;
       background-color: #ffffff;
     }
 
+    /* Margens oficiais UTP (p. 48): Superior 3cm, Esquerda 3cm, Direita 2cm, Inferior 2cm */
     .page {
       width: 210mm;
       height: 297mm;
-      padding: 30mm 20mm 20mm 30mm; /* Padrão ABNT / UTP: Superior 3cm, Direita 2cm, Inferior 2cm, Esquerda 3cm */
+      padding: 30mm 20mm 20mm 30mm;
       position: relative;
       page-break-after: always;
       background: #ffffff;
     }
 
+    /* Paginação oficial UTP (p. 48-49): Canto superior direito, a 2cm da borda superior e 2cm da borda lateral direita, Arial 10 */
     .page-number {
       position: absolute;
       top: 20mm;
       right: 20mm;
       font-size: 10pt;
-      color: #333333;
-      font-weight: normal;
+      color: #000000;
+      font-family: Arial, sans-serif;
     }
 
     p {
-      margin: 0 0 9pt 0;
+      margin: 0 0 10pt 0;
       text-align: justify;
-      text-indent: 1.25cm;
+      text-indent: 1.25cm; /* Recuo padrão ABNT / UTP */
     }
 
     p.no-indent {
       text-indent: 0;
     }
 
+    /* Títulos oficiais UTP (p. 47-48): 
+       Nível 1: 1 TÍTULO (MAIÚSCULAS, negrito, Arial 12)
+       Nível 2: 1.1 SUBTÍTULO (MAIÚSCULAS, sem negrito, Arial 12)
+       Nível 3: 1.1.1 Subtítulo (só inicial maiúscula, sem negrito, Arial 12)
+       Pular 1 linha para separar títulos dos textos que antecedem ou sucedem.
+    */
     h1, h2, h3, h4 {
       color: #000000;
-      margin: 14pt 0 8pt 0;
-      font-weight: bold;
+      font-family: Arial, sans-serif;
       page-break-after: avoid;
     }
 
@@ -93,47 +101,52 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 12pt;
       text-transform: uppercase;
       font-weight: bold;
-      margin-top: 10pt;
-      margin-bottom: 10pt;
+      margin-top: 14pt;
+      margin-bottom: 12pt;
     }
 
     h2.secondary-title {
-      font-size: 11pt;
+      font-size: 12pt;
       text-transform: uppercase;
       font-weight: normal;
-      margin-top: 10pt;
-      margin-bottom: 6pt;
+      margin-top: 14pt;
+      margin-bottom: 10pt;
     }
 
     h3.tertiary-title {
-      font-size: 11pt;
+      font-size: 12pt;
       text-transform: none;
-      font-weight: bold;
-      margin-top: 8pt;
-      margin-bottom: 5pt;
+      font-weight: normal;
+      margin-top: 12pt;
+      margin-bottom: 8pt;
     }
 
+    /* CAPA oficial UTP (p. 59-61): Arial 14, maiúsculas, negrito, centralizado, entrelinhas 1.5 */
     .cover {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       height: 247mm;
       text-align: center;
+      font-size: 14pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      line-height: 1.5;
     }
 
     .cover-institution {
-      font-size: 11pt;
+      font-size: 14pt;
       font-weight: bold;
       text-transform: uppercase;
       line-height: 1.4;
     }
 
     .cover-author {
-      font-size: 11pt;
+      font-size: 14pt;
       font-weight: bold;
       text-transform: uppercase;
       line-height: 1.4;
-      margin-top: 25mm;
+      margin-top: 20mm;
     }
 
     .cover-title-box {
@@ -141,19 +154,22 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .cover-title {
-      font-size: 13pt;
+      font-size: 14pt;
       font-weight: bold;
       text-transform: uppercase;
       line-height: 1.35;
     }
 
     .cover-footer {
-      font-size: 11pt;
+      font-size: 14pt;
       font-weight: bold;
       text-transform: uppercase;
       line-height: 1.3;
     }
 
+    /* FOLHA DE ROSTO oficial UTP (p. 62-63): 
+       Nota explicativa afastada 8cm da margem esquerda, fonte tamanho 10, espaçamento simples, sem negrito.
+    */
     .title-page-note-container {
       display: flex;
       justify-content: flex-end;
@@ -162,24 +178,25 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .title-page-note {
-      width: 90mm;
-      font-size: 9.5pt;
+      width: 90mm; /* Afastada 8cm da margem esquerda na folha A4 com margem 3cm */
+      font-size: 10pt;
       line-height: 1.25;
       text-align: justify;
-      color: #222222;
+      color: #000000;
     }
 
+    /* Quadros oficiais UTP (p. 54-55): traços contornam toda a ilustração */
     table.abnt-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 8pt 0;
-      font-size: 9pt;
-      line-height: 1.2;
+      margin: 10pt 0;
+      font-size: 9.5pt;
+      line-height: 1.3;
     }
 
     table.abnt-table th, table.abnt-table td {
-      border: 1px solid #444444;
-      padding: 4.5pt 6pt;
+      border: 1px solid #000000;
+      padding: 5pt 7pt;
       text-align: left;
     }
 
@@ -188,13 +205,18 @@ const htmlContent = `<!DOCTYPE html>
       font-weight: bold;
     }
 
+    /* Ilustrações oficiais UTP (p. 52-53): 
+       Identificação no topo, centralizada. 
+       Fonte na parte inferior em letra menor (Arial 10). 
+       Trabalho em equipe: "FONTE: os próprios autores, [ano]."
+    */
     .figure-box {
-      margin: 8pt 0;
+      margin: 10pt 0;
       text-align: center;
     }
 
     .figure-caption-top {
-      font-size: 9.5pt;
+      font-size: 10pt;
       font-weight: bold;
       margin-bottom: 4pt;
       text-align: center;
@@ -207,8 +229,8 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .figure-source-bottom {
-      font-size: 9pt;
-      color: #333333;
+      font-size: 10pt;
+      color: #000000;
       margin-top: 4pt;
       text-align: center;
     }
@@ -220,7 +242,7 @@ const htmlContent = `<!DOCTYPE html>
 
     pre {
       background-color: #f8f9fa;
-      border: 1px solid #dddddd;
+      border: 1px solid #cccccc;
       padding: 8pt 10pt;
       line-height: 1.3;
       margin: 8pt 0;
@@ -230,20 +252,22 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     ul, ol {
-      margin: 0 0 8pt 18pt;
+      margin: 0 0 10pt 20pt;
       padding: 0;
     }
 
     li {
-      margin-bottom: 3pt;
+      margin-bottom: 4pt;
       text-align: justify;
     }
 
+    /* Sumário e Listas oficiais UTP (p. 68-73): espaçamento 1,5, linha pontilhada */
     .toc-item {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 5pt;
-      font-size: 10pt;
+      margin-bottom: 3.5pt;
+      font-size: 9.5pt;
+      line-height: 1.35;
     }
 
     .toc-item.bold {
@@ -252,21 +276,22 @@ const htmlContent = `<!DOCTYPE html>
 
     .toc-dots {
       flex: 1;
-      border-bottom: 1px dotted #888888;
-      margin: 0 5pt 3pt 5pt;
+      border-bottom: 1px dotted #444444;
+      margin: 0 4pt 3pt 4pt;
     }
 
+    /* Referências oficiais UTP (p. 86-87): alinhadas à esquerda, sem recuo, espaçamento simples, 1 linha em branco entre elas */
     .reference-item {
-      font-size: 10pt;
+      font-size: 9.5pt;
       line-height: 1.25;
-      margin-bottom: 10pt;
+      margin-bottom: 6pt;
       text-align: justify;
     }
   </style>
 </head>
 <body>
 
-  <!-- ==================== CAPA ==================== -->
+  <!-- ==================== CAPA (p. 59-61 do Manual UTP) ==================== -->
   <div class="page">
     <div class="cover">
       <div class="cover-institution">
@@ -286,7 +311,8 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box">
         <div class="cover-title">
-          ${mainTitle}
+          OBSERVABILIDADE E MONITORAMENTO DE DESEMPENHO DE APLICAÇÕES (APM):<br />
+          ARQUITETURA TÉCNICA E VALIDAÇÃO EXPERIMENTAL
         </div>
       </div>
 
@@ -297,7 +323,8 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ==================== FOLHA DE ROSTO ==================== -->
+  <!-- ==================== FOLHA DE ROSTO (p. 62-63 do Manual UTP) ==================== -->
+  <!-- Folha contada (Folha 1), numeração visível não exibida em pré-textuais -->
   <div class="page">
     <div class="cover">
       <div class="cover-author" style="margin-top: 0;">
@@ -311,15 +338,16 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box" style="margin-top: 15mm;">
         <div class="cover-title">
-          ${mainTitle}
+          OBSERVABILIDADE E MONITORAMENTO DE DESEMPENHO DE APLICAÇÕES (APM):<br />
+          ARQUITETURA TÉCNICA E VALIDAÇÃO EXPERIMENTAL
         </div>
       </div>
 
       <div class="title-page-note-container">
         <div class="title-page-note">
-          Trabalho apresentado à Faculdade de Ciências Exatas e de Tecnologia da Universidade Tuiuti do Paraná, como requisito parcial para avaliação do 2º bimestre na disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas do Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas.
+          Relatório técnico-científico apresentado à Faculdade de Ciências Exatas e de Tecnologia da Universidade Tuiuti do Paraná, como requisito avaliativo do 2º bimestre na disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas do Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas.
           <br /><br />
-          <strong>Professor Orientador:</strong> Prof. Me. André Luiz de Souza Paula
+          <strong>Professor:</strong> Prof. Me. André Luiz de Souza Paula
         </div>
       </div>
 
@@ -330,47 +358,40 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ==================== PÁGINA 1: RESUMO ==================== -->
+  <!-- ==================== RESUMO (Folha 2 contada, p. 66-67 do Manual UTP) ==================== -->
   <div class="page">
-    <div class="page-number">1</div>
-    <h1 class="primary-title" style="text-align: center; margin-bottom: 20pt;">RESUMO</h1>
-    <p>
-      O presente trabalho apresenta a especificação técnica, a arquitetura e os resultados práticos da validação de uma plataforma de monitoramento e observabilidade voltada à inspeção contínua de hardware e rastreamento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). A indisponibilidade de sistemas e o diagnóstico tardio de sobrecargas de hardware motivaram o desenvolvimento de uma arquitetura híbrida e distribuída. O sistema combina coletores locais baseados no padrão Prometheus Node Exporter, WMI (<em>Windows Management Instrumentation</em>) e utilitário de leitura direta de aceleradores gráficos com a plataforma em nuvem Sentry APM. Para comprovar a eficácia prática da solução em laboratório, foram realizados ensaios empíricos no computador de desenvolvimento, validando o comportamento sob condições nominais (CPU 10%, RAM 73%, Disco 79%, GPU 37%) e sob sobrecarga crítica (>90% de GPU e RAM). Os testes demonstraram a precisão dos gráficos temporais, a sensibilidade da máquina de estados com trava de resfriamento (<em>cooldown</em> de 45 segundos) e o registro forense das ocorrências no Sentry, cumprindo integralmente os objetivos estabelecidos na proposta inicial.
+    <h1 class="primary-title" style="text-align: center; margin-bottom: 24pt;">RESUMO</h1>
+    <p class="no-indent">
+      O presente relatório técnico-científico expõe a especificação da arquitetura, as diretrizes de engenharia e a validação experimental de uma plataforma autoral de observabilidade voltada à telemetria contínua de hardware e monitoramento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). A indisponibilidade de serviços computacionais críticos e a detecção tardia de saturações de hardware motivaram o desenvolvimento de uma topologia híbrida e distribuída. O sistema integra coletores locais baseados no padrão aberto Prometheus Node Exporter, WMI (<em>Windows Management Instrumentation</em>) e utilitário de leitura direta de aceleradores gráficos dedicados com a plataforma corporativa em nuvem Sentry APM. Para comprovar a eficácia prática da solução em ambiente controlado de laboratório, foram conduzidos ensaios empíricos no computador de desenvolvimento, validando o comportamento do sistema sob regime nominal de repouso (CPU 10%, RAM 73%, Disco 79%, GPU 37%) e sob estresse operacional severo (>90% de ocupação de GPU e RAM). Os ensaios comprovaram a sensibilidade das métricas temporais em React com Recharts, a eficácia da máquina de estados finita dotada de trava de resfriamento (<em>cooldown</em> de 45 segundos) e o registro forense das ocorrências no painel da APM corporativa, atestando o cumprimento pleno de todos os objetivos estabelecidos na proposta pedagógica do curso.
     </p>
-    <p class="no-indent" style="margin-top: 24pt;">
+    <p class="no-indent" style="margin-top: 28pt;">
       <strong>Palavras-chave:</strong> Observabilidade. Telemetria de Hardware. Application Performance Monitoring (APM). Sentry. Auto-Discovery. Projeto Interdisciplinar.
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 2: LISTAS ==================== -->
+  <!-- ==================== LISTAS (Folha 3 contada, p. 68-71 do Manual UTP) ==================== -->
   <div class="page">
-    <div class="page-number">2</div>
-    <h1 class="primary-title" style="text-align: center;">LISTA DE ILUSTRAÇÕES</h1>
-    <br />
-    <div class="toc-item"><span>FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item"><span>FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item"><span>FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item"><span>FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item"><span>FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item"><span>FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</span><span class="toc-dots"></span><span>14</span></div>
-    <div class="toc-item"><span>FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</span><span class="toc-dots"></span><span>15</span></div>
+    <h1 class="primary-title" style="text-align: center; margin-top: 0; margin-bottom: 6pt;">LISTA DE ILUSTRAÇÕES</h1>
+    <div class="toc-item"><span>FIGURA 1 – TOPOLOGIA DA ARQUITETURA DISTRIBUÍDA E FLUXO DE TELEMETRIA</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item"><span>FIGURA 2 – MÁQUINA DE ESTADOS FINITA DO MOTOR DE ALERTAS E AUTO-RECOVERY</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item"><span>FIGURA 3 – PAINEL DE DISPOSITIVOS MONITORADOS EM CONDIÇÃO NOMINAL (STATUS ONLINE)</span><span class="toc-dots"></span><span>12</span></div>
+    <div class="toc-item"><span>FIGURA 4 – MÓDULO DE MÉTRICAS DETALHADAS COM GRÁFICO TEMPORAL DE OSCILAÇÃO</span><span class="toc-dots"></span><span>13</span></div>
+    <div class="toc-item"><span>FIGURA 5 – DETECÇÃO DE SOBRECARGA CRÍTICA (>90%) E COMUTAÇÃO PARA ESTADO CRITICAL</span><span class="toc-dots"></span><span>14</span></div>
+    <div class="toc-item"><span>FIGURA 6 – CENTRAL DE INCIDENTES COM FILA DE ALERTAS ATIVOS E RESOLVIDOS (AUTO-RECOVERY)</span><span class="toc-dots"></span><span>15</span></div>
+    <div class="toc-item"><span>FIGURA 7 – RASTREAMENTO FORENSE NO PAINEL CORPORATIVO DO SENTRY APM</span><span class="toc-dots"></span><span>16</span></div>
 
-    <br /><br />
-    <h1 class="primary-title" style="text-align: center;">LISTA DE QUADROS E TABELAS</h1>
-    <br />
-    <div class="toc-item"><span>QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item"><span>QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</span><span class="toc-dots"></span><span>16</span></div>
+    <h1 class="primary-title" style="text-align: center; margin-top: 10pt; margin-bottom: 6pt;">LISTA DE QUADROS</h1>
+    <div class="toc-item"><span>QUADRO 1 – MATRIZ COMPARATIVA DE SOLUÇÕES APM DE MERCADO</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item"><span>QUADRO 2 – MATRIZ DE RASTREABILIDADE E CUMPRIMENTO DOS OBJETIVOS DO 1º BIMESTRE</span><span class="toc-dots"></span><span>17</span></div>
 
-    <br /><br />
-    <h1 class="primary-title" style="text-align: center;">LISTA DE ABREVIATURAS E SIGLAS</h1>
-    <br />
-    <div class="toc-item"><span>APM – Application Performance Monitoring</span><span class="toc-dots"></span></div>
+    <h1 class="primary-title" style="text-align: center; margin-top: 10pt; margin-bottom: 6pt;">LISTA DE ABREVIATURAS E SIGLAS</h1>
+    <div class="toc-item"><span>APM – Application Performance Monitoring (Monitoramento de Desempenho de Aplicações)</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>ABNT – Associação Brasileira de Normas Técnicas</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>CPU – Central Processing Unit (Unidade Central de Processamento)</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>GPU – Graphics Processing Unit (Unidade de Processamento Gráfico)</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>HTTP – Hypertext Transfer Protocol</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>JSON – JavaScript Object Notation</span><span class="toc-dots"></span></div>
-    <div class="toc-item"><span>RAM – Random Access Memory</span><span class="toc-dots"></span></div>
+    <div class="toc-item"><span>RAM – Random Access Memory (Memória de Acesso Aleatório)</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>REST – Representational State Transfer</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>SDK – Software Development Kit</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>SLA – Service Level Agreement (Acordo de Nível de Serviço)</span><span class="toc-dots"></span></div>
@@ -378,65 +399,65 @@ const htmlContent = `<!DOCTYPE html>
     <div class="toc-item"><span>WMI – Windows Management Instrumentation</span><span class="toc-dots"></span></div>
   </div>
 
-  <!-- ==================== PÁGINA 3: SUMÁRIO ==================== -->
+  <!-- ==================== SUMÁRIO (Folha 4 contada, p. 72-73 do Manual UTP) ==================== -->
   <div class="page">
-    <div class="page-number">3</div>
     <h1 class="primary-title" style="text-align: center;">SUMÁRIO</h1>
     <br />
-    <div class="toc-item bold"><span>1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</span><span class="toc-dots"></span><span>4</span></div>
-    <div class="toc-item bold"><span>2 OBJETIVOS DO PROJETO</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>2.1 Objetivo Geral</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>2.2 Objetivos Específicos</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>2.3 Delimitação e Metodologia Científica</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item bold"><span>3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.1 Topologia Distribuída e Auto-Discovery</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 Protocolos e Coletores de Hardware</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.3 Infraestrutura Física e Configuração do Laboratório</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 Estudo Comparativo de Mercado (Sentry vs. Datadog vs. Better Stack)</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.2 Decisão Técnica pelo Sentry APM</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 Implementação do Algoritmo de Resfriamento</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 Ensaio 1: Descoberta e Telemetria em Repouso</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</span><span class="toc-dots"></span><span>14</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</span><span class="toc-dots"></span><span>15</span></div>
-    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>16</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>16</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros e Conclusão</span><span class="toc-dots"></span><span>17</span></div>
-    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>18</span></div>
+    <div class="toc-item bold"><span>1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</span><span class="toc-dots"></span><span>5</span></div>
+    <div class="toc-item bold"><span>2 OBJETIVOS DO PROJETO</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>2.1 OBJETIVO GERAL</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>2.2 OBJETIVOS ESPECÍFICOS</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>2.3 DELIMITAÇÃO E METODOLOGIA CIENTÍFICA</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item bold"><span>3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.1 TOPOLOGIA DISTRIBUÍDA E AUTO-DISCOVERY</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 PROTOCOLOS E COLETORES DE HARDWARE</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.3 INFRAESTRUTURA FÍSICA E CONFIGURAÇÃO DO LABORATÓRIO</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 ESTUDO COMPARATIVO DE MERCADO</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.2 DECISÃO TÉCNICA PELO SENTRY APM</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 ENGENHARIA DE ALERTAS, COOLDOWN E MÁQUINA DE ESTADOS</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 IMPLEMENTAÇÃO DO ALGORITMO DE RESFRIAMENTO</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>12</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 ENSAIO 1: DESCOBERTA E TELEMETRIA EM REPOUSO</span><span class="toc-dots"></span><span>12</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 ENSAIO 2: SÉRIES TEMPORAIS E VISUALIZAÇÃO GRÁFICA</span><span class="toc-dots"></span><span>13</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 ENSAIO 3: TESTE DE CARGA E SATURAÇÃO CRÍTICA (>90%)</span><span class="toc-dots"></span><span>14</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 ENSAIO 4: CENTRAL DE INCIDENTES E AUTO-RECOVERY</span><span class="toc-dots"></span><span>15</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 ENSAIO 5: RASTREAMENTO FORENSE NO PAINEL DO SENTRY APM</span><span class="toc-dots"></span><span>16</span></div>
+    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>17</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 CONFRONTO ENTRE OBJETIVOS PLANEJADOS E ENTREGAS REALIZADAS</span><span class="toc-dots"></span><span>17</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 TRABALHOS FUTUROS E CONCLUSÃO</span><span class="toc-dots"></span><span>18</span></div>
+    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>19</span></div>
   </div>
 
-  <!-- ==================== PÁGINA 4: INTRODUÇÃO ==================== -->
+  <!-- ==================== ELEMENTOS TEXTUAIS: PÁGINA 5 (Início da numeração visível p. 48-49) ==================== -->
+  <!-- 1 INTRODUÇÃO E CONTEXTUALIZAÇÃO -->
   <div class="page">
-    <div class="page-number">4</div>
+    <div class="page-number">5</div>
     <h1 class="primary-title">1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</h1>
     <p>
-      O monitoramento contínuo de infraestrutura computacional e de sistemas de software tornou-se um pilar estratégico imprescindível na governança corporativa de tecnologia da informação. Em ambientes modernos de alta concorrência e processamento intensivo, a degradação silenciosa de recursos físicos fundamentais — tais como sobrecarga na Unidade Central de Processamento (CPU), esgotamento de Memória Principal (RAM) ou saturação em Unidades de Processamento Gráfico (GPU) — pode acarretar indisponibilidades severas e comprometer os Acordos de Nível de Serviço (SLA) antes que qualquer equipe operacional detecte o incidente.
+      O monitoramento contínuo de infraestrutura computacional e de sistemas de software tornou-se um pilar estratégico imprescindível na governança de tecnologia da informação. Em ecossistemas modernos de alta concorrência e processamento intensivo, a degradação silenciosa de recursos físicos fundamentais — tais como sobrecarga na Unidade Central de Processamento (CPU), esgotamento de Memória Principal (RAM) ou saturação em Unidades de Processamento Gráfico (GPU) — pode acarretar indisponibilidades severas e comprometer os Acordos de Nível de Serviço (SLA) antes que qualquer equipe operacional detecte o incidente.
     </p>
     <p>
-      No primeiro bimestre letivo desta pesquisa, conduziu-se um diagnóstico aprofundado a respeito das principais ferramentas comerciais de monitoramento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). Esse estudo inicial evidenciou que soluções consagradas de grande porte, a exemplo do Datadog, impõem modelos de licenciamento com custos proibitivos para projetos acadêmicos e pequenas infraestruturas, cobrando tarifas em moeda estrangeira por nó e penalizando picos momentâneos de utilização. Por outro lado, plataformas simplificadas como o Better Stack concentram suas análises em testes sintéticos externos de disponibilidade (Uptime e checagens HTTP), carecendo de recursos nativos para instrumentação forense e inspeção minuciosa de hardware local.
+      No primeiro bimestre letivo desta pesquisa, conduziu-se um diagnóstico aprofundado a respeito das principais ferramentas comerciais de monitoramento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). Esse estudo inicial evidenciou que soluções consagradas de grande porte, a exemplo do Datadog, impõem modelos de licenciamento com custos proibitivos para projetos acadêmicos e pequenas infraestruturas, cobrando tarifas em moeda estrangeira por nó monitorado e penalizando picos momentâneos de utilização. Por outro lado, plataformas simplificadas como o Better Stack concentram suas análises em testes sintéticos externos de disponibilidade (Uptime e checagens HTTP), carecendo de recursos nativos para instrumentação forense e inspeção minuciosa de hardware local.
     </p>
     <p>
       Diante dessa lacuna técnica e atendendo às exigências pedagógicas da disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas da Universidade Tuiuti do Paraná (UTP), a equipe concebeu a plataforma <strong>WatchFlow</strong>. A solução unifica a extração periódica de dados de hardware local sem necessidade de parametrização manual complexa, apresentando-os em uma interface web analítica construída com padrões modernos da indústria e integrada de ponta a ponta à infraestrutura do <strong>Sentry APM</strong>.
     </p>
     <p>
-      O presente documento técnico-científico tem por finalidade detalhar a arquitetura da solução desenvolvida, fundamentar a seleção da APM adotada frente ao mercado, comprovar a eficácia dos mecanismos de controle de eventos e apresentar as evidências empíricas colhidas em ensaios laboratoriais reais, atestando a conformidade plena com os objetivos curriculares estabelecidos para o curso de Tecnologia em Análise e Desenvolvimento de Sistemas.
+      O presente relatório técnico-científico tem por finalidade detalhar a arquitetura da solução desenvolvida, fundamentar a seleção da APM adotada frente ao mercado, comprovar a eficácia dos mecanismos de controle de eventos e apresentar as evidências empíricas colhidas em ensaios laboratoriais reais, atestando a conformidade plena com os objetivos curriculares estabelecidos para o curso de Tecnologia em Análise e Desenvolvimento de Sistemas.
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 5: OBJETIVOS ==================== -->
+  <!-- ==================== PÁGINA 6: OBJETIVOS ==================== -->
   <div class="page">
-    <div class="page-number">5</div>
+    <div class="page-number">6</div>
     <h1 class="primary-title">2 OBJETIVOS DO PROJETO</h1>
-    <h2 class="secondary-title">2.1 Objetivo Geral</h2>
+    <h2 class="secondary-title">2.1 OBJETIVO GERAL</h2>
     <p>
       Desenvolver, documentar e validar experimentalmente uma plataforma web de observabilidade capaz de realizar a descoberta automática de ativos computacionais locais, inspecionar métricas de hardware em tempo real e integrar-se a uma solução corporativa de APM para rastreamento forense de falhas, análise de transações e gestão do ciclo de vida de incidentes.
     </p>
 
-    <h2 class="secondary-title">2.2 Objetivos Específicos</h2>
+    <h2 class="secondary-title">2.2 OBJETIVOS ESPECÍFICOS</h2>
     <p>
       Em conformidade com o plano de ensino da disciplina e a proposta formal pactuada no primeiro bimestre, foram estabelecidos quatro objetivos operacionais essenciais:
     </p>
@@ -447,23 +468,23 @@ const htmlContent = `<!DOCTYPE html>
       <li><strong>Avaliação de Alertas e Resposta a Incidentes:</strong> Construir uma máquina de estados finita com limiares críticos (>90%), trava de resfriamento (<em>cooldown</em> de 45 segundos), notificações visuais para o operador e mecanismo de normalização automática (<em>auto-recovery</em>).</li>
     </ol>
 
-    <h2 class="secondary-title">2.3 Delimitação e Metodologia Científica</h2>
+    <h2 class="secondary-title">2.3 DELIMITAÇÃO E METODOLOGIA CIENTÍFICA</h2>
     <p>
       O estudo orienta-se pela metodologia de pesquisa tecnológica aplicada, fundamentada em ensaios práticos controlados no laboratório de desenvolvimento. A validação das rotinas de telemetria baseou-se no confronto sistemático entre as medições da plataforma e os monitores nativos do sistema operacional, avaliando o comportamento sob condições nominais de repouso e sob rotinas induzidas de estresse de hardware.
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 6: TOPOLOGIA E ARQUITETURA ==================== -->
+  <!-- ==================== PÁGINA 7: ARQUITETURA E TOPOLOGIA ==================== -->
   <div class="page">
-    <div class="page-number">6</div>
+    <div class="page-number">7</div>
     <h1 class="primary-title">3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</h1>
-    <h2 class="secondary-title">3.1 Topologia Distribuída e Auto-Discovery</h2>
+    <h2 class="secondary-title">3.1 TOPOLOGIA DISTRIBUÍDA E AUTO-DISCOVERY</h2>
     <p>
       O sistema adota uma topologia híbrida de monitoramento. Em vez de exigir cadastros manuais de endereços IP em formulários estáticos, o nó local reporta suas métricas continuamente para a interface analítica em ciclos regulares de 2000 milissegundos:
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</div>
+      <div class="figure-caption-top">FIGURA 1 – TOPOLOGIA DA ARQUITETURA DISTRIBUÍDA E FLUXO DE TELEMETRIA</div>
       ${figura1Html}
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Diagrama conceitual da arquitetura de telemetria e ingestão em nuvem.</div>
     </div>
@@ -472,10 +493,10 @@ const htmlContent = `<!DOCTYPE html>
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 7: PROTOCOLOS E INFRAESTRUTURA ==================== -->
+  <!-- ==================== PÁGINA 8: PROTOCOLOS E INFRAESTRUTURA ==================== -->
   <div class="page">
-    <div class="page-number">7</div>
-    <h2 class="secondary-title">3.2 Protocolos e Coletores de Hardware</h2>
+    <div class="page-number">8</div>
+    <h2 class="secondary-title">3.2 PROTOCOLOS E COLETORES DE HARDWARE</h2>
     <p>
       A camada de ingestão de telemetria estrutura-se a partir de três mecanismos complementares:
     </p>
@@ -485,7 +506,7 @@ const htmlContent = `<!DOCTYPE html>
       <li><strong>Extração de Telemetria de GPU:</strong> Como a maioria das ferramentas tradicionais restringe-se ao processador central e ignora aceleradores gráficos dedicados, implementamos uma rotina de extração via binário do driver gráfico, convertendo uso de processador gráfico, alocação de memória e temperatura em JSON estruturado a cada ciclo.</li>
     </ul>
 
-    <h2 class="secondary-title">3.3 Infraestrutura Física e Configuração do Laboratório</h2>
+    <h2 class="secondary-title">3.3 INFRAESTRUTURA FÍSICA E CONFIGURAÇÃO DO LABORATÓRIO</h2>
     <p>
       Os ensaios práticos e a validação foram conduzidos no computador de desenvolvimento, cujas especificações representam uma máquina real de trabalho:
     </p>
@@ -499,16 +520,16 @@ const htmlContent = `<!DOCTYPE html>
     </ul>
   </div>
 
-  <!-- ==================== PÁGINA 8: JUSTIFICATIVA APM E QUADRO 1 ==================== -->
+  <!-- ==================== PÁGINA 9: JUSTIFICATIVA APM E QUADRO 1 ==================== -->
   <div class="page">
-    <div class="page-number">8</div>
+    <div class="page-number">9</div>
     <h1 class="primary-title">4 JUSTIFICATIVA DA ESCOLHA DA APM</h1>
-    <h2 class="secondary-title">4.1 Estudo Comparativo de Mercado</h2>
+    <h2 class="secondary-title">4.1 ESTUDO COMPARATIVO DE MERCADO</h2>
     <p>
       Para fundamentar a escolha da plataforma de APM com rigor acadêmico, confrontamos as três alternativas analisadas no 1º bimestre: <strong>Sentry</strong>, <strong>Datadog</strong> e <strong>Better Stack</strong>:
     </p>
 
-    <div class="figure-caption-top">QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</div>
+    <div class="figure-caption-top">QUADRO 1 – MATRIZ COMPARATIVA DE SOLUÇÕES APM DE MERCADO</div>
     <table class="abnt-table">
       <thead>
         <tr>
@@ -554,15 +575,15 @@ const htmlContent = `<!DOCTYPE html>
     <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Matriz comparativa baseada na documentação técnica oficial das plataformas.</div>
   </div>
 
-  <!-- ==================== PÁGINA 9: MÁQUINA DE ESTADOS E COOLDOWN ==================== -->
+  <!-- ==================== PÁGINA 10: MÁQUINA DE ESTADOS E COOLDOWN ==================== -->
   <div class="page">
-    <div class="page-number">9</div>
-    <h2 class="secondary-title">4.2 Decisão Técnica pelo Sentry APM</h2>
+    <div class="page-number">10</div>
+    <h2 class="secondary-title">4.2 DECISÃO TÉCNICA PELO SENTRY APM</h2>
     <p>
       A decisão pelo Sentry fundamentou-se em três pilares técnicos: aderência total à pilha frontend (React/TypeScript), capacidade de enriquecer cada incidente com metadados detalhados de hardware (tags de nó, percentuais de uso e status) e ausência de restrições financeiras ou exigência de cartões internacionais, permitindo foco exclusivo no desenvolvimento do sistema.
     </p>
 
-    <h2 class="secondary-title">4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</h2>
+    <h2 class="secondary-title">4.3 ENGENHARIA DE ALERTAS, COOLDOWN E MÁQUINA DE ESTADOS</h2>
     <p>
       Um obstáculo prático identificado durante os primeiros ensaios foi o risco de saturação da API do Sentry. Como o coletor consulta o nó a cada 2000 milissegundos, caso a máquina sofresse uma sobrecarga sustentada de 5 minutos, seriam enviados 150 chamados sucessivos, gerando bloqueio por taxa de requisição (<em>rate-limit</em>) e esgotamento da cota gratuita da conta.
     </p>
@@ -571,7 +592,7 @@ const htmlContent = `<!DOCTYPE html>
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</div>
+      <div class="figure-caption-top">FIGURA 2 – MÁQUINA DE ESTADOS FINITA DO MOTOR DE ALERTAS E AUTO-RECOVERY</div>
       ${figura2Html}
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Fluxograma da máquina de estados finita e ciclo de resfriamento.</div>
     </div>
@@ -580,10 +601,10 @@ const htmlContent = `<!DOCTYPE html>
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 10: IMPLEMENTAÇÃO DO CÓDIGO COMPLETO ==================== -->
+  <!-- ==================== PÁGINA 11: IMPLEMENTAÇÃO DO CÓDIGO COMPLETO ==================== -->
   <div class="page">
-    <div class="page-number">10</div>
-    <h2 class="secondary-title">4.4 Implementação do Algoritmo de Resfriamento</h2>
+    <div class="page-number">11</div>
+    <h2 class="secondary-title">4.4 IMPLEMENTAÇÃO DO ALGORITMO DE RESFRIAMENTO</h2>
     <p>
       A listagem a seguir apresenta a implementação em TypeScript do módulo <code>src/services/deviceService.ts</code>, evidenciando o controle de concorrência, o respeito à janela de resfriamento e o envio estruturado de métricas ao Sentry:
     </p>
@@ -635,21 +656,21 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 11: ENSAIO 1 (ONLINE) ==================== -->
+  <!-- ==================== PÁGINA 12: ENSAIO 1 (ONLINE) ==================== -->
   <div class="page">
-    <div class="page-number">11</div>
+    <div class="page-number">12</div>
     <h1 class="primary-title">5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</h1>
     <p>
       Apresentam-se a seguir os registros empíricos obtidos diretamente na execução prática do sistema no computador do laboratório, cobrindo todos os módulos da plataforma.
     </p>
 
-    <h2 class="secondary-title">5.1 Ensaio 1: Descoberta e Telemetria em Repouso</h2>
+    <h2 class="secondary-title">5.1 ENSAIO 1: DESCOBERTA E TELEMETRIA EM REPOUSO</h2>
     <p>
       Ao iniciar os serviços, o nó <code>srv-local-pc</code> (127.0.0.1, Windows 11 x86_64) foi detectado automaticamente, apresentando os contadores de CPU, RAM, Disco e GPU em condição nominal de operação:
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</div>
+      <div class="figure-caption-top">FIGURA 3 – PAINEL DE DISPOSITIVOS MONITORADOS EM CONDIÇÃO NOMINAL (STATUS ONLINE)</div>
       <img src="${img1}" alt="Dispositivos Monitorados Status ONLINE" style="max-height: 105mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface de Dispositivos (/devices).</div>
     </div>
@@ -659,16 +680,16 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 12: ENSAIO 2 (MÉTRICAS) ==================== -->
+  <!-- ==================== PÁGINA 13: ENSAIO 2 (MÉTRICAS) ==================== -->
   <div class="page">
-    <div class="page-number">12</div>
-    <h2 class="secondary-title">5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</h2>
+    <div class="page-number">13</div>
+    <h2 class="secondary-title">5.2 ENSAIO 2: SÉRIES TEMPORAIS E VISUALIZAÇÃO GRÁFICA</h2>
     <p>
       No módulo analítico de Métricas (/metrics), o sistema oferece gráficos contínuos de séries temporais desenvolvidos com a biblioteca Recharts, exibindo os dados históricos de desempenho do host selecionado:
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</div>
+      <div class="figure-caption-top">FIGURA 4 – MÓDULO DE MÉTRICAS DETALHADAS COM GRÁFICO TEMPORAL DE OSCILAÇÃO</div>
       <img src="${img2}" alt="Métricas Detalhadas Séries Temporais" style="max-height: 110mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface de Métricas (/metrics).</div>
     </div>
@@ -678,16 +699,16 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 13: ENSAIO 3 (SOBRECARGA CRÍTICA) ==================== -->
+  <!-- ==================== PÁGINA 14: ENSAIO 3 (SOBRECARGA CRÍTICA) ==================== -->
   <div class="page">
-    <div class="page-number">13</div>
-    <h2 class="secondary-title">5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</h2>
+    <div class="page-number">14</div>
+    <h2 class="secondary-title">5.3 ENSAIO 3: TESTE DE CARGA E SATURAÇÃO CRÍTICA (>90%)</h2>
     <p>
       Para avaliar o comportamento da plataforma sob estresse severo de hardware, acionou-se a rotina de sobrecarga operacional, elevando a demanda sobre a memória RAM e a placa de vídeo:
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</div>
+      <div class="figure-caption-top">FIGURA 5 – DETECÇÃO DE SOBRECARGA CRÍTICA (>90%) E COMUTAÇÃO PARA ESTADO CRITICAL</div>
       <img src="${img3}" alt="Dispositivos em Sobrecarga Status CRITICAL" style="max-height: 105mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface durante teste de saturação de hardware.</div>
     </div>
@@ -697,16 +718,16 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 14: ENSAIO 4 (CENTRAL DE ALERTAS) ==================== -->
+  <!-- ==================== PÁGINA 15: ENSAIO 4 (CENTRAL DE ALERTAS) ==================== -->
   <div class="page">
-    <div class="page-number">14</div>
-    <h2 class="secondary-title">5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</h2>
+    <div class="page-number">15</div>
+    <h2 class="secondary-title">5.4 ENSAIO 4: CENTRAL DE INCIDENTES E AUTO-RECOVERY</h2>
     <p>
       No módulo de Alertas (/alerts), a aplicação gerencia os chamados operacionais gerados pelas violações de limiares de segurança:
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</div>
+      <div class="figure-caption-top">FIGURA 6 – CENTRAL DE INCIDENTES COM FILA DE ALERTAS ATIVOS E RESOLVIDOS (AUTO-RECOVERY)</div>
       <img src="${img4}" alt="Central de Incidentes e Alertas" style="max-height: 110mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da Central de Incidentes e Alertas (/alerts).</div>
     </div>
@@ -716,16 +737,16 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 15: ENSAIO 5 (SENTRY APM) ==================== -->
+  <!-- ==================== PÁGINA 16: ENSAIO 5 (SENTRY APM) ==================== -->
   <div class="page">
-    <div class="page-number">15</div>
-    <h2 class="secondary-title">5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</h2>
+    <div class="page-number">16</div>
+    <h2 class="secondary-title">5.5 ENSAIO 5: RASTREAMENTO FORENSE NO PAINEL DO SENTRY APM</h2>
     <p>
       Para certificar a entrega ponta a ponta da telemetria de incidentes para a nuvem, inspecionou-se o painel oficial do projeto no Sentry (<code>watchflow.sentry.io/issues</code>):
     </p>
 
     <div class="figure-box">
-      <div class="figure-caption-top">FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</div>
+      <div class="figure-caption-top">FIGURA 7 – RASTREAMENTO FORENSE NO PAINEL CORPORATIVO DO SENTRY APM</div>
       <img src="${img5}" alt="Painel Oficial do Sentry APM" style="max-height: 105mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura real do dashboard corporativo em watchflow.sentry.io.</div>
     </div>
@@ -740,16 +761,16 @@ function checkAndDispatchAlert(
     </ul>
   </div>
 
-  <!-- ==================== PÁGINA 16: CONSIDERAÇÕES FINAIS E CONFRONTO ==================== -->
+  <!-- ==================== PÁGINA 17: CONSIDERAÇÕES FINAIS E CONFRONTO ==================== -->
   <div class="page">
-    <div class="page-number">16</div>
+    <div class="page-number">17</div>
     <h1 class="primary-title">6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</h1>
-    <h2 class="secondary-title">6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</h2>
+    <h2 class="secondary-title">6.1 CONFRONTO ENTRE OBJETIVOS PLANEJADOS E ENTREGAS REALIZADAS</h2>
     <p>
       O Quadro 2 apresenta o confronto direto entre as metas propostas no documento do primeiro bimestre e os resultados validados no produto final:
     </p>
 
-    <div class="figure-caption-top">QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</div>
+    <div class="figure-caption-top">QUADRO 2 – MATRIZ DE RASTREABILIDADE E CUMPRIMENTO DOS OBJETIVOS DO 1º BIMESTRE</div>
     <table class="abnt-table">
       <thead>
         <tr>
@@ -788,10 +809,10 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 17: TRABALHOS FUTUROS E CONCLUSÃO ==================== -->
+  <!-- ==================== PÁGINA 18: TRABALHOS FUTUROS E CONCLUSÃO ==================== -->
   <div class="page">
-    <div class="page-number">17</div>
-    <h2 class="secondary-title">6.2 Trabalhos Futuros e Conclusão</h2>
+    <div class="page-number">18</div>
+    <h2 class="secondary-title">6.2 TRABALHOS FUTUROS E CONCLUSÃO</h2>
     <p>
       Como propostas de expansão e evolução em etapas futuras do curso de Análise e Desenvolvimento de Sistemas, sugerem-se as seguintes frentes de pesquisa:
     </p>
@@ -805,10 +826,10 @@ function checkAndDispatchAlert(
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 18: REFERÊNCIAS ==================== -->
+  <!-- ==================== PÁGINA 19: REFERÊNCIAS ==================== -->
   <div class="page">
-    <div class="page-number">18</div>
-    <h1 class="primary-title">REFERÊNCIAS</h1>
+    <div class="page-number">19</div>
+    <h1 class="primary-title" style="text-align: center;">REFERÊNCIAS</h1>
     <br />
 
     <div class="reference-item">
