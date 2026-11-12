@@ -290,10 +290,7 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box">
         <div class="cover-title">
-          WATCHFLOW: PLATAFORMA DE OBSERVABILIDADE, TELEMETRIA DE ATIVOS E MONITORAMENTO DE DESEMPENHO (APM)
-        </div>
-        <div class="cover-subtitle">
-          Relatório Técnico-Científico e Especificação de Projeto de Software
+          DOCUMENTAÇÃO DAS APM'S: SENTRY, DATADOG E BETTER STACK
         </div>
       </div>
 
@@ -318,7 +315,7 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box" style="margin-top: 15mm;">
         <div class="cover-title">
-          WATCHFLOW: PLATAFORMA DE OBSERVABILIDADE, TELEMETRIA DE ATIVOS E MONITORAMENTO DE DESEMPENHO (APM)
+          DOCUMENTAÇÃO DAS APM'S: SENTRY, DATADOG E BETTER STACK
         </div>
       </div>
 
@@ -410,7 +407,7 @@ const htmlContent = `<!DOCTYPE html>
     <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>17</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros</span><span class="toc-dots"></span><span>18</span></div>
     <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>19</span></div>
-    <div class="toc-item bold"><span>APÊNDICE A – Roteiro de Demonstração Prática para a Banca Avaliadora</span><span class="toc-dots"></span><span>20</span></div>
+    
   </div>
 
   <!-- ==================== PÁGINA 6: INTRODUÇÃO E OBJETIVOS ==================== -->
@@ -925,43 +922,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     </div>
   </div>
 
-  <!-- ==================== PÁGINA 20: APÊNDICE A ==================== -->
-  <div class="page">
-    <div class="page-number">20</div>
-    <h1 class="primary-title">APÊNDICE A – ROTEIRO DE APRESENTAÇÃO PRÁTICA PARA A BANCA AVALIADORA</h1>
-    <br />
-    <p>
-      Este roteiro operacional foi estruturado para orientar a apresentação prática presencial de 5 a 10 minutos perante o professor da disciplina no laboratório da UTP:
-    </p>
-
-    <h2 class="secondary-title">1. Abertura e Propósito do Sistema (1 a 2 Minutos)</h2>
-    <p>
-      Apresentar os integrantes da equipe e esclarecer o propósito do WatchFlow: plataforma de observabilidade criada para superar a fragmentação de ferramentas e os altos custos de plataformas como o Datadog. Destacar a integração de coletores locais leves com a solução corporativa Sentry APM.
-    </p>
-
-    <h2 class="secondary-title">2. Demonstração da Telemetria em Tempo Real (2 a 3 Minutos)</h2>
-    <ul>
-      <li>Abrir a interface no navegador em <code>http://localhost:5173/devices</code> (Figura 3);</li>
-      <li>Apontar o reconhecimento automático do nó <code>srv-local-pc</code> com as leituras nominais de CPU, RAM, Disco e GPU sem necessidade de cadastro manual;</li>
-      <li>Acessar a tela <code>/metrics</code> (Figura 4) e exibir os gráficos de séries temporais oscilando dinamicamente a cada 2000 ms.</li>
-    </ul>
-
-    <h2 class="secondary-title">3. Demonstração de Carga, Alertas e Sentry APM (2 a 3 Minutos)</h2>
-    <ul>
-      <li>Acionar o botão vermelho de sobrecarga ou executar carga pesada no host (Figura 5);</li>
-      <li>Exibir a comutação instantânea do distintivo para <strong><code>CRITICAL</code></strong> em vermelho;</li>
-      <li>Mostrar a Central de Incidentes em <code>/alerts</code> (Figura 6) com as ocorrências ativas de saturação de GPU e RAM;</li>
-      <li>Alternar para o painel em nuvem oficial do Sentry em <code>watchflow.sentry.io/issues</code> (Figura 7), comprovando a recepção das ocorrências <code>WATCHFLOW-APP-8</code> e <code>APP-9</code> com nível <code>Fatal</code> e tags detalhadas;</li>
-      <li>Explicar a trava de resfriamento (<em>cooldown</em> de 45 segundos) desenvolvida para proteger a cota da API.</li>
-    </ul>
-
-    <h2 class="secondary-title">4. Normalização Automática e Encerramento (1 Minuto)</h2>
-    <p>
-      Demonstrar que, com o término da sobrecarga, o sistema aciona o <em>Auto-Recovery</em>, emite o aviso visual de normalização e resolve os chamados, comprovando a entrega dos quatro objetivos propostos no 1º bimestre.
-    </p>
-  </div>
-
-</body>
+  </body>
 </html>
 `;
 

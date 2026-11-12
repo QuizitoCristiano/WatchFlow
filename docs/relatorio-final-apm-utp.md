@@ -650,24 +650,3 @@ UNIVERSIDADE TUIUTI DO PARANÁ (UTP). **Normas técnicas: elaboração e apresen
 
 <div style="page-break-after: always;"></div>
 
-# APÊNDICE A – Roteiro de Demonstração Prática para a Banca
-
-Este roteiro sintetiza o passo a passo operacional para a defesa presencial de 5 a 10 minutos perante o professor da disciplina no laboratório da UTP:
-
-1. **Abertura e Contextualização (1 Minuto):**  
-   Apresentar o propósito do WatchFlow: plataforma de observabilidade com *Auto-Discovery* contínuo, eliminação de formulários manuais de cadastro e integração corporativa com o Sentry APM.
-2. **Demonstração da Telemetria de Hardware em Tempo Real (2 Minutos):**  
-   - Abrir o WatchFlow no navegador em `http://localhost:5173/devices`;
-   - Apontar o card do host `srv-local-pc`, demonstrando a leitura dos 16 threads do processador AMD Ryzen 7, os 15.9 GB de memória física, o volume SSD de 999 GB e a placa gráfica dedicada NVIDIA GeForce GTX 1060 6GB;
-   - Navegar até `/metrics`, exibindo os gráficos temporais do Recharts atualizando a cada 2000 ms.
-3. **Provocação de Sobrecarga e Detecção de Saturação (2 Minutos):**  
-   - Clicar no botão vermelho *"Simular Sobrecarga (Pico > 90%)"* ou abrir o jogo *God of War*;
-   - Demonstrar oDistinctive do host transitando instantaneamente para o estado **`CRITICAL`**;
-   - Apontar as notificações flutuantes (*toasts* vermelhos) disparadas na interface informando o estouro de limiar.
-4. **Comprovação Forense no Sentry APM (2 Minutos):**  
-   - Alternar para a aba do Sentry (`watchflow.sentry.io/issues`);
-   - Atualizar o painel e demonstrar a entrada das Issues com severidade `fatal`, tags categorizadas (`resource=GPU`, `resource=RAM`) e detalhes do sistema operacional.
-5. **Demonstração do Auto-Recovery e Encerramento (1 Minuto):**  
-   - Cessar a carga pesada;
-   - Observar a emissão do toast verde de normalização, o encerramento do chamado na Central de Incidentes e o retorno do host para o estado `ONLINE`;
-   - Concluir destacando o cumprimento dos objetivos do 1º bimestre.
