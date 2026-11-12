@@ -479,22 +479,15 @@ Ao iniciar o sistema no laboratório, a plataforma consultou o nó físico e ger
 
 <br />
 
-```
-+----------------------------------------------------------------------------------------------------+
-| FIGURA 3 – Card de Telemetria do Host com Reconhecimento de Hardware e GPU                         |
-|                                                                                                    |
-|                     [ srv-local-pc ]                     ( ONLINE )                                |
-|                     127.0.0.1 • Windows_NT 10.0.26300 (x64)                                        |
-|                                                                                                    |
-|                     CPU                [========................] 39%                              |
-|                     RAM                [=================.......] 75%                              |
-|                     Disco              [====================....] 78%                              |
-|                     GPU (NVIDIA)       [====....................] 16%                              |
-|                                                                                                    |
-|                     Último visto: Agora mesmo                                                      |
-+----------------------------------------------------------------------------------------------------+
-FONTE: os próprios autores, 2026. Documentado a partir de screenshot real do sistema em execução.
-```
+<div align="center">
+<strong>FIGURA 3 – Card de Telemetria do Host com Reconhecimento de Hardware e GPU</strong>
+<br /><br />
+
+![FIGURA 3 – Card de Telemetria do Host com Reconhecimento de Hardware e GPU](evidencias/03-dispositivos-telemetria-gpu.jpg)
+
+<br />
+<sub>FONTE: os próprios autores, 2026. Documentado a partir de screenshot real do sistema em execução.</sub>
+</div>
 
 *Análise do Ensaio:* O host foi descoberto com êxito, catalogando a CPU AMD Ryzen 7 5700X, o SSD de 999 GB e a placa de vídeo dedicada NVIDIA GeForce GTX 1060 6GB com barras de proporção coloridas e dinâmicas.
 
@@ -503,23 +496,15 @@ Na tela de Métricas (`/metrics`), o WatchFlow oferece gráficos temporais dinâ
 
 <br />
 
-```
-+----------------------------------------------------------------------------------------------------+
-| FIGURA 4 – Painel de Métricas Temporais com Gráfico Interativo de GPU                              |
-|                                                                                                    |
-|   [ CPU ]   [ Memória ]   [ Disco ]   [ Rede ]   [ GPU (NVIDIA) ] <── Aba Selecionada              |
-|                                                                                                    |
-|   Uso da GPU (%)                                                                                   |
-|   100% ┤                                                                                           |
-|    75% ┤                                                                                           |
-|    50% ┤                                                                                           |
-|    25% ┤       /\                /\                                                                |
-|     0% └───/\─/──\──────────────/──\─────────────────────────                                      |
-|          10:12:00    10:12:20    10:12:40    10:13:00                                              |
-|          • Modelo: NVIDIA GeForce GTX 1060 6GB  • VRAM: 1.5 GB / 6.0 GB  • Temp: 37°C              |
-+----------------------------------------------------------------------------------------------------+
-FONTE: os próprios autores, 2026. Documentado a partir de screenshot da interface de Métricas.
-```
+<div align="center">
+<strong>FIGURA 4 – Painel de Métricas Temporais com Gráfico Interativo de GPU</strong>
+<br /><br />
+
+![FIGURA 4 – Painel de Métricas Temporais com Gráfico Interativo de GPU](evidencias/04-metricas-grafico-temporal-gpu.png)
+
+<br />
+<sub>FONTE: os próprios autores, 2026. Documentado a partir de screenshot da interface de Métricas.</sub>
+</div>
 
 *Análise do Ensaio:* O gráfico temporal registrou a oscilação de VRAM e percentual de processamento gráfico com janela deslizante de 30 amostras sucessivas, mantendo histórico preciso da operação.
 
@@ -528,22 +513,15 @@ Para comprovar que o WatchFlow não opera com dados simulados e reage em tempo r
 
 <br />
 
-```
-+----------------------------------------------------------------------------------------------------+
-| FIGURA 5 – Detecção de Saturação Crítica (>90%) sob Execução de Jogo Real                          |
-|                                                                                                    |
-|                     [ srv-local-pc ]                     ( CRITICAL )                              |
-|                     127.0.0.1 • Windows_NT 10.0.26300 (x64)                                        |
-|                                                                                                    |
-|                     CPU                [========................] 39%                              |
-|                     RAM                [======================..] 97%  <── LIMIAR CRÍTICO (>90%)   |
-|                     Disco              [====================....] 78%                              |
-|                     GPU (NVIDIA)       [======================..] 95%  <── SATURAÇÃO CRÍTICA (>90%)|
-|                                                                                                    |
-|                     Último visto: Agora mesmo                                                      |
-+----------------------------------------------------------------------------------------------------+
-FONTE: os próprios autores, 2026. Documentado a partir de captura da tela durante execução do jogo.
-```
+<div align="center">
+<strong>FIGURA 5 – Detecção de Saturação Crítica (>90%) sob Execução de Jogo Real</strong>
+<br /><br />
+
+![FIGURA 5 – Detecção de Saturação Crítica (>90%) sob Execução de Jogo Real](evidencias/01-watchflow-god-of-war-sobrecarga.jpg)
+
+<br />
+<sub>FONTE: os próprios autores, 2026. Documentado a partir de captura da tela durante execução de God of War.</sub>
+</div>
 
 *Análise do Ensaio:* Imediatamente após a inicialização da renderização 3D do jogo, o consumo de GPU atingiu **95%** e a memória RAM física foi requisitada até **97%**. O WatchFlow detectou a transição de estado, alterou o distintivo do host para **`CRITICAL`** (em vermelho) e gerou o respectivo incidente.
 
@@ -559,20 +537,15 @@ No painel em nuvem oficial do Sentry (`watchflow.sentry.io/issues`), as ocorrên
 
 <br />
 
-```
-+----------------------------------------------------------------------------------------------------+
-| FIGURA 6 – Painel Sentry APM com Issues Críticas, Tags e Lifecycle Capturados                      |
-|                                                                                                    |
-|  Status  | Título da Ocorrência (Issue no Sentry)                           | Eventos | Severidade |
-| ---------+------------------------------------------------------------------+---------+------------+
-|  Active  | [WatchFlow Alert] Sobrecarga Crítica de GPU (96%)                |    1    |   Fatal    |
-|  Active  | [WatchFlow Alert] Esgotamento Crítico de Memória RAM (92%)       |    3    |   Fatal    |
-|  Active  | [WatchFlow Alert] Uso Excessivo de CPU (94%)                     |    1    |   Fatal    |
-|  Resolved| [WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: srv-pc  |    1    |   Info     |
-|  Resolved| [WatchFlow Lifecycle] Dispositivo Desconectado/Removido: srv-pc  |    1    |   Info     |
-+----------------------------------------------------------------------------------------------------+
-FONTE: os próprios autores, 2026. Documentado a partir de captura do dashboard web do Sentry.
-```
+<div align="center">
+<strong>FIGURA 6 – Painel Sentry APM com Issues Críticas, Tags e Lifecycle Capturados</strong>
+<br /><br />
+
+![FIGURA 6 – Painel Sentry APM com Issues Críticas, Tags e Lifecycle Capturados](evidencias/02-sentry-issues-alertas-e-lifecycle.jpg)
+
+<br />
+<sub>FONTE: os próprios autores, 2026. Documentado a partir de captura do dashboard web do Sentry.io.</sub>
+</div>
 
 *Análise do Ensaio:* O Sentry agrupou e catalogou os alertas com severidade `fatal`, anexando metadados completos em cada evento: identificação da placa gráfica, temperatura operacional, total de memória do sistema operacional e identificador do dispositivo. Comprovou-se a perfeita integração do APM sem qualquer intercorrência de bloqueio ou descarte de dados.
 
