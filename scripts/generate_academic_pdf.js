@@ -279,7 +279,12 @@ const htmlContent = `<!DOCTYPE html>
       </div>
 
       <div class="cover-author">
-        CRISTIANO QUIZITO
+        FABRICIO TITO COSTA GOULART<br />
+MATHEUS SERRUTE BAILO<br />
+MIGUEL DE CARLO GOMES<br />
+QUIZITO CRISTIANO AGOSTINHO<br />
+VITOR DA SILVA CAMPOS<br />
+ZACK REYEL FERREIRA BARROZO
       </div>
 
       <div class="cover-title-box">
@@ -302,7 +307,12 @@ const htmlContent = `<!DOCTYPE html>
   <div class="page">
     <div class="cover">
       <div class="cover-author" style="margin-top: 0;">
-        CRISTIANO QUIZITO
+        FABRICIO TITO COSTA GOULART<br />
+MATHEUS SERRUTE BAILO<br />
+MIGUEL DE CARLO GOMES<br />
+QUIZITO CRISTIANO AGOSTINHO<br />
+VITOR DA SILVA CAMPOS<br />
+ZACK REYEL FERREIRA BARROZO
       </div>
 
       <div class="cover-title-box" style="margin-top: 25mm;">
