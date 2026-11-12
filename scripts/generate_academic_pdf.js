@@ -48,8 +48,8 @@ const htmlContent = `<!DOCTYPE html>
       margin: 0;
       padding: 0;
       font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-      font-size: 11pt;
-      line-height: 1.45;
+      font-size: 10.5pt;
+      line-height: 1.4;
       color: #111111;
       background-color: #ffffff;
     }
@@ -59,7 +59,7 @@ const htmlContent = `<!DOCTYPE html>
       height: 297mm;
       max-height: 297mm;
       overflow: hidden;
-      padding: 30mm 20mm 20mm 30mm; /* ABNT: Sup 3cm, Dir 2cm, Inf 2cm, Esq 3cm */
+      padding: 25mm 20mm 20mm 25mm; /* Margens limpas */
       position: relative;
       page-break-after: always;
       background: #ffffff;
@@ -67,7 +67,7 @@ const htmlContent = `<!DOCTYPE html>
 
     .page-number {
       position: absolute;
-      top: 20mm;
+      top: 18mm;
       right: 20mm;
       font-size: 10pt;
       color: #333333;
@@ -75,7 +75,7 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     p {
-      margin: 0 0 9pt 0;
+      margin: 0 0 7pt 0;
       text-align: justify;
       text-indent: 1.25cm;
     }
@@ -86,40 +86,40 @@ const htmlContent = `<!DOCTYPE html>
 
     h1, h2, h3, h4 {
       color: #000000;
-      margin: 14pt 0 8pt 0;
+      margin: 10pt 0 6pt 0;
       font-weight: bold;
       page-break-after: avoid;
     }
 
     h1.primary-title {
-      font-size: 12pt;
+      font-size: 11.5pt;
       text-transform: uppercase;
       font-weight: bold;
-      margin-top: 10pt;
-      margin-bottom: 10pt;
+      margin-top: 6pt;
+      margin-bottom: 8pt;
     }
 
     h2.secondary-title {
-      font-size: 11pt;
+      font-size: 10.5pt;
       text-transform: uppercase;
       font-weight: normal;
-      margin-top: 10pt;
-      margin-bottom: 6pt;
+      margin-top: 8pt;
+      margin-bottom: 5pt;
     }
 
     h3.tertiary-title {
-      font-size: 11pt;
+      font-size: 10.5pt;
       text-transform: none;
       font-weight: bold;
-      margin-top: 8pt;
-      margin-bottom: 5pt;
+      margin-top: 6pt;
+      margin-bottom: 4pt;
     }
 
     .cover {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 247mm;
+      height: 252mm;
       text-align: center;
     }
 
@@ -174,14 +174,14 @@ const htmlContent = `<!DOCTYPE html>
     table.abnt-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 8pt 0;
-      font-size: 9pt;
+      margin: 6pt 0;
+      font-size: 8.5pt;
       line-height: 1.2;
     }
 
     table.abnt-table th, table.abnt-table td {
       border: 1px solid #444444;
-      padding: 4.5pt 6pt;
+      padding: 4pt 5pt;
       text-align: left;
     }
 
@@ -196,9 +196,9 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .figure-caption-top {
-      font-size: 9.5pt;
+      font-size: 9pt;
       font-weight: bold;
-      margin-bottom: 4pt;
+      margin-bottom: 3pt;
       text-align: center;
     }
 
@@ -209,15 +209,15 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .figure-source-bottom {
-      font-size: 9pt;
+      font-size: 8.5pt;
       color: #333333;
-      margin-top: 4pt;
+      margin-top: 3pt;
       text-align: center;
     }
 
     pre, code {
       font-family: "Courier New", Courier, monospace;
-      font-size: 8.5pt;
+      font-size: 8pt;
     }
 
     pre {
@@ -225,24 +225,27 @@ const htmlContent = `<!DOCTYPE html>
       border: 1px solid #dddddd;
       padding: 6pt 8pt;
       line-height: 1.25;
-      margin: 8pt 0;
+      margin: 6pt 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-wrap: break-word;
     }
 
     ul, ol {
-      margin: 0 0 8pt 18pt;
+      margin: 0 0 6pt 16pt;
       padding: 0;
     }
 
     li {
-      margin-bottom: 3pt;
+      margin-bottom: 2pt;
       text-align: justify;
     }
 
     .toc-item {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 5pt;
-      font-size: 10pt;
+      margin-bottom: 4pt;
+      font-size: 9.5pt;
     }
 
     .toc-item.bold {
@@ -256,9 +259,9 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .reference-item {
-      font-size: 10pt;
-      line-height: 1.25;
-      margin-bottom: 10pt;
+      font-size: 9.5pt;
+      line-height: 1.2;
+      margin-bottom: 8pt;
       text-align: justify;
     }
   </style>
@@ -329,7 +332,7 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ==================== PÁGINA 3: RESUMO ==================== -->
+  <!-- ==================== PÁGINA 1: RESUMO ==================== -->
   <div class="page">
     <div class="page-number">1</div>
     <h1 class="primary-title" style="text-align: center; margin-bottom: 20pt;">RESUMO</h1>
@@ -341,28 +344,25 @@ const htmlContent = `<!DOCTYPE html>
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 4: LISTAS ==================== -->
+  <!-- ==================== PÁGINA 2: LISTAS ==================== -->
   <div class="page">
     <div class="page-number">2</div>
     <h1 class="primary-title" style="text-align: center;">LISTA DE ILUSTRAÇÕES</h1>
-    <br />
     <div class="toc-item"><span>FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item"><span>FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item"><span>FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item"><span>FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item"><span>FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item"><span>FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item"><span>FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</span><span class="toc-dots"></span><span>14</span></div>
+    <div class="toc-item"><span>FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item"><span>FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item"><span>FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item"><span>FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item"><span>FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item"><span>FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</span><span class="toc-dots"></span><span>10</span></div>
 
-    <br /><br />
+    <br />
     <h1 class="primary-title" style="text-align: center;">LISTA DE QUADROS E TABELAS</h1>
-    <br />
-    <div class="toc-item"><span>QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item"><span>QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</span><span class="toc-dots"></span><span>15</span></div>
+    <div class="toc-item"><span>QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item"><span>QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</span><span class="toc-dots"></span><span>11</span></div>
 
-    <br /><br />
-    <h1 class="primary-title" style="text-align: center;">LISTA DE ABREVIATURAS E SIGLAS</h1>
     <br />
+    <h1 class="primary-title" style="text-align: center;">LISTA DE ABREVIATURAS E SIGLAS</h1>
     <div class="toc-item"><span>APM – Application Performance Monitoring</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>ABNT – Associação Brasileira de Normas Técnicas</span><span class="toc-dots"></span></div>
     <div class="toc-item"><span>CPU – Central Processing Unit (Unidade Central de Processamento)</span><span class="toc-dots"></span></div>
@@ -377,37 +377,36 @@ const htmlContent = `<!DOCTYPE html>
     <div class="toc-item"><span>WMI – Windows Management Instrumentation</span><span class="toc-dots"></span></div>
   </div>
 
-  <!-- ==================== PÁGINA 5: SUMÁRIO ==================== -->
+  <!-- ==================== PÁGINA 3: SUMÁRIO ==================== -->
   <div class="page">
     <div class="page-number">3</div>
     <h1 class="primary-title" style="text-align: center;">SUMÁRIO</h1>
-    <br />
     <div class="toc-item bold"><span>1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</span><span class="toc-dots"></span><span>4</span></div>
     <div class="toc-item bold"><span>2 OBJETIVOS DO PROJETO</span><span class="toc-dots"></span><span>4</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>2.1 Objetivo Geral</span><span class="toc-dots"></span><span>4</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>2.2 Objetivos Específicos</span><span class="toc-dots"></span><span>4</span></div>
     <div class="toc-item bold"><span>3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</span><span class="toc-dots"></span><span>5</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>3.1 Topologia Distribuída e Auto-Discovery</span><span class="toc-dots"></span><span>5</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 Protocolos e Coletores de Hardware (WMI e Utilitários de GPU)</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>3.2 Protocolos e Coletores de Hardware</span><span class="toc-dots"></span><span>5</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>3.3 Infraestrutura Física e Configuração do Laboratório</span><span class="toc-dots"></span><span>6</span></div>
-    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 Estudo Comparativo de Mercado (Sentry vs. Datadog vs. Better Stack)</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item bold"><span>4 JUSTIFICATIVA DA ESCOLHA DA APM</span><span class="toc-dots"></span><span>6</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.1 Estudo Comparativo de Mercado (Sentry vs. Datadog vs. Better Stack)</span><span class="toc-dots"></span><span>6</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>4.2 Decisão Técnica pelo Sentry APM</span><span class="toc-dots"></span><span>7</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</span><span class="toc-dots"></span><span>8</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 Implementação do Algoritmo de Resfriamento</span><span class="toc-dots"></span><span>9</span></div>
-    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 Ensaio 1: Descoberta e Telemetria em Repouso</span><span class="toc-dots"></span><span>10</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</span><span class="toc-dots"></span><span>11</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</span><span class="toc-dots"></span><span>12</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</span><span class="toc-dots"></span><span>13</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</span><span class="toc-dots"></span><span>14</span></div>
-    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>15</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>15</span></div>
-    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros</span><span class="toc-dots"></span><span>16</span></div>
-    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>17</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>4.4 Implementação do Algoritmo de Resfriamento</span><span class="toc-dots"></span><span>7</span></div>
+    <div class="toc-item bold"><span>5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.1 Ensaio 1: Descoberta e Telemetria em Repouso</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</span><span class="toc-dots"></span><span>8</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</span><span class="toc-dots"></span><span>9</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</span><span class="toc-dots"></span><span>10</span></div>
+    <div class="toc-item bold"><span>6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros e Conclusão</span><span class="toc-dots"></span><span>11</span></div>
+    <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>12</span></div>
   </div>
 
-  <!-- ==================== PÁGINA 6: INTRODUÇÃO E OBJETIVOS ==================== -->
+  <!-- ==================== PÁGINA 4: INTRODUÇÃO E OBJETIVOS ==================== -->
   <div class="page">
     <div class="page-number">4</div>
     <h1 class="primary-title">1 INTRODUÇÃO E CONTEXTUALIZAÇÃO</h1>
@@ -421,7 +420,7 @@ const htmlContent = `<!DOCTYPE html>
       Para atender aos requisitos da disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas da Universidade Tuiuti do Paraná (UTP), desenvolvemos uma plataforma de observabilidade sob medida. O sistema integra telemetria direta de hardware local (sem necessidade de cadastros manuais) a uma aplicação web moderna em React e TypeScript, conectando os eventos críticos à plataforma corporativa <strong>Sentry APM</strong>.
     </p>
 
-    <h1 class="primary-title">2 OBJETIVOS DO PROJETO</h1>
+    <h1 class="primary-title" style="margin-top: 14pt;">2 OBJETIVOS DO PROJETO</h1>
     <h2 class="secondary-title">2.1 Objetivo Geral</h2>
     <p>
       Desenvolver, documentar e validar experimentalmente uma plataforma web de observabilidade capaz de realizar a descoberta automática de ativos computacionais locais, inspecionar métricas em tempo real de hardware e integrar-se a uma solução de APM para rastreamento de falhas, métricas de transação e gestão do ciclo de vida de incidentes.
@@ -439,7 +438,7 @@ const htmlContent = `<!DOCTYPE html>
     </ol>
   </div>
 
-  <!-- ==================== PÁGINA 7: TOPOLOGIA E ARQUITETURA (HTML DIAGRAM) ==================== -->
+  <!-- ==================== PÁGINA 5: ARQUITETURA, FIGURA 1 E PROTOCOLOS ==================== -->
   <div class="page">
     <div class="page-number">5</div>
     <h1 class="primary-title">3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</h1>
@@ -451,47 +450,27 @@ const htmlContent = `<!DOCTYPE html>
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</div>
       ${figura1Html}
-      <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
+      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Diagrama conceitual da arquitetura de telemetria e ingestão em nuvem.</div>
     </div>
-    <p>
-      O mecanismo de <em>Auto-Discovery</em> reconhece o nó hospedeiro assim que a aplicação é iniciada. Ao consultar os endpoints de telemetria locais, o sistema detecta o hostname, o endereço IP de loopback e os recursos disponíveis, instanciando o card do host sem qualquer etapa prévia de parametrização.
-    </p>
-  </div>
 
-  <!-- ==================== PÁGINA 8: PROTOCOLOS E INFRAESTRUTURA ==================== -->
-  <div class="page">
-    <div class="page-number">6</div>
     <h2 class="secondary-title">3.2 Protocolos e Coletores de Hardware</h2>
     <p>
-      A camada de ingestão de telemetria estrutura-se a partir de três mecanismos complementares:
+      A camada de ingestão estrutura-se a partir de três mecanismos: <strong>Prometheus Node Exporter</strong> (padrão aberto na porta 9100 para contadores do SO), <strong>WMI/Node.js</strong> (leitura direta de tempo de CPU via <code>os.cpus()</code> e memória física via <code>os.totalmem()</code>) e <strong>Extração de Telemetria de GPU</strong> (consulta periódica ao binário do driver gráfico, convertendo carga percentual, VRAM alocada e temperatura em JSON tipado).
     </p>
-    <ul>
-      <li><strong>Prometheus Node Exporter:</strong> Padrão aberto de mercado na porta 9100, utilizado para extração de contadores do sistema operacional conforme convenções abertas de telemetria;</li>
-      <li><strong>Módulo do Sistema Operacional (WMI/Node.js):</strong> No Windows, o coletor realiza chamadas às funções internas do sistema operacional (como <code>os.cpus()</code> e <code>os.totalmem()</code>), calculando os deltas de tempo de processamento ativo em relação ao tempo ocioso para mensurar a CPU em percentual exato;</li>
-      <li><strong>Extração de Telemetria de GPU:</strong> Como a maioria das ferramentas tradicionais restringe-se ao processador central e ignora aceleradores gráficos dedicados, implementamos uma rotina de extração via binário do driver gráfico, convertendo uso de processador gráfico, alocação de memória e temperatura em JSON estruturado a cada ciclo.</li>
-    </ul>
-
-    <h2 class="secondary-title">3.3 Infraestrutura Física e Configuração do Laboratório</h2>
-    <p>
-      Os ensaios práticos e a validação foram conduzidos no computador de desenvolvimento, cujas especificações representam uma máquina real de trabalho:
-    </p>
-    <ul>
-      <li><strong>Processador (CPU):</strong> AMD Ryzen 7 5700X (8 núcleos físicos, 16 threads, frequência de 3.4 GHz a 4.6 GHz);</li>
-      <li><strong>Memória Principal (RAM):</strong> 16 GB DDR4 (15.9 GB endereçáveis pelo sistema operacional);</li>
-      <li><strong>Armazenamento Secundário:</strong> SSD NVMe M.2 de 1.0 TB (999 GB formatados);</li>
-      <li><strong>Acelerador Gráfico Dedicado (GPU):</strong> NVIDIA GeForce GTX 1060 de 6 GB VRAM GDDR5;</li>
-      <li><strong>Sistema Operacional:</strong> Microsoft Windows 11 Pro 64 bits (Build 26100);</li>
-      <li><strong>Pilha Tecnológica:</strong> Node.js 24 LTS, Vite 6, React 18, Sentry React SDK v8.</li>
-    </ul>
   </div>
 
-  <!-- ==================== PÁGINA 9: JUSTIFICATIVA APM E QUADRO 1 ==================== -->
+  <!-- ==================== PÁGINA 6: INFRAESTRUTURA, JUSTIFICATIVA APM E QUADRO 1 ==================== -->
   <div class="page">
-    <div class="page-number">7</div>
+    <div class="page-number">6</div>
+    <h2 class="secondary-title">3.3 Infraestrutura Física e Configuração do Laboratório</h2>
+    <p>
+      Os ensaios foram conduzidos no computador de desenvolvimento: CPU AMD Ryzen 7 5700X (8 núcleos/16 threads), 16 GB RAM DDR4, SSD NVMe 1.0 TB, GPU dedicada NVIDIA GeForce GTX 1060 6GB e Windows 11 Pro 64 bits (Build 26100), executando Node.js 24 LTS, Vite 6 e React 18.
+    </p>
+
     <h1 class="primary-title">4 JUSTIFICATIVA DA ESCOLHA DA APM</h1>
     <h2 class="secondary-title">4.1 Estudo Comparativo de Mercado</h2>
     <p>
-      Para fundamentar a escolha da plataforma de APM com rigor acadêmico, confrontamos as três alternativas analisadas no 1º bimestre: <strong>Sentry</strong>, <strong>Datadog</strong> e <strong>Better Stack</strong>:
+      Para fundamentar a escolha da plataforma com rigor técnico, confrontamos as três alternativas avaliadas no 1º bimestre:
     </p>
 
     <div class="figure-caption-top">QUADRO 1 – Matriz Comparativa de Soluções APM de Mercado</div>
@@ -512,19 +491,19 @@ const htmlContent = `<!DOCTYPE html>
           <td>Plano gratuito voltado a checagens de Uptime/Ping simples.</td>
         </tr>
         <tr>
-          <td><strong>Rastreamento Forense de Erros</strong></td>
+          <td><strong>Rastreamento de Erros</strong></td>
           <td>Pioneiro de mercado, com agregação de stack traces e metadados.</td>
           <td>Excelente, porém complexo e voltado a nuvens empresariais.</td>
           <td>Básico, focado em logs brutos sem análise profunda de código.</td>
         </tr>
         <tr>
-          <td><strong>Tracing Distribuído no Frontend</strong></td>
+          <td><strong>Tracing no Frontend</strong></td>
           <td>Nativo via <code>@sentry/react</code> e monitoramento de transações.</td>
           <td>Requer instrumentação detalhada de agentes RUM adicionais.</td>
           <td>Indisponível no tier gratuito.</td>
         </tr>
         <tr>
-          <td><strong>Metadados e Tags Customizadas</strong></td>
+          <td><strong>Metadados e Tags</strong></td>
           <td>Permite anexar métricas de GPU, memória e contexto de hardware.</td>
           <td>Permite, porém exige configuração de tags em agentes locais.</td>
           <td>Restrito a atributos chave-valor simples em mensagens de texto.</td>
@@ -537,50 +516,40 @@ const htmlContent = `<!DOCTYPE html>
         </tr>
       </tbody>
     </table>
-    <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
-
-    <h2 class="secondary-title">4.2 Decisão Técnica pelo Sentry APM</h2>
-    <p>
-      A decisão pelo Sentry fundamentou-se em três pilares técnicos: aderência total à pilha frontend (React/TypeScript), capacidade de enriquecer cada incidente com metadados detalhados de hardware (tags de nó, percentuais de uso e status) e ausência de restrições financeiras ou exigência de cartões internacionais, permitindo foco exclusivo no desenvolvimento do sistema.
-    </p>
+    <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Matriz comparativa baseada na documentação técnica oficial das plataformas.</div>
   </div>
 
-  <!-- ==================== PÁGINA 10: MÁQUINA DE ESTADOS (HTML DIAGRAM) ==================== -->
+  <!-- ==================== PÁGINA 7: DECISÃO, MÁQUINA DE ESTADOS E CÓDIGO ==================== -->
   <div class="page">
-    <div class="page-number">8</div>
+    <div class="page-number">7</div>
+    <h2 class="secondary-title">4.2 Decisão Técnica pelo Sentry APM</h2>
+    <p>
+      A decisão pelo Sentry fundamentou-se em três pilares: integração nativa com React/TypeScript, enriquecimento de contexto com tags customizadas de hardware e política transparente de acesso acadêmico sem custos.
+    </p>
+
     <h2 class="secondary-title">4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</h2>
     <p>
-      Um obstáculo prático identificado durante os primeiros ensaios foi o risco de saturação da API do Sentry. Como o coletor consulta o nó a cada 2000 milissegundos, caso a máquina sofresse uma sobrecarga sustentada de 5 minutos, seriam enviados 150 chamados sucessivos, gerando bloqueio por taxa de requisição (<em>rate-limit</em>) e esgotamento da cota gratuita da conta.
-    </p>
-    <p>
-      Para solucionar esse problema, projetamos uma <strong>Máquina de Estados Finita com Trava de Resfriamento (*Cooldown*) de 45 segundos</strong> no módulo <code>deviceService.ts</code>:
+      Para evitar esgotar a cota da API por rate-limit durante sobrecargas sustentadas (devido à varredura a cada 2000 ms), desenvolvemos uma <strong>Máquina de Estados Finita com Trava de Resfriamento (*Cooldown*) de 45 segundos</strong>:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</div>
       ${figura2Html}
-      <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
+      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Fluxograma da máquina de estados finita e ciclo de resfriamento.</div>
     </div>
-    <p>
-      Caso os valores permaneçam acima do teto de 90%, o estado do host na tela segue destacado em vermelho como <code>CRITICAL</code>, mantendo o operador ciente do perigo. Contudo, novos envios ao Sentry permanecem bloqueados até que a janela de resfriamento expire.
-    </p>
-  </div>
 
-  <!-- ==================== PÁGINA 11: IMPLEMENTAÇÃO DO CÓDIGO ==================== -->
-  <div class="page">
-    <div class="page-number">9</div>
     <h2 class="secondary-title">4.4 Implementação do Algoritmo de Resfriamento</h2>
-    <p>
-      A implementação em TypeScript no módulo <code>src/services/deviceService.ts</code> evidencia a lógica de controle de concorrência e etiquetagem dos eventos:
-    </p>
-
     <pre>
-// Implementação do controle de resfriamento e disparo no Sentry APM
-const CRITICAL_THRESHOLD = 90; // Limiar percentual de alerta crítico
-const ALERT_COOLDOWN_MS = 45000; // Janela de segurança de 45 segundos
+// Controle de resfriamento e disparo seguro no Sentry (src/services/deviceService.ts)
+const CRITICAL_THRESHOLD = 90;
+const ALERT_COOLDOWN_MS = 45000;
 const recentDispatches = new Map&lt;string, number&gt;();
 
-function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: number) {
+function checkAndDispatchAlert(
+  device: MonitoredDevice,
+  metric: string,
+  value: number
+) {
   const alertKey = \`\${device.id}_\${metric}\`;
   const now = Date.now();
   const lastTime = recentDispatches.get(alertKey) || 0;
@@ -589,144 +558,104 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     if (now - lastTime &gt; ALERT_COOLDOWN_MS) {
       recentDispatches.set(alertKey, now);
 
-      // Notificação visual imediata para o operador
       toast.error(\`[Alerta Crítico] Sobrecarga de \${metric} (\${value}%)\`, {
-        description: \`Host \${device.name} ultrapassou o limiar de segurança de 90%.\`
+        description: \`Host \${device.name} ultrapassou o limiar de 90%.\`
       });
 
-      // Registro analítico estruturado no Sentry
       Sentry.withScope((scope) =&gt; {
         scope.setLevel('fatal');
         scope.setTag('resource', metric);
         scope.setTag('hostname', device.name);
-        scope.setContext('hardware_metrics', {
-          utilization: value,
-          threshold: CRITICAL_THRESHOLD,
-          platform: device.os
-        });
-        Sentry.captureMessage(\`[WatchFlow Alert] Sobrecarga Crítica de \${metric} (\${value}%)\`);
+        scope.setContext('hardware', { utilization: value, threshold: CRITICAL_THRESHOLD });
+        Sentry.captureMessage(
+          \`[WatchFlow Alert] Sobrecarga Crítica de \${metric} (\${value}%)\`
+        );
       });
     }
   }
 }
     </pre>
-    <p>
-      Adicionalmente, quando o hardware retorna aos padrões seguros de operação (valores inferiores a 90%), o sistema aciona a função de <em>Auto-Recovery</em>. Essa rotina emite um aviso flutuante em verde informando a recuperação, atualiza a Central de Alertas e restaura a saúde do nó para <code>ONLINE</code>.
-    </p>
   </div>
 
-  <!-- ==================== PÁGINA 12: ENSAIO 1 (ONLINE) ==================== -->
+  <!-- ==================== PÁGINA 8: ENSAIOS 1 E 2 (REPOUSO E MÉTRICAS) ==================== -->
   <div class="page">
-    <div class="page-number">10</div>
+    <div class="page-number">8</div>
     <h1 class="primary-title">5 RESULTADOS EXPERIMENTAIS E EVIDÊNCIAS DE FUNCIONAMENTO</h1>
-    <p>
-      Apresentam-se a seguir os registros empíricos obtidos diretamente na execução prática do sistema no computador do laboratório, cobrindo todos os módulos da plataforma.
-    </p>
-
     <h2 class="secondary-title">5.1 Ensaio 1: Descoberta e Telemetria em Repouso</h2>
     <p>
-      Ao iniciar os serviços, o nó <code>srv-local-pc</code> (127.0.0.1, Windows 11 x86_64) foi detectado automaticamente, apresentando os contadores de CPU, RAM, Disco e GPU em condição nominal de operação:
+      Ao iniciar os serviços, o nó <code>srv-local-pc</code> foi detectado com status <code>ONLINE</code> em verde, apresentando CPU em 10%, RAM em 73%, Disco em 79% e GPU em 37%:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 3 – Painel de Dispositivos Monitorados em Condição Nominal (Status ONLINE)</div>
-      <img src="${img1}" alt="Dispositivos Monitorados Status ONLINE" style="max-height: 105mm;" />
+      <img src="${img1}" alt="Dispositivos Monitorados Status ONLINE" style="max-height: 85mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface de Dispositivos (/devices).</div>
     </div>
 
-    <p>
-      <em>Análise do Ensaio:</em> O host registrou consumo equilibrado: CPU em 10%, memória RAM em 73%, disco em 79% e acelerador gráfico GPU em 37%. O sistema manteve o distintivo verde <code>ONLINE</code>, sem emissão de alertas indevidos.
-    </p>
-  </div>
-
-  <!-- ==================== PÁGINA 13: ENSAIO 2 (MÉTRICAS) ==================== -->
-  <div class="page">
-    <div class="page-number">11</div>
     <h2 class="secondary-title">5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</h2>
     <p>
-      No módulo analítico de Métricas (<code>/metrics</code>), o sistema oferece gráficos contínuos de séries temporais desenvolvidos com a biblioteca Recharts, exibindo os dados históricos de desempenho do host selecionado:
+      Na tela de Métricas (/metrics), o sistema exibe os contadores detalhados e a curva de oscilação temporal em tempo real com Recharts:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 4 – Módulo de Métricas Detalhadas com Gráfico Temporal de Oscilação</div>
-      <img src="${img2}" alt="Métricas Detalhadas Séries Temporais" style="max-height: 110mm;" />
+      <img src="${img2}" alt="Métricas Detalhadas Séries Temporais" style="max-height: 85mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface de Métricas (/metrics).</div>
     </div>
-
-    <p>
-      <em>Análise do Ensaio:</em> O painel exibe a alocação de memória física (12 GB em uso de 15.9 GB totais), uso de disco (786 GB de 999 GB), tráfego de rede ativo (1.1 MB/s download e 0.6 MB/s upload) e a curva de oscilação temporal com janela deslizante de registros sucessivos.
-    </p>
   </div>
 
-  <!-- ==================== PÁGINA 14: ENSAIO 3 (SOBRECARGA CRÍTICA) ==================== -->
+  <!-- ==================== PÁGINA 9: ENSAIOS 3 E 4 (SOBRECARGA E CENTRAL DE ALERTAS) ==================== -->
   <div class="page">
-    <div class="page-number">12</div>
+    <div class="page-number">9</div>
     <h2 class="secondary-title">5.3 Ensaio 3: Teste de Carga e Saturação Crítica (>90%)</h2>
     <p>
-      Para avaliar o comportamento da plataforma sob estresse severo de hardware, acionou-se a rotina de sobrecarga operacional, elevando a demanda sobre a memória RAM e a placa de vídeo:
+      Durante a sobrecarga de hardware, a memória RAM atingiu <strong>94%</strong> e o acelerador gráfico GPU subiu para <strong>96%</strong>, comutando o distintivo do host para <strong><code>CRITICAL</code></strong> em vermelho:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 5 – Detecção de Sobrecarga Crítica (>90%) e Comutação para Estado CRITICAL</div>
-      <img src="${img3}" alt="Dispositivos em Sobrecarga Status CRITICAL" style="max-height: 105mm;" />
-      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface durante teste de saturação.</div>
+      <img src="${img3}" alt="Dispositivos em Sobrecarga Status CRITICAL" style="max-height: 85mm;" />
+      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela durante teste de saturação de hardware.</div>
     </div>
 
-    <p>
-      <em>Análise do Ensaio:</em> Ao atingir <strong>94%</strong> de memória física RAM e <strong>96%</strong> de utilização do acelerador gráfico GPU, o sistema identificou imediatamente a violação do limiar de 90%, comutando o distintivo do host para <strong><code>CRITICAL</code></strong> em vermelho e disparando a barra de GPU em destaque de alerta.
-    </p>
-  </div>
-
-  <!-- ==================== PÁGINA 15: ENSAIO 4 (CENTRAL DE ALERTAS) ==================== -->
-  <div class="page">
-    <div class="page-number">13</div>
     <h2 class="secondary-title">5.4 Ensaio 4: Central de Incidentes e Auto-Recovery</h2>
     <p>
-      No módulo de Alertas (<code>/alerts</code>), a aplicação gerencia os chamados operacionais gerados pelas violações de limiares de segurança:
+      A Central de Incidentes registrou 30 eventos críticos de GPU e RAM, permitindo intervenção do operador e resolução automática via <em>Auto-Recovery</em>:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 6 – Central de Incidentes com Fila de Alertas Ativos e Resolvidos (Auto-Recovery)</div>
-      <img src="${img4}" alt="Central de Incidentes e Alertas" style="max-height: 110mm;" />
-      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da interface de Incidentes (/alerts).</div>
+      <img src="${img4}" alt="Central de Incidentes e Alertas" style="max-height: 85mm;" />
+      <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura de tela da Central de Incidentes e Alertas (/alerts).</div>
     </div>
-
-    <p>
-      <em>Análise do Ensaio:</em> A Central de Incidentes registrou as ocorrências de <em>Sobrecarga Crítica de GPU (94% e 96%)</em> e <em>Esgotamento Crítico de Memória RAM (91% e 99%)</em>. O operador dispõe de botões para Reconhecer e Resolver os chamados, enquanto o motor de <em>Auto-Recovery</em> automaticamente contabilizou os incidentes normalizados no painel verde de histórico.
-    </p>
   </div>
 
-  <!-- ==================== PÁGINA 16: ENSAIO 5 (SENTRY APM) ==================== -->
+  <!-- ==================== PÁGINA 10: ENSAIO 5 (SENTRY APM) ==================== -->
   <div class="page">
-    <div class="page-number">14</div>
+    <div class="page-number">10</div>
     <h2 class="secondary-title">5.5 Ensaio 5: Rastreamento Forense no Painel do Sentry APM</h2>
     <p>
-      Para certificar a entrega ponta a ponta da telemetria de incidentes para a nuvem, inspecionou-se o painel oficial do projeto no Sentry (<code>watchflow.sentry.io/issues</code>):
+      A auditoria no painel em nuvem oficial do Sentry (<code>watchflow.sentry.io/issues</code>) confirmou a recepção fidedigna das ocorrências disparadas durante os ensaios práticos:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 7 – Rastreamento Forense no Painel Corporativo do Sentry APM</div>
-      <img src="${img5}" alt="Painel Oficial do Sentry APM" style="max-height: 105mm;" />
+      <img src="${img5}" alt="Painel Oficial do Sentry APM" style="max-height: 110mm;" />
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Captura real do dashboard corporativo em watchflow.sentry.io.</div>
     </div>
 
     <p>
-      <em>Análise do Ensaio:</em> O dashboard do Sentry comprova o recebimento estruturado das seguintes ocorrências:
+      <em>Análise Forense:</em> O Sentry agrupou 30 ocorrências de <code>[WatchFlow Alert] Sobrecarga Crítica de GPU (94%)</code> com severidade <code>Fatal</code> (identificador <code>WATCHFLOW-APP-8</code>) e 27 ocorrências de <code>Esgotamento Crítico de Memória RAM (91%)</code> (<code>WATCHFLOW-APP-9</code>), comprovando a rastreabilidade ponta a ponta sem descarte de pacotes.
     </p>
-    <ul>
-      <li><code>[WatchFlow Alert] Sobrecarga Crítica de GPU (94%)</code>: Identificador <code>WATCHFLOW-APP-8</code>, com 30 eventos capturados e agrupados por amostragem de tags;</li>
-      <li><code>[WatchFlow Alert] Esgotamento Crítico de Memória RAM (91%)</code>: Identificador <code>WATCHFLOW-APP-9</code>, com 27 eventos registrados;</li>
-      <li><code>[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: srv-local-pc</code>: Identificador <code>WATCHFLOW-APP-D</code>, comprovando o registro do ciclo de vida dos nós.</li>
-    </ul>
   </div>
 
-  <!-- ==================== PÁGINA 17: CONCLUSÃO E CONFRONTO DE OBJETIVOS ==================== -->
+  <!-- ==================== PÁGINA 11: CONSIDERAÇÕES FINAIS E TRABALHOS FUTUROS (UNIFICADOS) ==================== -->
   <div class="page">
-    <div class="page-number">15</div>
+    <div class="page-number">11</div>
     <h1 class="primary-title">6 CONSIDERAÇÕES FINAIS E CUMPRIMENTO DOS OBJETIVOS</h1>
     <h2 class="secondary-title">6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</h2>
     <p>
-      O Quadro 2 apresenta o confronto direto entre as metas propostas no documento do primeiro bimestre e os resultados validados no produto final:
+      O Quadro 2 apresenta o confronto direto entre as metas estabelecidas na proposta do primeiro bimestre e os resultados validados no produto final:
     </p>
 
     <div class="figure-caption-top">QUADRO 2 – Matriz de Rastreabilidade e Cumprimento dos Objetivos do 1º Bimestre</div>
@@ -761,33 +690,20 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
         </tr>
       </tbody>
     </table>
-    <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
+    <div class="figure-source-bottom">FONTE: os próprios autores, 2026. Matriz de rastreabilidade entre o plano de ensino e as entregas experimentais.</div>
 
+    <h2 class="secondary-title" style="margin-top: 10pt;">6.2 Trabalhos Futuros e Conclusão</h2>
     <p>
-      Dessa forma, a equipe transformou a pesquisa bibliográfica do primeiro bimestre em um sistema funcional, documentado e validado empiricamente, superando as deficiências apontadas pelo orientador nas entregas anteriores.
+      Como propostas de expansão para etapas futuras, destacam-se a distribuição de coletores empacotados em contêineres Docker para monitoramento de múltiplos servidores em rede acadêmica e o acionamento de rotinas automáticas de remediação (*self-healing*) via webhooks do Sentry.
+    </p>
+    <p>
+      O desenvolvimento do projeto proporcionou aos integrantes a vivência prática de observabilidade de software, telemetria em tempo real e governança de projetos segundo o Guia PMBOK 7ª Edição, resultando em uma solução robusta e validada empiricamente.
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 18: TRABALHOS FUTUROS ==================== -->
+  <!-- ==================== PÁGINA 12: REFERÊNCIAS ==================== -->
   <div class="page">
-    <div class="page-number">16</div>
-    <h2 class="secondary-title">6.2 Trabalhos Futuros</h2>
-    <p>
-      Como propostas de expansão e evolução em etapas futuras do curso de Análise e Desenvolvimento de Sistemas, sugerem-se as seguintes frentes de pesquisa:
-    </p>
-    <ul>
-      <li><strong>Suporte a Múltiplos Nós em Clusters:</strong> Empacotar os coletores locais em contêineres Docker para facilitar a distribuição e o monitoramento centralizado de múltiplos computadores na rede acadêmica;</li>
-      <li><strong>Ações Automatizadas de Remediação (*Self-Healing*):</strong> Integrar webhooks do Sentry para acionar rotinas automáticas de encerramento de processos travados ou liberação de memória em caso de esgotamento de recursos;</li>
-      <li><strong>Compatibilidade Universal com Fabricantes de Hardware:</strong> Expandir o módulo de GPU para leitura padronizada através de bibliotecas abertas como OpenCL e Vulkan, cobrindo aceleradores de múltiplos fabricantes.</li>
-    </ul>
-    <p>
-      O desenvolvimento do projeto proporcionou aos integrantes a vivência prática de observabilidade de software, padrões abertos de telemetria e governança de projetos segundo o Guia PMBOK 7ª Edição, resultando em uma solução robusta e aderente aos padrões da indústria de tecnologia.
-    </p>
-  </div>
-
-  <!-- ==================== PÁGINA 19: REFERÊNCIAS ==================== -->
-  <div class="page">
-    <div class="page-number">17</div>
+    <div class="page-number">12</div>
     <h1 class="primary-title">REFERÊNCIAS</h1>
     <br />
 
@@ -865,6 +781,7 @@ fs.writeFileSync(htmlPath, htmlContent, 'utf8');
 console.log(`HTML generated successfully at: ${htmlPath}`);
 
 const pdfPath = path.join(docsDir, 'Relatorio_Final_WatchFlow_UTP.pdf');
+const altPdfPath = path.join(docsDir, 'Observabilidade_e_Monitoramento_APM.pdf');
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
 console.log('Rendering PDF via Microsoft Edge Headless...');
@@ -875,7 +792,8 @@ try {
     '--no-pdf-header-footer',
     'file:///' + htmlPath.replace(/\\/g, '/')
   ]);
-  console.log('PDF generated successfully at: ' + pdfPath);
+  fs.copyFileSync(pdfPath, altPdfPath);
+  console.log('PDF generated successfully at both paths!');
 } catch (err) {
   console.error('Error generating PDF with Edge:', err);
 }
