@@ -53,7 +53,7 @@ export const DispositivosPage: React.FC = () => {
                     memory: m.memory.usedPercent,
                     disk: m.disk.usedPercent,
                     gpu: m.gpu || {
-                      name: 'NVIDIA GeForce GTX 1060 6GB',
+                      name: 'GPU',
                       usagePercent: 20,
                       temperatureC: 37,
                       memoryUsedMb: 1346,
@@ -260,8 +260,8 @@ export const DispositivosPage: React.FC = () => {
 
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'NVIDIA GeForce GTX 1060 6GB'}>
-                        <Monitor className="w-3 h-3 text-emerald-400"/> GPU ({device.latestMetricsSummary?.gpu?.name ? device.latestMetricsSummary.gpu.name.split(' ')[0] : 'NVIDIA'})
+                      <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'GPU'}>
+                        <Monitor className="w-3 h-3 text-emerald-400"/> GPU
                       </span>
                       <span className={(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'text-red-400 font-bold' : ''}>
                         {device.latestMetricsSummary?.gpu?.usagePercent ?? 20}%
