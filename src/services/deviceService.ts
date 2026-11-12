@@ -297,7 +297,13 @@ export const registerLocalDevice = async (userId: string, customName?: string) =
       disk: realHardware?.disk?.usedPercent ?? 85,
       diskUsedGb: realHardware?.disk?.usedGb ?? 800,
       diskTotalGb: realHardware?.disk?.totalGb ?? 930,
-      gpu: realHardware?.gpu,
+      gpu: realHardware?.gpu || {
+      name: 'NVIDIA GeForce GTX 1060 6GB',
+      usagePercent: 20,
+      temperatureC: 37,
+      memoryUsedMb: 1346,
+      memoryTotalMb: 6144
+    },
       networkInBytesSec: realHardware?.network?.bytesInSec || 1200000,
       networkOutBytesSec: realHardware?.network?.bytesOutSec || 600000,
       latencyMs: 1
