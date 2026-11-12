@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { figura1Html, figura2Html } from './html_diagrams.js';
 
 const baseDir = process.cwd();
 const docsDir = path.join(baseDir, 'docs');
@@ -24,13 +25,13 @@ const img3 = getBase64Image('03-dispositivos-sobrecarga-critical.png');
 const img4 = getBase64Image('04-central-incidentes-alertas.jpg');
 const img5 = getBase64Image('05-sentry-issues-incidentes-reais.jpg');
 
-console.log('All 5 new evidence images loaded successfully as Base64.');
+const mainTitle = 'OBSERVABILIDADE E MONITORAMENTO DE DESEMPENHO DE APLICAÇÕES (APM): ARQUITETURA TÉCNICA E VALIDAÇÃO EXPERIMENTAL';
 
 const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>WatchFlow - Relatório Final de Projeto de Software e Monitoramento de Sistemas</title>
+  <title>${mainTitle}</title>
   <style>
     @page {
       size: A4 portrait;
@@ -145,13 +146,7 @@ const htmlContent = `<!DOCTYPE html>
       font-size: 13pt;
       font-weight: bold;
       text-transform: uppercase;
-      line-height: 1.3;
-    }
-
-    .cover-subtitle {
-      font-size: 11pt;
-      font-weight: normal;
-      margin-top: 6pt;
+      line-height: 1.35;
     }
 
     .cover-footer {
@@ -196,7 +191,7 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .figure-box {
-      margin: 8pt 0;
+      margin: 6pt 0;
       text-align: center;
     }
 
@@ -290,7 +285,7 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box">
         <div class="cover-title">
-          DOCUMENTAÇÃO DAS APM'S: SENTRY, DATADOG E BETTER STACK
+          ${mainTitle}
         </div>
       </div>
 
@@ -315,13 +310,13 @@ const htmlContent = `<!DOCTYPE html>
 
       <div class="cover-title-box" style="margin-top: 15mm;">
         <div class="cover-title">
-          DOCUMENTAÇÃO DAS APM'S: SENTRY, DATADOG E BETTER STACK
+          ${mainTitle}
         </div>
       </div>
 
       <div class="title-page-note-container">
         <div class="title-page-note">
-          Relatório técnico-científico e de projeto de software apresentado à Faculdade de Ciências Exatas e de Tecnologia da Universidade Tuiuti do Paraná, como requisito avaliativo do 2º bimestre na disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas do Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas.
+          Trabalho apresentado à Faculdade de Ciências Exatas e de Tecnologia da Universidade Tuiuti do Paraná, como requisito parcial para avaliação do 2º bimestre na disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas do Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas.
           <br /><br />
           <strong>Professor Orientador:</strong> Prof. Me. André Luiz de Souza Paula
         </div>
@@ -338,7 +333,7 @@ const htmlContent = `<!DOCTYPE html>
   <div class="page">
     <h1 class="primary-title" style="text-align: center; margin-bottom: 20pt;">RESUMO</h1>
     <p>
-      O presente trabalho apresenta a especificação técnica, a arquitetura e os resultados práticos da validação do <strong>WatchFlow</strong>, uma plataforma de monitoramento e observabilidade voltada à inspeção contínua de hardware e rastreamento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). A indisponibilidade de sistemas e o diagnóstico tardio de sobrecargas de hardware motivaram o desenvolvimento de uma arquitetura híbrida e distribuída. O sistema combina coletores locais baseados no padrão Prometheus Node Exporter, WMI (<em>Windows Management Instrumentation</em>) e utilitário de leitura direta de aceleradores gráficos dedicados com a plataforma em nuvem Sentry APM. Para comprovar a eficácia prática da solução em laboratório, foram realizados ensaios empíricos no computador de desenvolvimento, validando o comportamento sob condições nominais (CPU 10%, RAM 73%, Disco 79%, GPU 37%) e sob sobrecarga crítica (>90% de GPU e RAM). Os testes demonstraram a precisão dos gráficos temporais, a sensibilidade da máquina de estados com trava de resfriamento (<em>cooldown</em> de 45 segundos) e o registro forense das ocorrências no Sentry, cumprindo integralmente os objetivos estabelecidos na proposta inicial.
+      O presente trabalho apresenta a especificação técnica, a arquitetura e os resultados práticos da validação de uma plataforma de monitoramento e observabilidade voltada à inspeção contínua de hardware e rastreamento de desempenho de aplicações (APM – <em>Application Performance Monitoring</em>). A indisponibilidade de sistemas e o diagnóstico tardio de sobrecargas de hardware motivaram o desenvolvimento de uma arquitetura híbrida e distribuída. O sistema combina coletores locais baseados no padrão Prometheus Node Exporter, WMI (<em>Windows Management Instrumentation</em>) e utilitário de leitura direta de aceleradores gráficos com a plataforma em nuvem Sentry APM. Para comprovar a eficácia prática da solução em laboratório, foram realizados ensaios empíricos no computador de desenvolvimento, validando o comportamento sob condições nominais (CPU 10%, RAM 73%, Disco 79%, GPU 37%) e sob sobrecarga crítica (>90% de GPU e RAM). Os testes demonstraram a precisão dos gráficos temporais, a sensibilidade da máquina de estados com trava de resfriamento (<em>cooldown</em> de 45 segundos) e o registro forense das ocorrências no Sentry, cumprindo integralmente os objetivos estabelecidos na proposta inicial.
     </p>
     <p class="no-indent" style="margin-top: 24pt;">
       <strong>Palavras-chave:</strong> Observabilidade. Telemetria de Hardware. Application Performance Monitoring (APM). Sentry. Auto-Discovery. Projeto Interdisciplinar.
@@ -407,7 +402,6 @@ const htmlContent = `<!DOCTYPE html>
     <div class="toc-item" style="padding-left: 12pt;"><span>6.1 Confronto entre Objetivos Planejados e Entregas Realizadas</span><span class="toc-dots"></span><span>17</span></div>
     <div class="toc-item" style="padding-left: 12pt;"><span>6.2 Trabalhos Futuros</span><span class="toc-dots"></span><span>18</span></div>
     <div class="toc-item bold"><span>REFERÊNCIAS</span><span class="toc-dots"></span><span>19</span></div>
-    
   </div>
 
   <!-- ==================== PÁGINA 6: INTRODUÇÃO E OBJETIVOS ==================== -->
@@ -421,7 +415,7 @@ const htmlContent = `<!DOCTYPE html>
       Na primeira etapa desta pesquisa, realizou-se um levantamento comparativo de ferramentas de APM (<em>Application Performance Monitoring</em>). Observou-se que soluções tradicionais como o Datadog impõem altos custos por host monitorado (aproximadamente US$ 46/mês combinando APM e infraestrutura) com cobrança pelo pico mensal (<em>high-water mark</em>). Por outro lado, ferramentas como o Better Stack concentram sua atuação em checagens externas sintéticas (HTTP/Ping), sem realizar a instrumentação profunda do código frontend.
     </p>
     <p>
-      Para atender aos requisitos da disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas da Universidade Tuiuti do Paraná (UTP), desenvolvemos o <strong>WatchFlow</strong>. A plataforma integra telemetria direta de hardware local (sem necessidade de cadastros manuais) a uma aplicação web moderna em React e TypeScript, conectando os eventos críticos à plataforma corporativa <strong>Sentry APM</strong>.
+      Para atender aos requisitos da disciplina de Projeto Interdisciplinar: Monitoramento de Sistemas da Universidade Tuiuti do Paraná (UTP), desenvolvemos uma plataforma de observabilidade sob medida. O sistema integra telemetria direta de hardware local (sem necessidade de cadastros manuais) a uma aplicação web moderna em React e TypeScript, conectando os eventos críticos à plataforma corporativa <strong>Sentry APM</strong>.
     </p>
 
     <h1 class="primary-title">2 OBJETIVOS DO PROJETO</h1>
@@ -442,55 +436,18 @@ const htmlContent = `<!DOCTYPE html>
     </ol>
   </div>
 
-  <!-- ==================== PÁGINA 7: TOPOLOGIA E ARQUITETURA ==================== -->
+  <!-- ==================== PÁGINA 7: TOPOLOGIA E ARQUITETURA (HTML DIAGRAM) ==================== -->
   <div class="page">
     <div class="page-number">7</div>
     <h1 class="primary-title">3 ARQUITETURA TÉCNICA E FLUXO DE MONITORAMENTO</h1>
     <h2 class="secondary-title">3.1 Topologia Distribuída e Auto-Discovery</h2>
     <p>
-      O WatchFlow adota uma topologia híbrida de monitoramento. Em vez de exigir que o operador cadastre manualmente endereços IP em formulários estáticos, o nó local reporta suas métricas continuamente para a interface analítica em ciclos regulares de 2000 milissegundos:
+      O sistema adota uma topologia híbrida de monitoramento. Em vez de exigir cadastros manuais de endereços IP em formulários estáticos, o nó local reporta suas métricas continuamente para a interface analítica em ciclos regulares de 2000 milissegundos:
     </p>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 1 – Topologia da Arquitetura Distribuída e Fluxo de Telemetria</div>
-      <pre>
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              HOST MONITORADO (MÁQUINA LOCAL)                           │
-│                                                                                        │
-│   ┌────────────────────┐   ┌──────────────────────┐   ┌────────────────────────────┐   │
-│   │   SO: Windows 11   │   │  Driver Gráfico/GPU  │   │  Prometheus Node Exporter  │   │
-│   │   WMI / os.cpus()  │   │      nvidia-smi      │   │        Porta :9100         │   │
-│   └─────────┬──────────┘   └──────────┬───────────┘   └─────────────┬──────────────┘   │
-│             │                         │                             │                  │
-│             ▼                         ▼                             ▼                  │
-│   ┌────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                     WatchFlow Telemetry Engine (Vite Dev API)                  │   │
-│   │                   Endpoints: /api/system-metrics • /__local/...                │   │
-│   └───────────────────────────────────────┬────────────────────────────────────────┘   │
-└───────────────────────────────────────────┼────────────────────────────────────────────┘
-                                            │ HTTP GET (Polling a cada 2000 ms)
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              FRONTEND ANALÍTICO (REACT / VITE)                         │
-│                                                                                        │
-│   ┌──────────────────────────────────┐      ┌──────────────────────────────────────┐   │
-│   │  Serviço de Polling e Descoberta │ ───► │  Máquina de Estados & Cooldown (45s) │   │
-│   │       (deviceService.ts)         │      │  Detecção de Limiar Crítico > 90%    │   │
-│   └─────────────────┬────────────────┘      └──────────────────┬───────────────────┘   │
-│                     │                                          │                       │
-│                     ▼                                          ▼                       │
-│   ┌──────────────────────────────────┐      ┌──────────────────────────────────────┐   │
-│   │  Interface Visual (UI / Toasts)  │      │  Disparo Seguro Sentry APM           │   │
-│   │  Cards de Hardware e Gráficos    │      │  Tags: resource, host, severidade    │   │
-│   └──────────────────────────────────┘      └──────────────────┬───────────────────┘   │
-└────────────────────────────────────────────────────────────────┼───────────────────────┘
-                                                                 │ HTTPS (Eventos e Traces)
-                                                                 ▼
-                                              ┌──────────────────────────────────────┐
-                                              │    Sentry Cloud APM (SaaS Oficial)   │
-                                              │    watchflow.sentry.io/issues        │
-                                              └──────────────────────────────────────┘
-      </pre>
+      ${figura1Html}
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
     </div>
     <p>
@@ -513,7 +470,7 @@ const htmlContent = `<!DOCTYPE html>
 
     <h2 class="secondary-title">3.3 Infraestrutura Física e Configuração do Laboratório</h2>
     <p>
-      Os ensaios práticos e a validação do WatchFlow foram conduzidos no computador de desenvolvimento, cujas especificações representam uma máquina real de trabalho:
+      Os ensaios práticos e a validação foram conduzidos no computador de desenvolvimento, cujas especificações representam uma máquina real de trabalho:
     </p>
     <ul>
       <li><strong>Processador (CPU):</strong> AMD Ryzen 7 5700X (8 núcleos físicos, 16 threads, frequência de 3.4 GHz a 4.6 GHz);</li>
@@ -585,12 +542,12 @@ const htmlContent = `<!DOCTYPE html>
     </p>
   </div>
 
-  <!-- ==================== PÁGINA 10: MÁQUINA DE ESTADOS E COOLDOWN ==================== -->
+  <!-- ==================== PÁGINA 10: MÁQUINA DE ESTADOS (HTML DIAGRAM) ==================== -->
   <div class="page">
     <div class="page-number">10</div>
     <h2 class="secondary-title">4.3 Engenharia de Alertas, Cooldown e Máquina de Estados</h2>
     <p>
-      Um obstáculo prático identificado durante os primeiros ensaios foi o risco de saturação da API do Sentry. Como o coletor do WatchFlow consulta o nó a cada 2000 milissegundos, caso a máquina sofresse uma sobrecarga sustentada de 5 minutos, seriam enviados 150 chamados sucessivos, gerando bloqueio por taxa de requisição (<em>rate-limit</em>) e esgotamento da cota gratuita da conta.
+      Um obstáculo prático identificado durante os primeiros ensaios foi o risco de saturação da API do Sentry. Como o coletor consulta o nó a cada 2000 milissegundos, caso a máquina sofresse uma sobrecarga sustentada de 5 minutos, seriam enviados 150 chamados sucessivos, gerando bloqueio por taxa de requisição (<em>rate-limit</em>) e esgotamento da cota gratuita da conta.
     </p>
     <p>
       Para solucionar esse problema, projetamos uma <strong>Máquina de Estados Finita com Trava de Resfriamento (*Cooldown*) de 45 segundos</strong> no módulo <code>deviceService.ts</code>:
@@ -598,33 +555,7 @@ const htmlContent = `<!DOCTYPE html>
 
     <div class="figure-box">
       <div class="figure-caption-top">FIGURA 2 – Máquina de Estados Finita do Motor de Alertas e Auto-Recovery</div>
-      <pre>
-             ┌─────────────────────────────────────────────────────────┐
-             │                     ESTADO: ONLINE                      │
-             │              (Métricas nominais: todas <= 90%)          │
-             └────────────────────────────┬────────────────────────────┘
-                                          │
-                                          │ Evento: Alguma métrica (CPU, RAM, GPU) > 90%
-                                          │ Ação: Dispara Toast Crítico + Sentry Issue Fatal
-                                          │       Inicia Temporizador de Cooldown (45 segundos)
-                                          ▼
-             ┌─────────────────────────────────────────────────────────┐
-             │                    ESTADO: CRITICAL                     │
-             │                (Limiar crítico violado)                 │
-             └────────────────────────────┬────────────────────────────┘
-                                          │
-                   ┌──────────────────────┴──────────────────────┐
-                   │                                             │
-                   │ Métrica continua > 90%                      │ Todas as métricas retornam a <= 90%
-                   │ e Tempo < 45s                               │
-                   ▼                                             ▼
-┌──────────────────────────────────────┐       ┌──────────────────────────────────────┐
-│       BLOQUEIO ANTI-SPAM             │       │         MECANISMO DE AUTO-RECOVERY   │
-│  (Mantém alerta visual, mas inibe    │       │  Ação: Emite Toast Verde de Sucesso  │
-│   novos envios ao Sentry APM)        │       │        Resolve o Incidente no Painel │
-└──────────────────────────────────────┘       │        Transita de volta para ONLINE │
-                                               └──────────────────────────────────────┘
-      </pre>
+      ${figura2Html}
       <div class="figure-source-bottom">FONTE: os próprios autores, 2026.</div>
     </div>
     <p>
@@ -691,7 +622,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
 
     <h2 class="secondary-title">5.1 Ensaio 1: Descoberta e Telemetria em Repouso</h2>
     <p>
-      Ao iniciar o WatchFlow, o nó <code>srv-local-pc</code> (127.0.0.1, Windows 11 x86_64) foi detectado automaticamente, apresentando os contadores de CPU, RAM, Disco e GPU em condição nominal de operação:
+      Ao iniciar os serviços, o nó <code>srv-local-pc</code> (127.0.0.1, Windows 11 x86_64) foi detectado automaticamente, apresentando os contadores de CPU, RAM, Disco e GPU em condição nominal de operação:
     </p>
 
     <div class="figure-box">
@@ -710,7 +641,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     <div class="page-number">13</div>
     <h2 class="secondary-title">5.2 Ensaio 2: Séries Temporais e Visualização Gráfica</h2>
     <p>
-      No módulo analítico de Métricas (<code>/metrics</code>), o WatchFlow oferece gráficos contínuos de séries temporais desenvolvidos com a biblioteca Recharts, exibindo os dados históricos de desempenho do host selecionado:
+      No módulo analítico de Métricas (<code>/metrics</code>), o sistema oferece gráficos contínuos de séries temporais desenvolvidos com a biblioteca Recharts, exibindo os dados históricos de desempenho do host selecionado:
     </p>
 
     <div class="figure-box">
@@ -739,7 +670,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     </div>
 
     <p>
-      <em>Análise do Ensaio:</em> Ao atingir <strong>94%</strong> de memória física RAM e <strong>96%</strong> de utilização do acelerador gráfico GPU, o WatchFlow identificou imediatamente a violação do limiar de 90%, comutando o distintivo do host para <strong><code>CRITICAL</code></strong> em vermelho e disparando a barra de GPU em destaque de alerta.
+      <em>Análise do Ensaio:</em> Ao atingir <strong>94%</strong> de memória física RAM e <strong>96%</strong> de utilização do acelerador gráfico GPU, o sistema identificou imediatamente a violação do limiar de 90%, comutando o distintivo do host para <strong><code>CRITICAL</code></strong> em vermelho e disparando a barra de GPU em destaque de alerta.
     </p>
   </div>
 
@@ -839,7 +770,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     <div class="page-number">18</div>
     <h2 class="secondary-title">6.2 Trabalhos Futuros</h2>
     <p>
-      Como propostas de expansão e evolução do WatchFlow em etapas futuras do curso de Análise e Desenvolvimento de Sistemas, sugerem-se as seguintes frentes de pesquisa:
+      Como propostas de expansão e evolução em etapas futuras do curso de Análise e Desenvolvimento de Sistemas, sugerem-se as seguintes frentes de pesquisa:
     </p>
     <ul>
       <li><strong>Suporte a Múltiplos Nós em Clusters:</strong> Empacotar os coletores locais em contêineres Docker para facilitar a distribuição e o monitoramento centralizado de múltiplos computadores na rede acadêmica;</li>
@@ -922,7 +853,7 @@ function checkAndDispatchAlert(device: MonitoredDevice, metric: string, value: n
     </div>
   </div>
 
-  </body>
+</body>
 </html>
 `;
 
