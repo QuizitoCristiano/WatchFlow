@@ -308,8 +308,8 @@ export const AlertsPage: React.FC = () => {
               onChange={(e) => setFilterSeverity(e.target.value)}
               className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-orange-500"
             >
-              <option value="all">Todas as Severidades</option>
-              <option value="critical">Crítico</option>
+              <option value="all">{t('Todas as Severidades')}</option>
+              <option value="critical">{t('Crítico')}</option>
               <option value="warning">Warning</option>
               <option value="info">Info</option>
             </select>
@@ -424,14 +424,14 @@ export const AlertsPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Activity size={16} className="text-blue-500" />
-                  <span className="text-zinc-400">Métrica:</span>
+                  <span className="text-zinc-400">{t('Métrica:')}</span>
                   <span className="font-semibold text-white ml-auto">
                     {selectedAlert.metricTriggered ? `${selectedAlert.metricTriggered.metric} (${selectedAlert.metricTriggered.value})` : 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Clock size={16} className="text-emerald-500" />
-                  <span className="text-zinc-400">Primeira Ocorrência:</span>
+                  <span className="text-zinc-400">{t('Primeira Ocorrência:')}</span>
                   <span className="font-mono text-xs text-zinc-300 ml-auto">
                     {formatDate(selectedAlert.firstDetectedAt)} {formatTime(selectedAlert.firstDetectedAt)}
                   </span>
