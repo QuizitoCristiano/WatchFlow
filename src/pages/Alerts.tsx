@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { 
   collection, 
@@ -52,7 +52,11 @@ export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid ?? '';
   const [alertsState, setAlertsState] = useState<{ userId: string; items: Alert[] } | null>(null);
-  const alerts = alertsState?.userId === userId ? alertsState.items : [];
+  const [localRevision, setLocalRevision] = useState(0);
+  const localAlerts = useMemo(() => getStoredLocalAlerts(userId), [userId, localRevision]);
+  const alerts = isFirebaseConfigured && db
+    ? (userId && alertsState?.userId === userId ? alertsState.items : [])
+    : localAlerts;
   const [selectedAlertState, setSelectedAlertState] = useState<{ userId: string; alert: Alert } | null>(null);
   const selectedAlert = selectedAlertState?.userId === userId ? selectedAlertState.alert : null;
   const setSelectedAlert = (alert: Alert | null) => {
@@ -63,8 +67,8 @@ export const AlertsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const refreshAlerts = useCallback(() => {
-    setAlertsState({ userId, items: getStoredLocalAlerts(userId) });
-  }, [userId]);
+    setLocalRevision((revision) => revision + 1);
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -86,8 +90,7 @@ export const AlertsPage: React.FC = () => {
       });
     }
 
-    // Local development data is isolated by the authenticated local account ID.
-    refreshAlerts();
+    // Local development data is read from the current account's own storage key.
     window.addEventListener('wf_alerts_updated', refreshAlerts);
     window.addEventListener('storage', refreshAlerts);
     return () => {
@@ -129,8 +132,8 @@ export const AlertsPage: React.FC = () => {
     }
 
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
-    setAlertsState({ userId, items: updated });
     localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
+    setLocalRevision((revision) => revision + 1);
     toast.info('Alerta reconhecido pela equipe de monitoramento.');
   };
 
