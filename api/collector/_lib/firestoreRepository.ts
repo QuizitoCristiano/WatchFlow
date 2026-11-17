@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
 import {
   FieldValue,
   Timestamp,
+  type DocumentReference,
   type DocumentSnapshot,
   type Firestore,
+  type Transaction,
 } from 'firebase-admin/firestore';
 import { HttpError } from './errors.ts';
 import type {
@@ -125,8 +128,8 @@ function alertReference(db: Firestore, userId: string, deviceId: string, type: A
 }
 
 function updateMetricAlert(
-  transaction: FirebaseFirestore.Transaction,
-  reference: FirebaseFirestore.DocumentReference,
+  transaction: Transaction,
+  reference: DocumentReference,
   snapshot: DocumentSnapshot,
   identity: CollectorIdentity,
   deviceName: string,
@@ -378,7 +381,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           integrationId: identity.integrationId,
           hostname: typeof integration.name === 'string' ? integration.name : identity.deviceId,
           ip: host,
-          status: 'online',
+          status: alertMetrics.some((metric) => metric.value >= 90) ? 'critical' :
+            alertMetrics.some((metric) => metric.value >= 80) ? 'warning' : 'online',
           isDemoData: false,
           lastSeen: Timestamp.fromDate(now),
           updatedAt: FieldValue.serverTimestamp(),
