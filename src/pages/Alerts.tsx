@@ -136,7 +136,7 @@ export const AlertsPage: React.FC = () => {
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
     localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
     setLocalRevision((revision) => revision + 1);
-    toast.info('Alerta reconhecido pela equipe de monitoramento.');
+    toast.info(t('Alerta reconhecido pela equipe de monitoramento.'));
   };
 
   // Firestore remains the source of truth when a Firebase session is active.
@@ -150,7 +150,7 @@ export const AlertsPage: React.FC = () => {
         });
         toast.success('Alerta resolvido com sucesso!');
       } catch {
-        toast.error('Não foi possível resolver o alerta. Verifique suas permissões.');
+        toast.error(t('Não foi possível resolver o alerta. Verifique suas permissões.'));
       }
       return;
     }
@@ -181,7 +181,7 @@ export const AlertsPage: React.FC = () => {
         await batch.commit();
         toast.success(`${snapshot.size} alerta(s) resolvido(s).`);
       } catch {
-        toast.error('Não foi possível resolver os alertas.');
+        toast.error(t('Não foi possível resolver os alertas.'));
       }
       return;
     }
@@ -190,18 +190,18 @@ export const AlertsPage: React.FC = () => {
     localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
     setLocalRevision((revision) => revision + 1);
     window.dispatchEvent(new Event('wf_alerts_updated'));
-    toast.success('Todos os incidentes foram marcados como resolvidos.');
+    toast.success(t('Todos os incidentes foram marcados como resolvidos.'));
   };
 
   // Persistent incident history is retained for auditability in the MVP.
   const handleClearHistory = () => {
     if (isFirebaseConfigured && db && user?.uid) {
-      toast.info('O histórico persistido é mantido para auditoria.');
+      toast.info(t('O histórico persistido é mantido para auditoria.'));
       return;
     }
     localStorage.removeItem(localAlertsKey(userId));
     window.dispatchEvent(new Event('wf_alerts_updated'));
-    toast.info('Histórico local de alertas foi limpo.');
+    toast.info(t('Histórico local de alertas foi limpo.'));
   };
 
 
