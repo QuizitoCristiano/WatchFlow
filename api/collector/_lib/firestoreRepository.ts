@@ -8,6 +8,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import { HttpError } from './errors.ts';
+import { getMetricSeverity } from './alertPolicy.ts';
 import type {
   AuthenticatedCollector,
   CollectorIdentity,
@@ -137,7 +138,7 @@ function updateMetricAlert(
   now: Date,
 ): void {
   const previous = getRecord(snapshot.data());
-  const severity = metric.value >= 90 ? 'critical' : metric.value >= 80 ? 'warning' : null;
+  const severity = getMetricSeverity(metric.value);
 
   if (!severity) {
     if (previous.status === 'active' || previous.status === 'acknowledged') {
