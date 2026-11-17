@@ -116,6 +116,66 @@ function metricDocument(sample: SuccessfulSample): DocumentData {
   return result;
 }
 
+type AlertMetric = { type: 'CPU_HIGH' | 'RAM_HIGH' | 'DISK_HIGH'; metric: string; value: number };
+
+function alertReference(db: Firestore, userId: string, deviceId: string, type: AlertMetric['type']) {
+  // Hashing creates a stable Firestore-safe ID without exposing identifiers in document names.
+  const id = createHash('sha256').update(`${userId}:${deviceId}:${type}`).digest('hex');
+  return db.doc(`alerts/collector-${id}`);
+}
+
+function updateMetricAlert(
+  transaction: FirebaseFirestore.Transaction,
+  reference: FirebaseFirestore.DocumentReference,
+  snapshot: DocumentSnapshot,
+  identity: CollectorIdentity,
+  deviceName: string,
+  metric: AlertMetric,
+  now: Date,
+): void {
+  const previous = getRecord(snapshot.data());
+  const severity = metric.value >= 90 ? 'critical' : metric.value >= 80 ? 'warning' : null;
+
+  if (!severity) {
+    if (previous.status === 'active' || previous.status === 'acknowledged') {
+      transaction.set(reference, {
+        status: 'resolved',
+        resolvedAt: Timestamp.fromDate(now),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    return;
+  }
+
+  const wasOpen = previous.status === 'active' || previous.status === 'acknowledged';
+  const threshold = severity === 'critical' ? 90 : 80;
+  transaction.set(reference, {
+    userId: identity.userId,
+    deviceId: identity.deviceId,
+    integrationId: identity.integrationId,
+    deviceName,
+    type: metric.type,
+    title: `${metric.metric}: uso elevado`,
+    description: `${metric.metric} está em ${metric.value.toFixed(1)}% (limite de atenção: 80%; crítico: 90%).`,
+    severity,
+    status: wasOpen && previous.status === 'acknowledged' ? 'acknowledged' : 'active',
+    isDemoData: false,
+    metricTriggered: {
+      metric: metric.metric,
+      value: Number(metric.value.toFixed(2)),
+      threshold,
+      operator: '>' as const,
+    },
+    firstDetectedAt: wasOpen && previous.firstDetectedAt instanceof Timestamp
+      ? previous.firstDetectedAt
+      : Timestamp.fromDate(now),
+    lastDetectedAt: Timestamp.fromDate(now),
+    resolvedAt: null,
+    createdAt: wasOpen && previous.createdAt ? previous.createdAt : FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
 function integrationReference(db: Firestore, identity: CollectorIdentity) {
   return db.doc(`users/${identity.userId}/integrations/${identity.integrationId}`);
 }
@@ -255,14 +315,25 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
       const deviceRef = db.doc(`users/${identity.userId}/devices/${identity.deviceId}`);
       const metricRef = deviceRef.collection('metrics').doc(sample.sampleId);
       const credentialRef = credentialReference(db, tokenHash);
+      const diskPercent = sample.filesystems.reduce((sum, filesystem) => sum + filesystem.usedBytes, 0) /
+        sample.filesystems.reduce((sum, filesystem) => sum + filesystem.totalBytes, 0) * 100;
+      const alertMetrics: AlertMetric[] = [
+        { type: 'CPU_HIGH', metric: 'CPU', value: sample.cpuUsagePercent },
+        { type: 'RAM_HIGH', metric: 'RAM', value: sample.memoryUsagePercent },
+        { type: 'DISK_HIGH', metric: 'Disco', value: diskPercent },
+      ];
+      const alertRefs = alertMetrics.map((metric) => alertReference(db, identity.userId, identity.deviceId, metric.type));
 
       return db.runTransaction(async (transaction) => {
-        const [integrationSnapshot, deviceSnapshot, metricSnapshot, credentialSnapshot] = await Promise.all([
+        const snapshots = await Promise.all([
           transaction.get(integrationRef),
           transaction.get(deviceRef),
           transaction.get(metricRef),
           transaction.get(credentialRef),
+          ...alertRefs.map((reference) => transaction.get(reference)),
         ]);
+        const [integrationSnapshot, deviceSnapshot, metricSnapshot, credentialSnapshot] = snapshots;
+        const alertSnapshots = snapshots.slice(4);
         const integration = ensureOwner(integrationSnapshot, identity);
         const credential = ensureCredential(credentialSnapshot, identity, now);
         if (metricSnapshot.exists) {
@@ -338,6 +409,19 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           lastSuccessAt: Timestamp.fromDate(now),
           lastSync: Timestamp.fromDate(now),
           lastError: null,
+        });
+
+        // Alert lifecycle is evaluated in the same transaction as the metric write.
+        alertMetrics.forEach((metric, index) => {
+          updateMetricAlert(
+            transaction,
+            alertRefs[index],
+            alertSnapshots[index],
+            identity,
+            typeof integration.name === 'string' ? integration.name : identity.deviceId,
+            metric,
+            now,
+          );
         });
         return 'stored';
       });
