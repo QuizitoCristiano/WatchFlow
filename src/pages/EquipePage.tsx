@@ -12,6 +12,7 @@ import {
   Zap,
   X
 } from 'lucide-react';
+import { useI18n } from '@/i18n/useI18n';
 import Quizito from "../imagem/quizito.jpeg"
 
 interface TeamMember {
@@ -58,7 +59,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro3',
     name: 'Nome do Integrante',
-    role: 'Documentação & Engenharia de Requisitos',
+    role: t('Documentação & Engenharia de Requisitos'),
     photoUrl: '',
     responsibilities: [
       'Levantamento das Regras de Negócio (RNs)',
@@ -73,7 +74,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro4',
     name: 'Nome do Integrante',
-    role: 'Garantia de Qualidade (QA) & Testes',
+    role: t('Garantia de Qualidade (QA) & Testes'),
     photoUrl: '',
     responsibilities: [
       'Validação dos Fluxos de Navegação',
@@ -96,6 +97,7 @@ const STACK_TECHNOLOGIES = [
 ];
 
 export const EquipePage: React.FC = () => {
+  const { t } = useI18n();
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
   // Fechar o modal com a tecla ESC
@@ -114,11 +116,8 @@ export const EquipePage: React.FC = () => {
       <div className="relative overflow-hidden bg-gradient-to-r from-zinc-900 via-zinc-900 to-orange-950/40 border border-zinc-800 rounded-2xl p-8 md:p-10">
         <div className="max-w-3xl space-y-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20">
-            <Users className="w-3.5 h-3.5" /> Projeto Acadêmico WatchFlow
-          </span>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Nossa Equipe & Arquitetura
-          </h1>
+            <Users className="w-3.5 h-3.5" />{t('Projeto Acadêmico WatchFlow')}</span>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{t('Nossa Equipe & Arquitetura')}</h1>
           <p className="text-gray-300 text-base md:text-lg leading-relaxed">
             "Desenvolvendo soluções para monitoramento, observabilidade e gestão inteligente de ambientes de TI."
           </p>
@@ -128,10 +127,9 @@ export const EquipePage: React.FC = () => {
       {/* SOBRE O PROJETO */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 md:p-8 space-y-4">
         <h2 className="text-xl font-bold flex items-center gap-2 text-white">
-          <Monitor className="text-orange-500 w-5 h-5" /> Sobre o Projeto
-        </h2>
+          <Monitor className="text-orange-500 w-5 h-5" />{t('Sobre o Projeto')}</h2>
         <p className="text-gray-300 leading-relaxed text-sm md:text-base">
-          O <strong>WatchFlow</strong> foi desenvolvido como projeto acadêmico com o objetivo de centralizar o monitoramento de infraestrutura de TI utilizando o ecossistema Serverless do <strong>Firebase</strong>. A plataforma reúne dados operacionais em um único painel em tempo real, permitindo acompanhar a saúde de servidores e dispositivos, gerenciar alertas críticos e analisar histórico de métricas com rapidez e precisão.
+          O <strong>WatchFlow</strong>{t('foi desenvolvido como projeto acadêmico com o objetivo de centralizar o monitoramento de infraestrutura de TI utilizando o ecossistema Serverless do')}<strong>Firebase</strong>. A plataforma reúne dados operacionais em um único painel em tempo real, permitindo acompanhar a saúde de servidores e dispositivos, gerenciar alertas críticos e analisar histórico de métricas com rapidez e precisão.
         </p>
       </div>
 
@@ -139,9 +137,8 @@ export const EquipePage: React.FC = () => {
       <div className="space-y-6">
         <div className="border-b border-zinc-800 pb-3">
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Users className="text-orange-500 w-5 h-5" /> Divisão de Responsabilidades
-          </h2>
-          <p className="text-xs text-gray-400">Clique na foto do integrante para visualizar em tamanho ampliado</p>
+            <Users className="text-orange-500 w-5 h-5" />{t('Divisão de Responsabilidades')}</h2>
+          <p className="text-xs text-gray-400">{t('Clique na foto do integrante para visualizar em tamanho ampliado')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -182,9 +179,7 @@ export const EquipePage: React.FC = () => {
 
                 {/* Lista de Responsabilidades */}
                 <div className="space-y-2 pt-2">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Principais Atividades:
-                  </span>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('Principais Atividades:')}</span>
                   <ul className="space-y-1.5 text-xs text-gray-300">
                     {member.responsibilities.map((resp, idx) => (
                       <li key={idx} className="flex items-start gap-2">
@@ -238,7 +233,7 @@ export const EquipePage: React.FC = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Cpu className="text-orange-500 w-5 h-5" /> Stack Tecnológico
           </h2>
-          <p className="text-xs text-gray-400">Tecnologias de ponta utilizadas na construção da aplicação</p>
+          <p className="text-xs text-gray-400">{t('Tecnologias de ponta utilizadas na construção da aplicação')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -265,32 +260,32 @@ export const EquipePage: React.FC = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Layers className="text-orange-500 w-5 h-5" /> Fluxo de Arquitetura
           </h2>
-          <p className="text-xs text-gray-400">Como os dados transitam entre os agentes e a interface</p>
+          <p className="text-xs text-gray-400">{t('Como os dados transitam entre os agentes e a interface')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
           <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2">
             <span className="text-xs text-orange-400 font-semibold uppercase">1. Origem dos Dados</span>
-            <h4 className="text-sm font-bold text-white">Agente / Telegraf / Coletor</h4>
-            <p className="text-[11px] text-gray-500">Coleta CPU, RAM, Disco e Tráfego dos Servidores</p>
+            <h4 className="text-sm font-bold text-white">{t('Agente / Telegraf / Coletor')}</h4>
+            <p className="text-[11px] text-gray-500">{t('Coleta CPU, RAM, Disco e Tráfego dos Servidores')}</p>
           </div>
 
           <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2">
             <span className="text-xs text-amber-400 font-semibold uppercase">2. Armazenamento</span>
             <h4 className="text-sm font-bold text-white">Cloud Firestore</h4>
-            <p className="text-[11px] text-gray-500">Documentos em tempo real (`devices` e `metrics`)</p>
+            <p className="text-[11px] text-gray-500">{t('Documentos em tempo real (`devices` e `metrics`)')}</p>
           </div>
 
           <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2">
             <span className="text-xs text-blue-400 font-semibold uppercase">3. Autenticação</span>
             <h4 className="text-sm font-bold text-white">Firebase Auth</h4>
-            <p className="text-[11px] text-gray-500">Validação e isolamento por conta de usuário (UID)</p>
+            <p className="text-[11px] text-gray-500">{t('Validação e isolamento por conta de usuário (UID)')}</p>
           </div>
 
           <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2">
             <span className="text-xs text-emerald-400 font-semibold uppercase">4. Apresentação</span>
             <h4 className="text-sm font-bold text-white">Dashboard WatchFlow</h4>
-            <p className="text-[11px] text-gray-500">Interface em React atualizada em tempo real</p>
+            <p className="text-[11px] text-gray-500">{t('Interface em React atualizada em tempo real')}</p>
           </div>
         </div>
       </div>
@@ -323,7 +318,7 @@ export const EquipePage: React.FC = () => {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-orange-500 font-bold text-5xl">
                   {selectedMember.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                  <span className="text-xs text-gray-500 font-normal mt-4">Sem foto cadastrada</span>
+                  <span className="text-xs text-gray-500 font-normal mt-4">{t('Sem foto cadastrada')}</span>
                 </div>
               )}
             </div>
