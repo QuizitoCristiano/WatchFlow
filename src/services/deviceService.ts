@@ -7,6 +7,8 @@ import {
   onSnapshot,
   doc,
   deleteDoc,
+  setDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 
 function localDevicesKey(userId: string): string {
@@ -44,6 +46,49 @@ export const getDevicesRef = (userId: string) => {
   assertUserScope(userId);
   if (!isFirebaseConfigured || !db) return null;
   return collection(db, 'users', userId, 'devices');
+};
+
+/**
+ * Registra o navegador atual como dispositivo de demonstração da integração Sentry.
+ * Não inventa métricas físicas: CPU, RAM, disco e GPU dependem de um agente local.
+ */
+export const registerBrowserDevice = async (userId: string) => {
+  assertUserScope(userId);
+
+  const now = new Date().toISOString();
+  const deviceId = 'sentry-browser-local';
+  const device: Device = {
+    id: deviceId,
+    userId,
+    integrationId: 'sentry-browser',
+    hostname: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 80) : 'Navegador local',
+    ip: 'Não disponibilizado pelo navegador',
+    os: {
+      distro: typeof navigator !== 'undefined' ? navigator.platform || 'Sistema não identificado' : 'N/A',
+      hostname: 'Dispositivo conectado via navegador',
+    },
+    status: 'online',
+    isDemoData: true,
+    lastSeen: now,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (isFirebaseConfigured && db) {
+    const deviceRef = doc(db, 'users', userId, 'devices', deviceId);
+    await setDoc(deviceRef, {
+      ...device,
+      lastSeen: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return deviceId;
+  }
+
+  const devices = readLocalDevices(userId).filter((item) => item.id !== deviceId);
+  devices.push(device);
+  writeLocalDevices(userId, devices);
+  return deviceId;
 };
 
 /**
