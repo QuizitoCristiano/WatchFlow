@@ -153,10 +153,11 @@ export const subscribeToIntegrations = (
   if (isFirebaseConfigured && db) {
     const integrationsQuery = query(getIntegrationsCollection(userId)!, orderBy('createdAt', 'desc'));
     return onSnapshot(integrationsQuery, (snapshot) => {
-      callback(snapshot.docs.map((document) => ({
+      const integrations = snapshot.docs.map((document) => ({
         id: document.id,
-        ...document.data(),
-      })).filter((item) => item.userId === userId) as Integration[]);
+        ...(document.data() as Omit<Integration, 'id'>),
+      }));
+      callback(integrations.filter((integration) => integration.userId === userId));
     }, (error) => onError?.(error));
   }
 
