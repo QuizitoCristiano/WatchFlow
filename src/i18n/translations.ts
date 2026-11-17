@@ -254,9 +254,29 @@ const en: Record<string, string> = {
   'Demonstração do coletor local': 'Local Collector Demo',
   'Node Exporter · leitura real, sem persistência': 'Node Exporter · live read, no persistence',
   'Consultando e calculando duas amostras...': 'Fetching and calculating two samples...',
+  'Desenvolvedor Full Stack & Arquiteto': 'Full Stack Developer & Architect',
+  'UI/UX Designer & Frontend': 'UI/UX Designer & Frontend',
+  'Agente Local': 'Local Agent',
+  'Ativo': 'Active',
+  'Reconhecido': 'Acknowledged',
+  'Resolvido': 'Resolved',
+  'Crítico': 'Critical',
+  'Atenção': 'Warning',
+  'Informativo': 'Informational',
+  'CPU: uso elevado': 'CPU: high usage',
+  'RAM: uso elevado': 'RAM: high usage',
+  'Disco: uso elevado': 'Disk: high usage',
+  'CPU está em': 'CPU is at',
+  'RAM está em': 'RAM is at',
+  'Disco está em': 'Disk is at',
 };
 
 export function translate(language: SupportedLanguage, value: string): string {
   if (language === 'pt-BR') return value;
+  const metricDescription = value.match(/^(CPU|RAM|Disco) está em ([0-9]+(?:\\.[0-9]+)?)% \\(limite de atenção: 80%; crítico: 90%\\)\\.$/);
+  if (metricDescription) {
+    const metric = metricDescription[1] === 'Disco' ? 'Disk' : metricDescription[1];
+    return `${metric} is at ${metricDescription[2]}% (warning threshold: 80%; critical: 90%).`;
+  }
   return en[value] ?? value;
 }
