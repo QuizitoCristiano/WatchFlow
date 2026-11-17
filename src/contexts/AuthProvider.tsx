@@ -31,8 +31,8 @@ function createLocalUser(email: string): User {
 }
 
 function requireDevelopmentFallback(): void {
-  if (import.meta.env.PROD) {
-    throw new Error("Autenticação indisponível: configure o Firebase antes de publicar o WatchFlow.");
+  if (import.meta.env.PROD || isFirebaseConfigured) {
+    throw new Error("Firebase está configurado, mas a autenticação não foi inicializada. Verifique as variáveis e a conexão.");
   }
 }
 
