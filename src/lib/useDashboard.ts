@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import type { Alert, DashboardMetricPoint, DashboardSummary, Device } from '@/types';
 import { dashboardService } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/useAuth';
+import { usePreferences } from '@/contexts/PreferencesProvider';
 
 export const useDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
+  const { preferences } = usePreferences();
   const userId = user?.uid ?? null;
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [dashboardData, setDashboardData] = useState<{
@@ -127,9 +129,9 @@ export const useDashboard = () => {
     if (authLoading || !userId) return;
     const refreshTimer = window.setInterval(() => {
       setRefreshVersion((version) => version + 1);
-    }, 60_000);
+    }, preferences.monitoring.refreshInterval * 1000);
     return () => window.clearInterval(refreshTimer);
-  }, [authLoading, userId]);
+  }, [authLoading, userId, preferences.monitoring.refreshInterval]);
 
   const hasCurrentUserData = userId !== null &&
     dashboardData?.userId === userId &&
