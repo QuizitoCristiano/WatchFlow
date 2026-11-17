@@ -1,5 +1,5 @@
 import { useDashboard } from "@/lib/useDashboard";
-import { usePreferences } from "@/contexts/PreferencesProvider";
+import { usePreferences } from "@/contexts/usePreferences";
 import { 
     Cpu, 
     HardDrive, 
