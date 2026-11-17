@@ -6,8 +6,11 @@ import {
   where, 
   onSnapshot, 
   doc, 
-  updateDoc, 
-  serverTimestamp 
+  updateDoc,
+  serverTimestamp,
+  getDocs,
+  writeBatch,
+  limit 
 } from 'firebase/firestore';
 import { 
   AlertTriangle, 
@@ -129,8 +132,22 @@ export const AlertsPage: React.FC = () => {
     toast.info('Alerta reconhecido pela equipe de monitoramento.');
   };
 
-  // Ação de Resolver individualmente
-  const handleResolve = (id: string) => {
+  // Firestore remains the source of truth when a Firebase session is active.
+  const handleResolve = async (id: string) => {
+    if (isFirebaseConfigured && db && user?.uid) {
+      try {
+        await updateDoc(doc(db, 'alerts', id), {
+          status: 'resolved',
+          resolvedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        toast.success('Alerta resolvido com sucesso!');
+      } catch {
+        toast.error('Não foi possível resolver o alerta. Verifique suas permissões.');
+      }
+      return;
+    }
+
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() } : a);
     setAlerts(updated);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -138,8 +155,30 @@ export const AlertsPage: React.FC = () => {
     toast.success('Alerta resolvido com sucesso!');
   };
 
-  // Resolver Todos
-  const handleResolveAll = () => {
+  // Batch keeps the action efficient while limiting each commit to Firestore's safe write size.
+  const handleResolveAll = async () => {
+    if (isFirebaseConfigured && db && user?.uid) {
+      try {
+        const snapshot = await getDocs(query(
+          collection(db, 'alerts'),
+          where('userId', '==', user.uid),
+          where('status', 'in', ['active', 'acknowledged']),
+          limit(450),
+        ));
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((item) => batch.update(item.ref, {
+          status: 'resolved',
+          resolvedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }));
+        await batch.commit();
+        toast.success(`${snapshot.size} alerta(s) resolvido(s).`);
+      } catch {
+        toast.error('Não foi possível resolver os alertas.');
+      }
+      return;
+    }
+
     const updated = alerts.map(a => ({ ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() }));
     setAlerts(updated);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -147,12 +186,16 @@ export const AlertsPage: React.FC = () => {
     toast.success('Todos os incidentes foram marcados como resolvidos.');
   };
 
-  // Limpar Histórico
+  // Persistent incident history is retained for auditability in the MVP.
   const handleClearHistory = () => {
+    if (isFirebaseConfigured && db && user?.uid) {
+      toast.info('O histórico persistido é mantido para auditoria.');
+      return;
+    }
     setAlerts([]);
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     window.dispatchEvent(new Event('wf_alerts_updated'));
-    toast.info('Histórico de alertas foi limpo.');
+    toast.info('Histórico local de alertas foi limpo.');
   };
 
   // Simular Carga Extrema
