@@ -241,7 +241,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="border-t border-[var(--color-border-subtle)] pt-4 space-y-3">
                 <h3 className="text-sm font-semibold text-[var(--color-text-heading)]">Categorias de alertas</h3>
-                <p className="text-xs text-[var(--color-text-muted)]">Desative apenas os avisos que não deseja receber. A coleta e o histórico das métricas continuam ativos.</p>
+                <p className="text-xs text-[var(--color-text-muted)]">Preferências de entrega por categoria. A coleta e o histórico das métricas permanecem ativos; a integração com o dispatcher será concluída na próxima etapa.</p>
                 {([
                   ['cpu', 'CPU'],
                   ['memory', 'Memória (RAM)'],
@@ -264,12 +264,12 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <Clock size={20} className="text-[var(--color-brand-primary)]" />
-                Frequência de Coleta (RN-CONFIG-04)
+                Atualização do Dashboard (RN-CONFIG-04)
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Intervalo de Atualização</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Intervalo de atualização da tela</label>
                   <select
                     value={preferences.monitoring.refreshInterval}
                     onChange={(e) => updateNestedPref('monitoring', 'refreshInterval', Number(e.target.value) as UserPreferences['monitoring']['refreshInterval'])}
