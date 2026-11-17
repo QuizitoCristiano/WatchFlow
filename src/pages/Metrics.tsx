@@ -35,21 +35,21 @@ export const MetricasPage: React.FC = () => {
 
   // State is tagged with the authenticated UID so account switches never flash another user's data.
   const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
-  const devices = devicesState?.userId === userId ? devicesState.items : [];
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
   const [selectedDeviceState, setSelectedDeviceState] = useState<{ userId: string; id: string } | null>(null);
-  const selectedDeviceId = selectedDeviceState?.userId === userId ? selectedDeviceState.id : '';
+  const selectedDeviceId = userId && selectedDeviceState?.userId === userId ? selectedDeviceState.id : '';
   const setSelectedDeviceId = (id: string) => setSelectedDeviceState({ userId: userId ?? '', id });
   const [historyState, setHistoryState] = useState<{
     userId: string;
     deviceId: string;
     records: MetricPayload[];
   } | null>(null);
-  const metricsHistory = historyState?.userId === userId && historyState.deviceId === selectedDeviceId
+  const metricsHistory = userId && historyState?.userId === userId && historyState.deviceId === selectedDeviceId
     ? historyState.records
     : [];
   const loadingHistory = Boolean(
     userId && selectedDeviceId &&
-    (historyState?.userId !== userId || historyState?.deviceId !== selectedDeviceId)
+    (!historyState || historyState.userId !== userId || historyState.deviceId !== selectedDeviceId)
   );
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'gpu' | 'disk' | 'network'>('cpu');
