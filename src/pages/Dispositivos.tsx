@@ -44,11 +44,11 @@ export const DispositivosPage: React.FC = () => {
 
       const deviceContext = {
         browser: navigator.userAgent,
-        operatingSystem: navigator.userAgentData?.platform || navigator.platform || 'Não identificado',
+        operatingSystem: navigator.platform || 'Não identificado',
         platform: navigator.platform || 'Não informado',
         language: navigator.language,
         logicalProcessors: navigator.hardwareConcurrency ?? null,
-        deviceMemoryGb: navigator.deviceMemory ?? null,
+        deviceMemoryGb: null,
         screen: `${window.screen.width}x${window.screen.height}`,
         online: navigator.onLine,
       };
