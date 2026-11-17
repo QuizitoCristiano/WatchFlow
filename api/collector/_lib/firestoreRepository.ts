@@ -360,7 +360,7 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           data.expiresAt.toMillis() <= now.getTime()
         ) return null;
 
-        // Rate-limit before parsing attacker-controlled JSON to fail fast on repeated requests.
+        // Persist the request timestamp so the interval is enforced across serverless instances.
         const lastRequestAt = data.lastRequestAt;
         if (
           lastRequestAt instanceof Timestamp &&
