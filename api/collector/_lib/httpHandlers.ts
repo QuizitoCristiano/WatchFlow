@@ -149,6 +149,7 @@ export function createProvisionHandler(dependencies: ProvisionDependencies): Api
   return async (request, response) => {
     if (!requireMethod(request, response)) return;
     try {
+      enforceIpRateLimit(request);
       requireJson(request);
       const idToken = requireBearerToken(request);
       let verified: { uid: string };
