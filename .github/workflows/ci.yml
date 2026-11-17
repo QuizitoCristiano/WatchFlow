@@ -45,3 +45,16 @@ jobs:
       - run: npm ci
       - name: Typecheck and production build
         run: npm run build
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Report dependency vulnerabilities
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e "const report = require('./npm-audit.json'); const entries = Object.entries(report.vulnerabilities || {}).map(([name, item]) => ({ name, severity: item.severity, direct: item.isDirect, range: item.range, fixAvailable: item.fixAvailable })); console.log(JSON.stringify({ totals: report.metadata?.vulnerabilities, packages: entries }, null, 2));"
