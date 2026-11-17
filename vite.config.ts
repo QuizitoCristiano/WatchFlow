@@ -12,7 +12,7 @@ function localCollectorPlugin() {
     configureServer(server: ViteDevServer) {
       let collectionInProgress = false;
 
-      server.middlewares.use('/__local/collector-metrics', async (request: any, response: any) => {
+      server.middlewares.use('/__local/collector-metrics', async (request, response) => {
         const hostHeader = request.headers.host;
         const requestHost = typeof hostHeader === 'string' ? hostHeader.split(':')[0].toLowerCase() : '';
         const remoteAddress = request.socket.remoteAddress;
