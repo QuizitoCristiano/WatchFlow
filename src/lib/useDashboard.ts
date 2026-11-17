@@ -45,7 +45,7 @@ export const useDashboard = () => {
 
       if (devicesResult.status === 'fulfilled') {
         try {
-          metricData = await dashboardService.getMetricsHistory(userId, storedDevices);
+          metricData = await dashboardService.getMetricsHistory(userId, storedDevices, preferences.monitoring.defaultTimeRange);
         } catch (loadError) {
           metricsError = loadError;
         }
@@ -123,7 +123,7 @@ export const useDashboard = () => {
     return () => {
       active = false;
     };
-  }, [authLoading, refreshVersion, userId]);
+  }, [authLoading, refreshVersion, userId, preferences.monitoring.defaultTimeRange]);
 
   useEffect(() => {
     if (authLoading || !userId) return;
