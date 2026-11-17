@@ -351,17 +351,17 @@ export const AlertsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                      <div className="font-semibold text-white">{a.title}</div>
-                      <div className="text-zinc-500">{a.description}</div>
+                      <div className="font-semibold text-white">{t(a.title)}</div>
+                      <div className="text-zinc-500">{t(a.description)}</div>
                     </td>
-                    <td className="p-3 font-mono text-zinc-400">{a.deviceName || 'Agente Local'}</td>
+                    <td className="p-3 font-mono text-zinc-400">{a.deviceName || t('Agente Local')}</td>
                     <td className="p-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         a.status === 'active' ? 'text-red-400 bg-red-950/40' :
                         a.status === 'acknowledged' ? 'text-amber-400 bg-amber-950/40' :
                         'text-emerald-400 bg-emerald-950/40'
                       }`}>
-                        {ALERT_STATUS_LABELS[a.status] || a.status}
+                        {t(ALERT_STATUS_LABELS[a.status] || a.status)}
                       </span>
                     </td>
                     <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -403,7 +403,7 @@ export const AlertsPage: React.FC = () => {
                   selectedAlert.severity === 'warning' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
                   'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                 }`}>
-                  {selectedAlert.severity}
+                  {t(selectedAlert.severity)}
                 </span>
                 <button 
                   onClick={() => setSelectedAlert(null)}
