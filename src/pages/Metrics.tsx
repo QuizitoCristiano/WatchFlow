@@ -389,7 +389,7 @@ export const MetricasPage: React.FC = () => {
               {chartData.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-500">
                   <Activity className="w-8 h-8 mb-2 animate-spin text-zinc-600" />
-                  <p className="text-sm">Aguardando dados de telemetria do coletor...</p>
+                  <p className="text-sm">{t('Aguardando dados de telemetria do coletor...')}</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -461,7 +461,7 @@ export const MetricasPage: React.FC = () => {
             {/* Tabela de Histórico Real */}
             <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-semibold text-gray-200">Amostras Recentes de Telemetria</h3>
+                <h3 className="text-sm font-semibold text-gray-200">{t('Amostras Recentes de Telemetria')}</h3>
                 <span className="text-xs text-gray-500">{metricsHistory.length} registros recebidos</span>
               </div>
 
@@ -518,7 +518,7 @@ export const MetricasPage: React.FC = () => {
                     <span className="font-mono text-white">{selectedDevice.hostname}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Endereço IP:</span>
+                    <span className="text-gray-400">{t('Endereço IP:')}</span>
                     <span className="font-mono text-white">{selectedDevice.ip}</span>
                   </div>
                   <div className="flex justify-between">
@@ -533,7 +533,7 @@ export const MetricasPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Última Coleta:</span>
+                    <span className="text-gray-400">{t('Última Coleta:')}</span>
                     <span className="text-gray-300">{formatLastSeen(selectedDevice.lastSeen)}</span>
                   </div>
                 </div>
@@ -564,18 +564,18 @@ export const MetricasPage: React.FC = () => {
                 <div className="space-y-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>Threshold CPU: &gt; 80%</span>
+                      <span>{t('Threshold CPU: &gt; 80%')}</span>
                       <span className="text-emerald-400">{t('Ativo')}</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Gera incidente caso consumo ultrapasse 80%.</p>
+                    <p className="text-gray-400 text-[11px]">{t('Gera incidente caso consumo ultrapasse 80%.')}</p>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>Threshold RAM: &gt; 85%</span>
+                      <span>{t('Threshold RAM: &gt; 85%')}</span>
                       <span className="text-emerald-400">{t('Ativo')}</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Notifica saturação de memória física.</p>
+                    <p className="text-gray-400 text-[11px]">{t('Notifica saturação de memória física.')}</p>
                   </div>
                 </div>
               </div>
