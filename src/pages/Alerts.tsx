@@ -33,11 +33,12 @@ import { toast } from 'sonner';
 import { ALERT_STATUS_LABELS, type Alert } from '../types';
 import { formatDate, formatTime } from '../lib/formatters';
 
-const LOCAL_STORAGE_KEY = 'wf_local_alerts';
+const localAlertsKey = (userId: string) => `wf_local_alerts:${userId}`;
 
-const getStoredLocalAlerts = (): Alert[] => {
+const getStoredLocalAlerts = (userId: string): Alert[] => {
+  if (!userId) return [];
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(localAlertsKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -46,7 +47,7 @@ const getStoredLocalAlerts = (): Alert[] => {
 
 export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
-  const userId = user?.uid ?? 'usr_local_dev_001';
+  const userId = user?.uid ?? '';
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [, setLoading] = useState<boolean>(true);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
@@ -55,10 +56,15 @@ export const AlertsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const refreshAlerts = () => {
-    setAlerts(getStoredLocalAlerts());
+    setAlerts(getStoredLocalAlerts(userId));
   };
 
   useEffect(() => {
+    if (!userId) {
+      setAlerts([]);
+      setLoading(false);
+      return;
+    }
     if (isFirebaseConfigured && db && user?.uid) {
       const q = query(
         collection(db, 'alerts'),
@@ -128,7 +134,7 @@ export const AlertsPage: React.FC = () => {
 
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
     setAlerts(updated);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
     toast.info('Alerta reconhecido pela equipe de monitoramento.');
   };
 
@@ -193,20 +199,11 @@ export const AlertsPage: React.FC = () => {
       return;
     }
     setAlerts([]);
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(localAlertsKey(userId));
     window.dispatchEvent(new Event('wf_alerts_updated'));
     toast.info('Histórico local de alertas foi limpo.');
   };
 
-  // Simular Carga Extrema
-  const handleTriggerStress = async () => {
-    try {
-      await fetch('/api/trigger-stress');
-      toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% em instantes.');
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -223,14 +220,7 @@ export const AlertsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleTriggerStress}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shadow-lg shadow-red-900/30"
-            title="Gera carga simulada >90% por 12s para testar o Sentry"
-          >
-            <Flame className="w-4 h-4 animate-pulse" />
-            <span>Simular Sobrecarga</span>
-          </button>
+
 
           {alerts.length > 0 && (
             <>
