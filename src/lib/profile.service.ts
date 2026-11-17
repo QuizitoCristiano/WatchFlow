@@ -4,125 +4,116 @@ import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db, storage, isFirebaseConfigured } from '@/services/config';
 import type { UserProfile } from '@/types';
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const LOCAL_STORAGE_KEY = 'wf_local_profile';
-
-const DEFAULT_LOCAL_PROFILE: UserProfile = {
-  uid: 'usr_local_dev_001',
-  name: 'Administrador WatchFlow',
-  email: 'admin@watchflow.local',
-  role: 'admin',
-  status: 'active',
-  createdAt: '2026-08-18T14:00:00.000Z',
-};
+const localProfileKey = (uid: string) => `wf_local_profile:${uid}`;
 
 const getAuthenticatedUser = (uid: string) => {
   if (!isFirebaseConfigured || !auth) return null;
   const user = auth.currentUser;
-
-  if (!user) {
-    throw new Error('Nenhum usuário autenticado.');
-  }
-  if (user.uid !== uid) {
-    throw new Error('Não é permitido acessar o perfil de outro usuário.');
-  }
-
+  if (!user) throw new Error('Nenhum usuário autenticado.');
+  if (user.uid !== uid) throw new Error('Não é permitido acessar o perfil de outro usuário.');
   return user;
 };
 
+function getLocalProfile(uid: string): UserProfile {
+  const raw = localStorage.getItem(localProfileKey(uid));
+  if (raw) {
+    try {
+      const profile: unknown = JSON.parse(raw);
+      if (
+        typeof profile === 'object' && profile !== null &&
+        'uid' in profile && profile.uid === uid
+      ) return profile as UserProfile;
+    } catch {
+      // Invalid local profile is ignored and replaced by a safe default.
+    }
+  }
+  return {
+    uid,
+    name: 'Usuário',
+    email: '',
+    role: 'viewer',
+    status: 'active',
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export const profileService = {
   async getProfile(uid: string): Promise<UserProfile | null> {
+    if (!uid) throw new Error('Usuário não autenticado.');
     if (isFirebaseConfigured && db) {
-      try {
-        getAuthenticatedUser(uid);
-        const docRef = doc(db, 'users', uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          const createdAt = data.createdAt instanceof Timestamp
-            ? data.createdAt.toDate().toISOString()
-            : data.createdAt instanceof Date
-              ? data.createdAt.toISOString()
-              : typeof data.createdAt === 'string'
-                ? data.createdAt
-                : '';
-
-          return { ...data, uid, createdAt } as UserProfile;
-        }
-      } catch (err) {
-        console.warn('Erro ao carregar perfil do Firestore:', err);
-      }
+      getAuthenticatedUser(uid);
+      const snapshot = await getDoc(doc(db, 'users', uid));
+      if (!snapshot.exists()) return null;
+      const data = snapshot.data();
+      const createdAt = data.createdAt instanceof Timestamp
+        ? data.createdAt.toDate().toISOString()
+        : data.createdAt instanceof Date
+          ? data.createdAt.toISOString()
+          : typeof data.createdAt === 'string'
+            ? data.createdAt
+            : '';
+      return { ...data, uid, createdAt } as UserProfile;
     }
-
-    // Modo Local
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_LOCAL_PROFILE;
+    return getLocalProfile(uid);
   },
 
   async updateProfileData(uid: string, data: { name: string }): Promise<void> {
+    const name = data.name.trim();
+    if (!name || name.length > 100) throw new Error('Informe um nome com até 100 caracteres.');
     if (isFirebaseConfigured && db) {
       const user = getAuthenticatedUser(uid);
-      const docRef = doc(db, 'users', uid);
-      await updateDoc(docRef, {
-        name: data.name,
+      await updateDoc(doc(db, 'users', uid), {
+        name,
         updatedAt: serverTimestamp(),
       });
-
-      if (user) {
-        await updateProfile(user, { displayName: data.name });
-      }
+      if (user) await updateProfile(user, { displayName: name });
       return;
     }
-
-    const current = await this.getProfile(uid) || DEFAULT_LOCAL_PROFILE;
-    const updated = { ...current, name: data.name, updatedAt: new Date().toISOString() };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    const updated = { ...getLocalProfile(uid), name, updatedAt: new Date().toISOString() };
+    localStorage.setItem(localProfileKey(uid), JSON.stringify(updated));
   },
 
   async uploadAvatar(uid: string, file: File): Promise<string> {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      throw new Error('Formato de imagem inválido. Use JPEG, PNG ou WEBP.');
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error('O tamanho máximo do arquivo é de 2MB.');
-    }
+    if (!uid) throw new Error('Usuário não autenticado.');
+    if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Formato de imagem inválido. Use JPEG, PNG ou WEBP.');
+    if (file.size <= 0 || file.size > MAX_FILE_SIZE) throw new Error('A imagem deve ter até 2MB.');
 
     if (isFirebaseConfigured && storage && db) {
       const user = getAuthenticatedUser(uid);
       const storageRef = ref(storage, `profile-images/${uid}/avatar`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, file, { contentType: file.type });
       const photoURL = await getDownloadURL(storageRef);
-
-      const docRef = doc(db, 'users', uid);
-      await updateDoc(docRef, { photoURL, updatedAt: serverTimestamp() });
-
-      if (user) {
-        await updateProfile(user, { photoURL });
-      }
+      await updateDoc(doc(db, 'users', uid), {
+        photoURL,
+        updatedAt: serverTimestamp(),
+      });
+      if (user) await updateProfile(user, { photoURL });
       return photoURL;
     }
 
-    // Modo Local - cria data URL
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        const photoURL = e.target?.result as string;
-        const current = await this.getProfile(uid) || DEFAULT_LOCAL_PROFILE;
-        const updated = { ...current, photoURL };
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-        resolve(photoURL);
+      reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') {
+          reject(new Error('Formato de imagem local inválido.'));
+          return;
+        }
+        const updated = { ...getLocalProfile(uid), photoURL: reader.result };
+        localStorage.setItem(localProfileKey(uid), JSON.stringify(updated));
+        resolve(reader.result);
       };
       reader.readAsDataURL(file);
     });
   },
 
   async sendPasswordReset(email: string): Promise<void> {
-    if (isFirebaseConfigured && auth) {
-      await sendPasswordResetEmail(auth, email);
-    } else {
-      console.log(`[Modo Local] E-mail de redefinição de senha enviado para: ${email}`);
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Recuperação de senha exige Firebase configurado.');
     }
+    await sendPasswordResetEmail(auth, email);
   },
 };
