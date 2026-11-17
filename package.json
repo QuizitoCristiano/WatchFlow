@@ -16,7 +16,7 @@
     "collector:check": "tsc --noEmit -p collector/tsconfig.json",
     "api:test": "node --experimental-strip-types --test api/test/collector-api.test.ts",
     "api:check": "tsc --noEmit -p api/tsconfig.json",
-    "test": "npm run collector:test && npm run api:test && node --experimental-strip-types --test api/test/alert-policy.test.ts && node --experimental-strip-types --test api/test/endpoint-policy.test.ts"
+    "test": "npm run collector:test && npm run api:test && node --experimental-strip-types --test api/test/alert-policy.test.ts && node --experimental-strip-types --test api/test/endpoint-policy.test.ts && node --experimental-strip-types --test src/lib/preferences.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
