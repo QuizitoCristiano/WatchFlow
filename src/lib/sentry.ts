@@ -55,7 +55,6 @@ export function initSentry(): void {
     environment: import.meta.env.MODE || "development",
     release: import.meta.env.VITE_APP_RELEASE || "watchflow@1.0.0",
     integrations: [Sentry.browserTracingIntegration()],
-    sendDefaultPii: false,
     tracesSampleRate: isProduction ? 0.1 : 1,
     tracePropagationTargets: [
       /^https:\/\/watch-flow-six\.vercel\.app\//,
