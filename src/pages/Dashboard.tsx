@@ -15,6 +15,7 @@ import {
     Loader2,
 } from "lucide-react";
 import { 
+import { useI18n } from '@/i18n/useI18n';
     ResponsiveContainer, 
     LineChart, 
     Line, 
@@ -29,6 +30,7 @@ import {
 } from "recharts";
 
 export const Dashboard = () => {
+  const { t } = useI18n();
     const { preferences } = usePreferences();
     // 1. Consumindo os dados e o estado de loading do custom hook
     const {
@@ -100,7 +102,7 @@ export const Dashboard = () => {
                 {/* KPI CPU */}
                 <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
-                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de CPU</span>
+                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{t('Uso de CPU')}</span>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-text-heading">{formatMetric(summary?.avgCpuUsage, "%")}</span>
                             <span className="text-xs text-status-warning flex items-center font-semibold">
@@ -150,7 +152,7 @@ export const Dashboard = () => {
                 {/* KPI SLA */}
                 <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
-                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Disponibilidade</span>
+                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{t('Disponibilidade')}</span>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-text-heading">{formatMetric(summary?.globalSlaPercent, "%")}</span>
                         </div>
@@ -302,9 +304,9 @@ export const Dashboard = () => {
                         <table className="w-full text-left text-xs text-text-body">
                             <thead className="text-[11px] uppercase text-text-muted border-b border-border-subtle bg-bg-app/50">
                                 <tr>
-                                    <th className="py-3 px-3">Dispositivo</th>
-                                    <th className="py-3 px-3">Status</th>
-                                    <th className="py-3 px-3">CPU</th>
+                                    <th className="py-3 px-3">{t('Dispositivo')}</th>
+                                    <th className="py-3 px-3">{t('Status')}</th>
+                                    <th className="py-3 px-3">{t('CPU')}</th>
                                     <th className="py-3 px-3">RAM</th>
                                     <th className="py-3 px-3">Latência</th>
                                 </tr>
@@ -327,12 +329,12 @@ export const Dashboard = () => {
                                             <td className="py-3 px-3">
                                                 {device.status === 'online' && (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-success/10 text-status-success border border-status-success/20">
-                                                        <CheckCircle2 className="w-3 h-3" /> Online
+                                                        <CheckCircle2 className="w-3 h-3" /> {t('Online')}
                                                     </span>
                                                 )}
                                                 {device.status === 'offline' && (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-danger/10 text-status-danger border border-status-danger/20">
-                                                        <XCircle className="w-3 h-3" /> Offline
+                                                        <XCircle className="w-3 h-3" /> {t('Offline')}
                                                     </span>
                                                 )}
                                                 {device.status === 'warning' && (
