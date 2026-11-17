@@ -273,7 +273,7 @@ const en: Record<string, string> = {
 
 export function translate(language: SupportedLanguage, value: string): string {
   if (language === 'pt-BR') return value;
-  const metricDescription = value.match(/^(CPU|RAM|Disco) está em ([0-9]+(?:\\.[0-9]+)?)% \\(limite de atenção: 80%; crítico: 90%\\)\\.$/);
+  const metricDescription = value.match(/^(CPU|RAM|Disco) está em ([0-9]+(?:\.[0-9]+)?)% \(limite de atenção: 80%; crítico: 90%\)\.$/);
   if (metricDescription) {
     const metric = metricDescription[1] === 'Disco' ? 'Disk' : metricDescription[1];
     return `${metric} is at ${metricDescription[2]}% (warning threshold: 80%; critical: 90%).`;
