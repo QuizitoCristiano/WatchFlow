@@ -51,7 +51,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [preferences.theme, state?.userId, userId]);
 
   const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
-    if (!userId) return;
+    if (!userId || state?.userId !== userId) return;
     setState((current) => {
       const currentValue = current?.userId === userId ? current.value : DEFAULT_PREFERENCES;
       return { userId, value: typeof action === 'function' ? action(currentValue) : action };
