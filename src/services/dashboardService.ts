@@ -128,6 +128,10 @@ export const dashboardService = {
         let totalCpu = 0;
         let totalRam = 0;
         let totalDisk = 0;
+        let totalMemoryUsedGb = 0;
+        let totalMemoryTotalGb = 0;
+        let totalDiskUsedGb = 0;
+        let totalDiskTotalGb = 0;
         let devicesWithMetrics = 0;
 
         devicesSnap.forEach(docSnap => {
@@ -141,12 +145,17 @@ export const dashboardService = {
             totalCpu += d.latestMetricsSummary.cpu || 0;
             totalRam += d.latestMetricsSummary.memory || 0;
             totalDisk += d.latestMetricsSummary.disk || 0;
+            totalMemoryUsedGb += d.latestMetricsSummary.memoryUsedGb || 0;
+            totalMemoryTotalGb += d.latestMetricsSummary.memoryTotalGb || 0;
+            totalDiskUsedGb += d.latestMetricsSummary.diskUsedGb || 0;
+            totalDiskTotalGb += d.latestMetricsSummary.diskTotalGb || 0;
             devicesWithMetrics++;
           }
         });
 
         const activeAlertsCount = alertsSnap.size;
-        const globalSlaPercent = totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : 99.98;
+        // This is a current availability ratio, not a historical SLA calculation.
+        const globalSlaPercent = totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : null;
 
         return {
           totalDevices,
@@ -156,13 +165,13 @@ export const dashboardService = {
           devicesOffline,
           activeAlertsCount,
           globalSlaPercent,
-          avgCpuUsage: devicesWithMetrics > 0 ? Math.round(totalCpu / devicesWithMetrics) : 18,
-          avgRamUsage: devicesWithMetrics > 0 ? Math.round(totalRam / devicesWithMetrics) : 45,
-          ramUsedGb: 8,
-          ramTotalGb: 16,
-          avgDiskUsage: devicesWithMetrics > 0 ? Math.round(totalDisk / devicesWithMetrics) : 62,
-          diskUsedGb: 500,
-          diskTotalGb: 1000,
+          avgCpuUsage: devicesWithMetrics > 0 ? Math.round(totalCpu / devicesWithMetrics) : null,
+          avgRamUsage: devicesWithMetrics > 0 ? Math.round(totalRam / devicesWithMetrics) : null,
+          ramUsedGb: devicesWithMetrics > 0 ? Number(totalMemoryUsedGb.toFixed(2)) : null,
+          ramTotalGb: devicesWithMetrics > 0 ? Number(totalMemoryTotalGb.toFixed(2)) : null,
+          avgDiskUsage: devicesWithMetrics > 0 ? Math.round(totalDisk / devicesWithMetrics) : null,
+          diskUsedGb: devicesWithMetrics > 0 ? Number(totalDiskUsedGb.toFixed(2)) : null,
+          diskTotalGb: devicesWithMetrics > 0 ? Number(totalDiskTotalGb.toFixed(2)) : null,
           lastUpdatedAt: new Date().toISOString() as any,
         };
       }
@@ -183,6 +192,16 @@ export const dashboardService = {
     const devicesOffline = totalDevices - (devicesOnline + devicesWarning + devicesCritical);
     const activeAlertsCount = alerts.filter(a => a.status === 'active').length;
 
+    const devicesWithMetrics = devs.filter((device) => device.latestMetricsSummary);
+    const average = (values: Array<number | undefined>): number | null => {
+      const available = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+      return available.length ? Math.round(available.reduce((sum, value) => sum + value, 0) / available.length) : null;
+    };
+    const sum = (values: Array<number | undefined>): number | null => {
+      const available = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+      return available.length ? Number(available.reduce((total, value) => total + value, 0).toFixed(2)) : null;
+    };
+
     return {
       totalDevices,
       devicesOnline,
@@ -190,14 +209,14 @@ export const dashboardService = {
       devicesCritical,
       devicesOffline: Math.max(0, devicesOffline),
       activeAlertsCount,
-      globalSlaPercent: 99.95,
-      avgCpuUsage: devs[0]?.latestMetricsSummary?.cpu ?? 24,
-      avgRamUsage: devs[0]?.latestMetricsSummary?.memory ?? 58,
-      ramUsedGb: devs[0]?.latestMetricsSummary?.memoryUsedGb ?? 9.2,
-      ramTotalGb: devs[0]?.latestMetricsSummary?.memoryTotalGb ?? 16,
-      avgDiskUsage: devs[0]?.latestMetricsSummary?.disk ?? 70,
-      diskUsedGb: devs[0]?.latestMetricsSummary?.diskUsedGb ?? 700,
-      diskTotalGb: devs[0]?.latestMetricsSummary?.diskTotalGb ?? 1000,
+      globalSlaPercent: totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : null,
+      avgCpuUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.cpu)),
+      avgRamUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memory)),
+      ramUsedGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memoryUsedGb)),
+      ramTotalGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memoryTotalGb)),
+      avgDiskUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.disk)),
+      diskUsedGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskUsedGb)),
+      diskTotalGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskTotalGb)),
       lastUpdatedAt: new Date().toISOString() as any,
     };
   },
@@ -245,16 +264,12 @@ export const dashboardService = {
       timestamp: new Date(item.collectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       cpu: item.cpu?.usagePercent || 0,
       memory: item.memory?.usedPercent || 0,
-      downloadMbps: 12.5,
-      uploadMbps: 5.2,
+      ...(typeof item.network?.bytesInSec === 'number' ? { downloadMbps: item.network.bytesInSec * 8 / 1_000_000 } : {}),
+      ...(typeof item.network?.bytesOutSec === 'number' ? { uploadMbps: item.network.bytesOutSec * 8 / 1_000_000 } : {}),
     }));
 
     return {
-      history: history.length > 0 ? history : [
-        { timestamp: '10:00', cpu: 22, memory: 54, downloadMbps: 10, uploadMbps: 4 },
-        { timestamp: '10:15', cpu: 35, memory: 58, downloadMbps: 14, uploadMbps: 6 },
-        { timestamp: '10:30', cpu: 28, memory: 55, downloadMbps: 11, uploadMbps: 5 },
-      ],
+      history,
       latestMetricsByDevice: {},
       errors: [],
     };
