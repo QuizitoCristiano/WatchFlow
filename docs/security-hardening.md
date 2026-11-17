@@ -19,7 +19,7 @@ Substitua 10.0.0.25 pelo IP privado fixo do Collector:
 
 ```bash
 sudo ufw deny 9100/tcp
-sudo ufw allow from 10.0.0.25 to any port 9100 proto tcp
+sudo ufw insert 1 allow from 10.0.0.25 to any port 9100 proto tcp
 sudo ufw status numbered
 ```
 
@@ -31,11 +31,10 @@ Substitua o endereço pelo IP privado do Collector:
 
 ```powershell
 New-NetFirewallRule -DisplayName "WatchFlow Node Exporter" -Direction Inbound -Protocol TCP -LocalPort 9100 -RemoteAddress 10.0.0.25 -Action Allow
-New-NetFirewallRule -DisplayName "Block public Node Exporter" -Direction Inbound -Protocol TCP -LocalPort 9100 -RemoteAddress Any -Action Block
 Get-NetFirewallRule -DisplayName "*Node Exporter*"
 ```
 
-Verifique as regras existentes e a precedência efetiva no Windows Firewall antes de colocar em produção; adapte a rede e valide o acesso administrativo de recuperação.
+A política padrão de entrada deve permanecer bloqueada. Remova regras genéricas que permitam TCP 9100 a qualquer origem; uma regra explícita de bloqueio pode prevalecer sobre a permissão restrita. Verifique as regras existentes antes de aplicar em produção.
 
 ## Limites aplicados pelo aplicativo
 
