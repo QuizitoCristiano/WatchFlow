@@ -8,7 +8,20 @@ service cloud.firestore {
 
     // A user may manage only their own profile document.
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'user'
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'role', 'createdAt', 'updatedAt', 'name', 'photoURL'
+        ]);
+      allow update: if isOwner(userId)
+        && resource.data.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'photoURL', 'updatedAt']);
+      allow delete: if false;
     }
 
     // Integrations are user-owned configuration. The client cannot change ownership.
