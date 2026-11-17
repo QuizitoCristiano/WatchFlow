@@ -20,7 +20,7 @@ service cloud.firestore {
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.role == resource.data.role
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['name', 'photoURL', 'updatedAt']);
+          .hasOnly(['name', 'photoURL', 'preferences', 'updatedAt']);
       allow delete: if false;
     }
 
