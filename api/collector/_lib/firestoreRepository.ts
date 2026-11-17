@@ -191,6 +191,37 @@ function credentialReference(db: Firestore, tokenHash: string) {
   return db.doc(`collectorCredentials/${tokenHash}`);
 }
 
+function validateNodeExporterEndpoint(value: unknown): void {
+  if (typeof value !== 'string' || value.length > 2048) {
+    throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
+  }
+  let endpoint: URL;
+  try {
+    endpoint = new URL(value);
+  } catch {
+    throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
+  }
+  const port = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
+  const hostname = endpoint.hostname.toLowerCase();
+  if (
+    !['http:', 'https:'].includes(endpoint.protocol) ||
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.search ||
+    endpoint.hash ||
+    endpoint.pathname !== '/metrics' ||
+    !['9100', '443'].includes(port) ||
+    (port === '443' && endpoint.protocol !== 'https:') ||
+    hostname === '169.254.169.254' ||
+    hostname.startsWith('169.254.') ||
+    hostname === '100.100.100.200' ||
+    hostname === 'metadata.google.internal' ||
+    hostname === 'metadata.azure.internal'
+  ) {
+    throw new HttpError(400, 'Endpoint do Node Exporter viola a política de protocolo, porta ou destino.');
+  }
+}
+
 function ensureOwner(
   integrationSnapshot: DocumentSnapshot,
   identity: CollectorIdentity,
@@ -267,6 +298,7 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
         if (integration.type !== 'node_exporter') {
           throw new HttpError(400, 'A ingestão ainda suporta somente Node Exporter.');
         }
+        validateNodeExporterEndpoint(integration.baseUrl);
         const previousState = getRecord(stateSnapshot.data());
         const lastRotation = previousState.rotatedAt;
         if (lastRotation instanceof Timestamp && issuedAt.getTime() - lastRotation.toMillis() < MIN_PROVISION_INTERVAL_MS) {
