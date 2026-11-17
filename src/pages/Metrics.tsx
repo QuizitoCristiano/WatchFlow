@@ -18,7 +18,6 @@ import {
   Filter
 } from 'lucide-react';
 import {
-import { useI18n } from '@/i18n/useI18n';
   ResponsiveContainer,
   LineChart,
   Line,
@@ -29,6 +28,7 @@ import { useI18n } from '@/i18n/useI18n';
   Tooltip,
   CartesianGrid
 } from 'recharts';
+import { useI18n } from '@/i18n/useI18n';
 
 export const MetricasPage: React.FC = () => {
   const { t } = useI18n();
