@@ -1,20 +1,16 @@
-import { AuthProvider } from "./contexts/AuthProvider"
-import { PreferencesProvider, usePreferences } from "./contexts/PreferencesProvider"
-import { AppRoutes } from "./routes/AppRoutes"
-import { Toaster } from "sonner"
+import { AuthProvider } from './contexts/AuthProvider';
+import { PreferencesProvider, usePreferences } from './contexts/PreferencesProvider';
+import { AppRoutes } from './routes/AppRoutes';
+import { Toaster } from 'sonner';
 
 function AppShell() {
-  const { preferences } = usePreferences()
+  const { preferences } = usePreferences();
   return (
     <>
-      <AuthProvider>
-        <PreferencesProvider>
-          <AppRoutes />
-          <Toaster position="top-right" richColors theme={preferences.theme} closeButton />
-        </PreferencesProvider>
-      </AuthProvider>
+      <AppRoutes />
+      <Toaster position="top-right" richColors theme={preferences.theme} closeButton />
     </>
-  )
+  );
 }
 
 function App() {
@@ -24,7 +20,7 @@ function App() {
         <AppShell />
       </PreferencesProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
