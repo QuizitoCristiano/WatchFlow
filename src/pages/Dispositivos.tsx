@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToDevices, deleteDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor, Flame } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Search, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 
 export const DispositivosPage: React.FC = () => {
