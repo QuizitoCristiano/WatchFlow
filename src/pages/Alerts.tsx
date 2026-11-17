@@ -154,8 +154,8 @@ export const AlertsPage: React.FC = () => {
     }
 
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() } : a);
-    setAlertsState({ userId, items: updated });
     localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
+    setLocalRevision((revision) => revision + 1);
     window.dispatchEvent(new Event('wf_alerts_updated'));
     toast.success('Alerta resolvido com sucesso!');
   };
