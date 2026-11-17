@@ -11,7 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { DEFAULT_PREFERENCES } from '../lib/settings.service';
-import type { UserPreferences, NotificationPreferences, DashboardPreferences } from '@/types';
+import type { UserPreferences } from '@/types';
 import { settingsService } from '@/lib/settings.service';
 import { useAuth } from '@/contexts/useAuth';
 
