@@ -15,8 +15,10 @@ import {
 import type { UserProfile } from '@/types';
 import { profileService } from '@/lib/profile.service';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const ProfilePage: React.FC = () => {
+  const { t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const [profileState, setProfileState] = useState<{
     userId: string;
