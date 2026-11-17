@@ -9,7 +9,7 @@ export const DispositivosPage: React.FC = () => {
   const userId = user?.uid;
 
   const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
-  const devices = devicesState?.userId === userId ? devicesState.items : [];
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
   const [search, setSearch] = useState('');
 
   useEffect(() => {
