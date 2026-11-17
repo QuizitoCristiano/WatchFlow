@@ -1,6 +1,7 @@
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from 'vite';
+import type { ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import { CollectorError, loadConfig } from './collector/src/config.ts';
 import { collectMetrics } from './collector/src/collect.ts';
@@ -8,16 +9,18 @@ import { collectMetrics } from './collector/src/collect.ts';
 function localCollectorPlugin() {
   return {
     name: 'local-node-exporter-demo',
-    configureServer(server: any) {
+    configureServer(server: ViteDevServer) {
       let collectionInProgress = false;
 
       server.middlewares.use('/__local/collector-metrics', async (request: any, response: any) => {
-        const requestHost = request.headers.host?.split(':')[0].toLowerCase();
+        const hostHeader = request.headers.host;
+        const requestHost = typeof hostHeader === 'string' ? hostHeader.split(':')[0].toLowerCase() : '';
         const remoteAddress = request.socket.remoteAddress;
         const isLoopbackAddress = remoteAddress === '127.0.0.1' ||
           remoteAddress === '::1' ||
           remoteAddress === '::ffff:127.0.0.1';
-        const fetchSite = request.headers['sec-fetch-site'];
+        const fetchSiteHeader = request.headers['sec-fetch-site'];
+        const fetchSite = Array.isArray(fetchSiteHeader) ? fetchSiteHeader[0] : fetchSiteHeader;
 
         if (
           (requestHost !== '127.0.0.1' && requestHost !== 'localhost') ||
