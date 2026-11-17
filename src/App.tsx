@@ -1,5 +1,6 @@
 import { AuthProvider } from './contexts/AuthProvider';
-import { PreferencesProvider, usePreferences } from './contexts/PreferencesProvider';
+import { PreferencesProvider } from './contexts/PreferencesProvider';
+import { usePreferences } from './contexts/usePreferences';
 import { AppRoutes } from './routes/AppRoutes';
 import { Toaster } from 'sonner';
 
