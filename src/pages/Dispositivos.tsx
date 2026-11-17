@@ -8,13 +8,13 @@ export const DispositivosPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid;
 
-  const [devices, setDevices] = useState<Device[]>([]);
+  const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
+  const devices = devicesState?.userId === userId ? devicesState.items : [];
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!userId) return;
-    const unsubscribe = subscribeToDevices(userId, setDevices);
-    return () => unsubscribe();
+    return subscribeToDevices(userId, (items) => setDevicesState({ userId, items }));
   }, [userId]);
 
   // Busca segura evitando erros se hostname ou ip forem undefined
@@ -44,7 +44,7 @@ export const DispositivosPage: React.FC = () => {
           </p>
         </div>
 
-        <p className="text-xs text-zinc-500">Os dispositivos aparecem aqui somente depois de serem vinculados à sua conta por uma integração autenticada.</p>>
+        <p className="text-xs text-zinc-500">Os dispositivos aparecem aqui somente depois de serem vinculados à sua conta por uma integração autenticada.</p>
       </div>
 
       {/* Condicional para tratar tela vazia ou sem resultados */}
@@ -57,7 +57,7 @@ export const DispositivosPage: React.FC = () => {
           <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
             {search
               ? `Nenhum host ou IP corresponde à busca "${search}".`
-              : 'Conecte o agente de monitoramento ou clique no botão acima para registrar este computador no WatchFlow.'}
+              : 'Cadastre uma integração Node Exporter e execute o Collector para vincular uma máquina à sua conta.'}
           </p>
 
         </div>
