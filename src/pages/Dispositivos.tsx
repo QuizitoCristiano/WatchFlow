@@ -41,7 +41,7 @@ export const DispositivosPage: React.FC = () => {
           </p>
         </div>
 
-        <p className="text-xs text-zinc-500">Os dispositivos aparecem aqui somente depois de serem vinculados à sua conta por uma integração autenticada.</p>
+        <p className="text-xs text-zinc-500">{t('Os dispositivos aparecem aqui somente depois de serem vinculados à sua conta por uma integração autenticada.')}</p>
       </div>
 
       {/* Condicional para tratar tela vazia ou sem resultados */}
