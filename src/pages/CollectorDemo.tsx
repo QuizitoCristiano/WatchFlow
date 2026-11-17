@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useI18n } from '@/i18n/useI18n';
 import { Activity, Cpu, Server } from 'lucide-react';
 
 interface CollectorMetrics {
@@ -30,6 +31,7 @@ function parseCollectorMetrics(value: unknown): CollectorMetrics | null {
 }
 
 export const CollectorDemo = () => {
+  const { t } = useI18n();
   const [metrics, setMetrics] = useState<CollectorMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,8 +91,8 @@ export const CollectorDemo = () => {
               <Activity className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Demonstração do coletor local</h1>
-              <p className="mt-1 text-sm text-zinc-400">Node Exporter · leitura real, sem persistência</p>
+              <h1 className="text-xl font-semibold">{t('Demonstração do coletor local')}</h1>
+              <p className="mt-1 text-sm text-zinc-400">{t('Node Exporter · leitura real, sem persistência')}</p>
             </div>
           </div>
         </header>
@@ -101,7 +103,7 @@ export const CollectorDemo = () => {
           </div>
 
           {loading && !metrics ? (
-            <p className="mt-5 text-sm text-zinc-400">Consultando e calculando duas amostras...</p>
+            <p className="mt-5 text-sm text-zinc-400">{t('Consultando e calculando duas amostras...')}</p>
           ) : error && !metrics ? (
             <p role="alert" className="mt-5 text-sm text-rose-300">{error}</p>
           ) : metrics ? (
