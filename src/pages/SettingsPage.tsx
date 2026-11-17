@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/useAuth';
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const [preferenceState, setPreferenceState] = useState<{ userId: string; value: UserPreferences } | null>(null);
-  const preferences = preferenceState?.userId === user?.uid
+  const preferences = user && preferenceState?.userId === user.uid
     ? preferenceState.value
     : DEFAULT_PREFERENCES;
   const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
