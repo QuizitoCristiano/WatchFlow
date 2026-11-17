@@ -26,6 +26,9 @@ interface IngestDependencies {
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
+const MIN_REQUEST_INTERVAL_MS = 15_000;
+const MAX_RATE_LIMIT_KEYS = 5_000;
+const recentRequestsByToken = new Map<string, number>();
 
 function header(request: ApiRequest, name: string): string | undefined {
   const headers = request.headers ?? {};
@@ -88,9 +91,30 @@ function readJsonBody(request: ApiRequest): unknown {
   return body;
 }
 
+function enforceInMemoryRateLimit(token: string): void {
+  const now = Date.now();
+  const previousRequest = recentRequestsByToken.get(token);
+  if (previousRequest !== undefined && now - previousRequest < MIN_REQUEST_INTERVAL_MS) {
+    throw new HttpError(429, 'Limite de requisições atingido. Aguarde pelo menos 15 segundos.');
+  }
+
+  recentRequestsByToken.set(token, now);
+  if (recentRequestsByToken.size > MAX_RATE_LIMIT_KEYS) {
+    for (const [key, timestamp] of recentRequestsByToken) {
+      if (now - timestamp > 60_000) recentRequestsByToken.delete(key);
+      if (recentRequestsByToken.size <= MAX_RATE_LIMIT_KEYS) break;
+    }
+    while (recentRequestsByToken.size > MAX_RATE_LIMIT_KEYS) {
+      const oldestKey = recentRequestsByToken.keys().next().value;
+      if (oldestKey === undefined) break;
+      recentRequestsByToken.delete(oldestKey);
+    }
+  }
+}
+
 function requireBearerToken(request: ApiRequest): string {
   const authorization = header(request, 'authorization');
-  const match = authorization?.match(/^Bearer ([A-Za-z0-9._~-]{20,8192})$/);
+  const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
   if (!match) throw new HttpError(401, 'Credencial Bearer obrigatória.');
   return match[1];
 }
@@ -144,6 +168,7 @@ export function createIngestHandler(dependencies: IngestDependencies): ApiHandle
     try {
       requireJson(request);
       const token = requireBearerToken(request);
+      enforceInMemoryRateLimit(token);
       const body = readJsonBody(request);
       const result = await dependencies.ingest(token, body);
       send(response, 200, result);
