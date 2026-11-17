@@ -125,11 +125,14 @@ export function validateIntegrationInput(input: {
     throw new Error('A URL não pode conter credenciais, parâmetros ou fragmentos.');
   }
   if (endpoint.href.length > 2048) throw new Error('A URL excede o limite permitido.');
-  if (input.type === 'node_exporter' && endpoint.port && endpoint.port !== '9100') {
-    throw new Error('Para Node Exporter, utilize a porta padrão 9100.');
-  }
-  if (input.type === 'node_exporter' && endpoint.port === '9100' && endpoint.protocol === 'https:') {
-    throw new Error('A porta 9100 do Node Exporter deve utilizar HTTP na rede privada ou um proxy HTTPS configurado.');
+  if (input.type === 'node_exporter') {
+    const effectivePort = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
+    if (!['9100', '443'].includes(effectivePort)) {
+      throw new Error('Node Exporter deve usar a porta TCP 9100 ou um proxy HTTPS na porta 443.');
+    }
+    if (effectivePort === '443' && endpoint.protocol !== 'https:') {
+      throw new Error('A porta 443 exige HTTPS.');
+    }
   }
 
   return { name, type: input.type, baseUrl: endpoint.toString() };
