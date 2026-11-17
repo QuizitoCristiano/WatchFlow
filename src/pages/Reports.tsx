@@ -14,6 +14,7 @@ import {
   Zap
 } from 'lucide-react';
 import type { Report, ReportFormat, ReportType } from '@/types';
+import { useI18n } from '@/i18n/useI18n';
 
 const MOCK_REPORTS: Report[] = [
   {
@@ -55,6 +56,7 @@ const MOCK_REPORTS: Report[] = [
 ];
 
 export const ReportsPage: React.FC = () => {
+  const { t } = useI18n();
   const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -110,10 +112,10 @@ export const ReportsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-heading)] flex items-center gap-2">
             <FileText className="text-[var(--color-brand-primary)]" size={28} />
-            Relatórios Consolidados
+            {t('Relatórios Consolidados')}
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Analise o desempenho, incidentes e a disponibilidade da sua infraestrutura ao longo do tempo.
+            {t('Analise o desempenho, incidentes e a disponibilidade da sua infraestrutura ao longo do tempo.')}
           </p>
         </div>
 
@@ -122,7 +124,7 @@ export const ReportsPage: React.FC = () => {
           className="inline-flex items-center justify-center gap-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-medium px-4 py-2.5 rounded-lg transition-colors shadow-md"
         >
           <Plus size={18} />
-          Gerar Novo Relatório
+          {t('Gerar Novo Relatório')}
         </button>
       </div>
 
@@ -130,7 +132,7 @@ export const ReportsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Total de Relatórios</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Total de Relatórios')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-text-heading)] mt-1">{reports.length}</h3>
           </div>
           <div className="p-3 bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] rounded-lg">
@@ -140,7 +142,7 @@ export const ReportsPage: React.FC = () => {
 
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Disponibilidade Média</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Disponibilidade Média')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-success)] mt-1">99,8%</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-success)]/10 text-[var(--color-status-success)] rounded-lg">
@@ -150,7 +152,7 @@ export const ReportsPage: React.FC = () => {
 
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Alertas Consolidados</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Alertas Consolidados')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-warning)] mt-1">34</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-warning)]/10 text-[var(--color-status-warning)] rounded-lg">
@@ -162,19 +164,19 @@ export const ReportsPage: React.FC = () => {
       {/* Tabela de Histórico */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl overflow-hidden shadow-lg">
         <div className="p-4 border-b border-[var(--color-border-subtle)]">
-          <h2 className="text-base font-semibold text-[var(--color-text-heading)]">Histórico de Documentos Gerados</h2>
+          <h2 className="text-base font-semibold text-[var(--color-text-heading)]">{t('Histórico de Documentos Gerados')}</h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--color-bg-app)] border-b border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
-                <th className="py-3 px-4">Nome</th>
-                <th className="py-3 px-4">Tipo</th>
-                <th className="py-3 px-4">Alvo</th>
-                <th className="py-3 px-4">Período</th>
-                <th className="py-3 px-4">Gerado em</th>
-                <th className="py-3 px-4 text-center">Ações</th>
+                <th className="py-3 px-4">{t('Nome')}</th>
+                <th className="py-3 px-4">{t('Tipo')}</th>
+                <th className="py-3 px-4">{t('Alvo')}</th>
+                <th className="py-3 px-4">{t('Período')}</th>
+                <th className="py-3 px-4">{t('Gerado em')}</th>
+                <th className="py-3 px-4 text-center">{t('Ações')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-subtle)] text-sm">
@@ -191,17 +193,17 @@ export const ReportsPage: React.FC = () => {
                   <td className="py-3 px-4">
                     {rep.type === 'performance' && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-2 py-0.5 rounded-full">
-                        <TrendingUp size={12} /> Desempenho
+                        <TrendingUp size={12} /> {t('Desempenho')}
                       </span>
                     )}
                     {rep.type === 'incidents' && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-status-danger)] bg-[var(--color-status-danger)]/10 px-2 py-0.5 rounded-full">
-                        <AlertTriangle size={12} /> Incidentes
+                        <AlertTriangle size={12} /> {t('Incidentes')}
                       </span>
                     )}
                     {rep.type === 'availability' && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-status-success)] bg-[var(--color-status-success)]/10 px-2 py-0.5 rounded-full">
-                        <CheckCircle size={12} /> Disponibilidade
+                        <CheckCircle size={12} /> {t('Disponibilidade')}
                       </span>
                     )}
                   </td>
@@ -244,7 +246,7 @@ export const ReportsPage: React.FC = () => {
             <div className="flex items-center justify-between p-5 border-b border-[var(--color-border-subtle)]">
               <h3 className="text-lg font-bold text-[var(--color-text-heading)] flex items-center gap-2">
                 <FileText className="text-[var(--color-brand-primary)]" size={20} />
-                Gerar Novo Relatório
+                {t('Gerar Novo Relatório')}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-heading)] p-1 rounded-lg">
                 <X size={20} />
@@ -266,7 +268,7 @@ export const ReportsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">Tipo</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">{t('Tipo')}</label>
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value as ReportType)}
@@ -279,7 +281,7 @@ export const ReportsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">Dispositivo</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">{t('Dispositivo')}</label>
                   <select
                     value={device}
                     onChange={(e) => setDevice(e.target.value)}
@@ -390,7 +392,7 @@ export const ReportsPage: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] transition-colors"
                 >
-                  Cancelar
+                  {t('Cancelar')}
                 </button>
                 <button
                   type="submit"
