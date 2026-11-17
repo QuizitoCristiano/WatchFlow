@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && vite build",
+    "build": "tsc -b && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p collector/tsconfig.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "collector:start": "node --experimental-strip-types collector/src/cli.ts",
