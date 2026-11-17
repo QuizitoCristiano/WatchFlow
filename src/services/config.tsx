@@ -23,12 +23,12 @@ export const isFirebaseConfigured = Boolean(
 );
 
 const firebaseConfig = {
-  apiKey,
-  authDomain,
-  projectId,
-  storageBucket,
+  apiKey: apiKey ?? '',
+  authDomain: authDomain ?? '',
+  projectId: projectId ?? '',
+  storageBucket: storageBucket ?? '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId,
+  appId: appId ?? '',
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
