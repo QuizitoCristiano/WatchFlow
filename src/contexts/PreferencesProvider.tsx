@@ -1,14 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import type React from 'react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import type { UserPreferences } from '@/types';
-import { DEFAULT_PREFERENCES, settingsService } from '@/lib/settings.service';
+import { DEFAULT_PREFERENCES } from '@/lib/preferences';
+import { settingsService } from '@/lib/settings.service';
 import { useAuth } from '@/contexts/useAuth';
 
 interface PreferencesContextValue {
   preferences: UserPreferences;
   isLoading: boolean;
-  setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>>;
+  setPreferences: Dispatch<SetStateAction<UserPreferences>>;
   savePreferences: () => Promise<void>;
 }
 
@@ -36,8 +36,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [authLoading, userId]);
 
   useEffect(() => {
-    if (!userId || state?.userId !== userId) return;
     const root = document.documentElement;
+    if (!userId || state?.userId !== userId) {
+      root.dataset.theme = 'dark';
+      root.lang = 'pt-BR';
+      return;
+    }
+    root.lang = preferences.language;
     const applyTheme = () => {
       const resolved = preferences.theme === 'system'
         ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
@@ -50,7 +55,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => media.removeEventListener('change', applyTheme);
   }, [preferences.theme, state?.userId, userId]);
 
-  const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
+  const setPreferences: Dispatch<SetStateAction<UserPreferences>> = (action) => {
     if (!userId || state?.userId !== userId) return;
     setState((current) => {
       const currentValue = current?.userId === userId ? current.value : DEFAULT_PREFERENCES;
