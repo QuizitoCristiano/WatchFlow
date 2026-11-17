@@ -1,60 +1,101 @@
 import * as Sentry from "@sentry/react";
 
-/**
- * Inicialização oficial da APM Sentry no WatchFlow
- * Projeto: watchflow-app (Organização: watchflow)
- */
-export function initSentry() {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (!dsn) return;
+const isProduction = import.meta.env.PROD;
 
-  try {
-    Sentry.init({
-      dsn,
-      integrations: [
-        Sentry.browserTracingIntegration(),
-      ],
-      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-      tracePropagationTargets: ["localhost", /^https:\/\/.*\.vercel\.app/],
-      environment: import.meta.env.MODE || "development",
-      release: "watchflow@1.0.0",
-    });
+function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+  if (event.request) {
+    delete event.request.cookies;
+    delete event.request.data;
+    delete event.request.env;
 
-    console.log("🚀 [APM] Sentry inicializado com sucesso no WatchFlow!");
-  } catch (err) {
-    console.error("Falha ao inicializar o Sentry:", err);
+    if (event.request.headers) {
+      const headers = { ...event.request.headers };
+      for (const key of Object.keys(headers)) {
+        if (/authorization|cookie|token|secret|password|api[-_]?key/i.test(key)) {
+          headers[key] = "[Filtered]";
+        }
+      }
+      event.request.headers = headers;
+    }
+
+    if (event.request.url) {
+      try {
+        const url = new URL(event.request.url);
+        url.search = "";
+        url.hash = "";
+        event.request.url = url.toString();
+      } catch {
+        event.request.url = "[Filtered URL]";
+      }
+    }
   }
+
+  if (event.user) {
+    // Não enviar e-mail, IP ou identificadores de usuário por padrão.
+    delete event.user.email;
+    delete event.user.ip_address;
+    delete event.user.username;
+    delete event.user.id;
+  }
+
+  return event;
 }
 
 /**
- * Envia uma mensagem ou exceção manual para o dashboard do Sentry
- * Garante nível de severidade e fingerprint para aparecer como Issue separada
+ * Inicializa o monitoramento do frontend WatchFlow.
+ * O DSN é público por definição; nunca coloque auth tokens aqui.
  */
-export function captureAppException(error: unknown, context?: Record<string, unknown>) {
-  console.warn("📡 [WatchFlow APM] Despachando evento ao Sentry:", error, context);
+export function initSentry(): void {
+  const dsn = import.meta.env.VITE_SENTRY_DSN?.trim();
+  if (!dsn) return;
 
-  const errorObj = typeof error === 'string' ? new Error(error) : (error instanceof Error ? error : new Error(String(error)));
-  const metricTag = typeof context?.metric === 'string' ? context.metric : 'General';
-
-  Sentry.withScope((scope) => {
-    scope.setLevel('fatal');
-    scope.setFingerprint([errorObj.message, metricTag]);
-    if (context) {
-      scope.setExtras(context);
-      if (typeof context.host === 'string') scope.setTag('host', context.host);
-      if (typeof context.metric === 'string') scope.setTag('resource', context.metric);
-    }
-    Sentry.captureException(errorObj);
+  Sentry.init({
+    dsn,
+    environment: import.meta.env.MODE || "development",
+    release: import.meta.env.VITE_APP_RELEASE || "watchflow@1.0.0",
+    integrations: [Sentry.browserTracingIntegration()],
+    sendDefaultPii: false,
+    tracesSampleRate: isProduction ? 0.1 : 1.0,
+    tracePropagationTargets: [
+      /^https:\/\/watch-flow-six\.vercel\.app\//,
+      /^http:\/\/localhost:5173\//,
+    ],
+    beforeSend: scrubSensitiveData,
+    enabled: true,
+    debug: !isProduction && import.meta.env.VITE_SENTRY_DEBUG === "true",
   });
 }
 
-/**
- * Função de demonstração ao vivo para a banca e para o professor:
- */
-export function triggerTestErrorForAPM() {
-  try {
-    throw new Error("WatchFlow APM Test Error: Simulação de falha controlada para validação na banca UTP");
-  } catch (err) {
-    Sentry.captureException(err);
+/** Registra exceções operacionais sem promover erros comuns a nível fatal. */
+export function captureAppException(
+  error: unknown,
+  context?: Record<string, string | number | boolean | null>,
+): void {
+  const normalizedError =
+    error instanceof Error ? error : new Error(String(error));
+
+  Sentry.withScope((scope) => {
+    scope.setLevel("error");
+    scope.setTag("application", "watchflow");
+    if (context) {
+      for (const [key, value] of Object.entries(context)) {
+        if (value !== null && /^(host|metric|module|operation|integration)$/i.test(key)) {
+          scope.setTag(key, String(value));
+        }
+      }
+    }
+    Sentry.captureException(normalizedError);
+  });
+}
+
+/** Erro sintético para validar a integração em ambiente de desenvolvimento. */
+export function triggerTestErrorForAPM(): void {
+  if (isProduction && import.meta.env.VITE_SENTRY_ALLOW_TEST_ERRORS !== "true") {
+    return;
   }
+
+  Sentry.captureException(
+    new Error("WatchFlow Sentry test: controlled frontend exception"),
+    { tags: { test_event: "true", application: "watchflow" } },
+  );
 }
