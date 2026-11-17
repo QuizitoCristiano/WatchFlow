@@ -185,8 +185,8 @@ export const dashboardService = {
     const rawAlerts = localStorage.getItem('wf_local_alerts');
     const alerts: Alert[] = rawAlerts ? JSON.parse(rawAlerts) : [];
 
-    const totalDevices = devs.length || 1;
-    const devicesOnline = devs.filter(d => d.status === 'online').length || 1;
+    const totalDevices = devs.length;
+    const devicesOnline = devs.filter(d => d.status === 'online').length;
     const devicesWarning = devs.filter(d => d.status === 'warning').length;
     const devicesCritical = devs.filter(d => d.status === 'critical').length;
     const devicesOffline = totalDevices - (devicesOnline + devicesWarning + devicesCritical);
