@@ -3,8 +3,10 @@ import { subscribeToDevices, deleteDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
 import { Server, HardDrive, Cpu, Activity, Trash2, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const DispositivosPage: React.FC = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const userId = user?.uid;
 
@@ -88,7 +90,7 @@ export const DispositivosPage: React.FC = () => {
                 <div className="space-y-3 pt-2">
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1"><Cpu className="w-3 h-3"/> CPU</span>
+                      <span className="text-gray-400 flex items-center gap-1"><Cpu className="w-3 h-3"/> {t('CPU')}</span>
                       <span>{cpu}%</span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
@@ -114,7 +116,7 @@ export const DispositivosPage: React.FC = () => {
 
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1"><HardDrive className="w-3 h-3"/> Disco</span>
+                      <span className="text-gray-400 flex items-center gap-1"><HardDrive className="w-3 h-3"/> {t('Disco')}</span>
                       <span>{disk}%</span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
