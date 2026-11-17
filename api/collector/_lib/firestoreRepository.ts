@@ -314,24 +314,38 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
     },
 
     async getCredential(tokenHash): Promise<AuthenticatedCollector | null> {
-      const snapshot = await credentialReference(db, tokenHash).get();
-      if (!snapshot.exists) return null;
-      const data = getRecord(snapshot.data());
-      if (
-        typeof data.userId !== 'string' ||
-        typeof data.integrationId !== 'string' ||
-        typeof data.deviceId !== 'string' ||
-        !(data.expiresAt instanceof Timestamp) ||
-        data.expiresAt.toMillis() <= Date.now()
-      ) return null;
-      return {
-        identity: {
-          userId: data.userId,
-          integrationId: data.integrationId,
-          deviceId: data.deviceId,
-        },
-        tokenHash,
-      };
+      const reference = credentialReference(db, tokenHash);
+      return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) return null;
+        const data = getRecord(snapshot.data());
+        const now = new Date();
+        if (
+          typeof data.userId !== 'string' ||
+          typeof data.integrationId !== 'string' ||
+          typeof data.deviceId !== 'string' ||
+          !(data.expiresAt instanceof Timestamp) ||
+          data.expiresAt.toMillis() <= now.getTime()
+        ) return null;
+
+        // Rate-limit before parsing attacker-controlled JSON to fail fast on repeated requests.
+        const lastRequestAt = data.lastRequestAt;
+        if (
+          lastRequestAt instanceof Timestamp &&
+          now.getTime() - lastRequestAt.toMillis() < MIN_WRITE_INTERVAL_MS
+        ) {
+          throw new HttpError(429, 'Limite de ingestão atingido. Aguarde pelo menos 15 segundos.');
+        }
+        transaction.update(reference, { lastRequestAt: Timestamp.fromDate(now) });
+        return {
+          identity: {
+            userId: data.userId,
+            integrationId: data.integrationId,
+            deviceId: data.deviceId,
+          },
+          tokenHash,
+        };
+      });
     },
 
     async recordSuccess(identity, tokenHash, sample, now) {
