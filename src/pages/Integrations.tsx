@@ -35,10 +35,15 @@ export const Integrations: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
-  const [provisionedConfig, setProvisionedConfig] = useState<{
+  const [provisionedConfigState, setProvisionedConfigState] = useState<{
+    userId: string;
     integrationId: string;
     command: string;
   } | null>(null);
+  const provisionedConfig = provisionedConfigState?.userId === userId ? provisionedConfigState : null;
+  const setProvisionedConfig = (value: { integrationId: string; command: string } | null) => {
+    setProvisionedConfigState(value ? { ...value, userId } : null);
+  };
   const [rateWindowNow, setRateWindowNow] = useState<number | null>(null);
 
   // Form State
