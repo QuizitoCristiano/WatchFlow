@@ -18,6 +18,9 @@ import type {
 import type { CollectorRepository } from './service.ts';
 
 const MIN_WRITE_INTERVAL_MS = 15_000;
+const MIN_PROVISION_INTERVAL_MS = 60_000;
+const PROVISION_WINDOW_MS = 60 * 60_000;
+const MAX_PROVISIONS_PER_WINDOW = 5;
 const BUCKET_MS = 60 * 60_000;
 const WINDOW_BUCKETS = 24;
 
@@ -263,9 +266,23 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
         if (integration.type !== 'node_exporter') {
           throw new HttpError(400, 'A ingestão ainda suporta somente Node Exporter.');
         }
+        const previousState = getRecord(stateSnapshot.data());
+        const lastRotation = previousState.rotatedAt;
+        if (lastRotation instanceof Timestamp && issuedAt.getTime() - lastRotation.toMillis() < MIN_PROVISION_INTERVAL_MS) {
+          throw new HttpError(429, 'Aguarde 60 segundos antes de gerar outra credencial.');
+        }
+        const windowStartedAt = previousState.rotationWindowStartedAt;
+        const windowIsCurrent = windowStartedAt instanceof Timestamp &&
+          issuedAt.getTime() - windowStartedAt.toMillis() < PROVISION_WINDOW_MS;
+        const rotationCount = windowIsCurrent && Number.isSafeInteger(previousState.rotationCount)
+          ? Number(previousState.rotationCount)
+          : 0;
+        if (rotationCount >= MAX_PROVISIONS_PER_WINDOW) {
+          throw new HttpError(429, 'Limite de 5 provisionamentos por hora atingido.');
+        }
         if (newCredentialSnapshot.exists) throw new HttpError(409, 'Não foi possível gerar uma credencial exclusiva.');
 
-        const previousHash = getRecord(stateSnapshot.data()).tokenHash;
+        const previousHash = previousState.tokenHash;
         const previousCredentialRef = typeof previousHash === 'string'
           ? credentialReference(db, previousHash)
           : null;
@@ -289,6 +306,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           tokenHash,
           rotatedAt: Timestamp.fromDate(issuedAt),
           expiresAt: Timestamp.fromDate(new Date(issuedAt.getTime() + 90 * 24 * 60 * 60_000)),
+          rotationWindowStartedAt: windowIsCurrent ? windowStartedAt : Timestamp.fromDate(issuedAt),
+          rotationCount: rotationCount + 1,
         });
       });
     },
