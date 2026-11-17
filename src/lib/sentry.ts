@@ -65,20 +65,21 @@ export function captureAppException(
  * Registra no Sentry que o usuário solicitou a conexão deste navegador.
  * Os dados são metadados disponíveis no navegador, não métricas físicas de CPU.
  */
-export function captureLocalDeviceConnected(device: LocalDeviceContext): void {
+export async function captureLocalDeviceConnected(device: LocalDeviceContext): Promise<boolean> {
   Sentry.withScope((scope) => {
     scope.setLevel("info");
     scope.setTag("feature", "local-device-demo");
     scope.setContext("local_device", device);
     Sentry.captureMessage("WatchFlow: dispositivo local conectado pelo usuário");
   });
+  return Sentry.flush(2000);
 }
 
 /**
  * Envia uma simulação identificada como demonstração. Não gera carga real
  * na máquina e não deve ser interpretada como telemetria física.
  */
-export function captureOverloadSimulation(host: string): void {
+export async function captureOverloadSimulation(host: string): Promise<boolean> {
   const simulatedMetrics = {
     cpuUsagePercent: 94,
     memoryUsagePercent: 92,
@@ -94,6 +95,7 @@ export function captureOverloadSimulation(host: string): void {
     scope.setContext("simulated_metrics", simulatedMetrics);
     Sentry.captureMessage("WatchFlow: simulação de sobrecarga acima de 90%");
   });
+  return Sentry.flush(2000);
 }
 
 /** Mantido para testes manuais controlados da integração APM. */
