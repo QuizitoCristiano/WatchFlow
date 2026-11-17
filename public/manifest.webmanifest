@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "WatchFlow — Observabilidade e Telemetria",
+  "short_name": "WatchFlow",
+  "description": "Monitore dispositivos, métricas de infraestrutura e disponibilidade em um só lugar.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/WatchFlow.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

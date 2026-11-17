@@ -1,44 +1,35 @@
 <!doctype html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/WatchFlow.png" />
+  <link rel="apple-touch-icon" href="/WatchFlow.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WatchFlow" />
 
-  <!-- Título e SEO Principal -->
   <title>WatchFlow | Plataforma de Observabilidade e Telemetria</title>
-  <meta name="description"
-    content="WatchFlow é uma plataforma de observabilidade com auto-discovery que centraliza métricas de infraestrutura, dispositivos, disponibilidade e alertas em tempo real." />
-  <meta name="keywords"
-    content="WatchFlow, observabilidade, telemetria, monitoramento, infraestrutura, métricas, auto-discovery, Node Exporter, Telegraf, Zabbix" />
+  <meta name="description" content="WatchFlow é uma plataforma de observabilidade que centraliza métricas de infraestrutura, dispositivos, disponibilidade e alertas em tempo real." />
+  <meta name="keywords" content="WatchFlow, observabilidade, telemetria, monitoramento, infraestrutura, métricas, Node Exporter, Telegraf, Zabbix" />
   <meta name="author" content="Quizito, Cristiano" />
-
-  <!-- Open Graph / Facebook / LinkedIn -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="WatchFlow | Plataforma de Observabilidade e Telemetria" />
-  <meta property="og:description"
-    content="Centralize métricas via auto-discovery, acompanhe a disponibilidade da infraestrutura e gerencie alertas em tempo real." />
+  <meta property="og:description" content="Centralize métricas, acompanhe a disponibilidade da infraestrutura e gerencie alertas." />
   <meta property="og:image" content="/WatchFlow.png" />
-
-  <!-- Twitter Card -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:title" content="WatchFlow | Plataforma de Observabilidade e Telemetria" />
-  <meta property="twitter:description"
-    content="Plataforma unificada de observabilidade e telemetria com auto-discovery e gestão de alertas." />
-  <meta property="twitter:image" content="/WatchFlow.png" />
-
-  <!-- Tipografia Externa (Inter Font) -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="WatchFlow | Plataforma de Observabilidade e Telemetria" />
+  <meta name="twitter:description" content="Plataforma unificada de observabilidade e telemetria." />
+  <meta name="twitter:image" content="/WatchFlow.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
- 
 </head>
-
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
-
 </html>
