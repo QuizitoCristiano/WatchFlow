@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 
 import { ALERT_STATUS_LABELS, type Alert } from '../types';
 import { formatDate, formatTime } from '../lib/formatters';
+import { useI18n } from '@/i18n/useI18n';
 
 const localAlertsKey = (userId: string) => `wf_local_alerts:${userId}`;
 
@@ -49,6 +50,7 @@ const getStoredLocalAlerts = (userId: string): Alert[] => {
 };
 
 export const AlertsPage: React.FC = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const userId = user?.uid ?? '';
   const [alertsState, setAlertsState] = useState<{ userId: string; items: Alert[] } | null>(null);
@@ -210,10 +212,10 @@ export const AlertsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-heading)] flex items-center gap-2">
             <AlertTriangle className="text-[var(--color-brand-primary)]" size={28} />
-            Central de Incidentes & Alertas
+            {t('Central de Incidentes & Alertas')}
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Monitoramento proativo e integração em tempo real com o Sentry APM.
+            {t('Monitoramento proativo e integração em tempo real com o Sentry APM.')}
           </p>
         </div>
 
@@ -227,7 +229,7 @@ export const AlertsPage: React.FC = () => {
                 className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
-                <span>Resolver Todos</span>
+                <span>{t('Resolver Todos')}</span>
               </button>
 
               <button
@@ -235,7 +237,7 @@ export const AlertsPage: React.FC = () => {
                 className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Limpar Histórico</span>
+                <span>{t('Limpar Histórico')}</span>
               </button>
             </>
           )}
@@ -246,7 +248,7 @@ export const AlertsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Críticos Ativos</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Críticos Ativos')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-danger)] mt-1">{openCriticals}</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-danger)]/10 rounded-lg text-[var(--color-status-danger)]">
@@ -256,7 +258,7 @@ export const AlertsPage: React.FC = () => {
 
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Atenção / Warning</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Atenção / Warning')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-warning)] mt-1">{totalWarnings}</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-warning)]/10 rounded-lg text-[var(--color-status-warning)]">
@@ -266,7 +268,7 @@ export const AlertsPage: React.FC = () => {
 
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Resolvidos / Histórico</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{t('Resolvidos / Histórico')}</p>
             <h3 className="text-3xl font-extrabold text-[var(--color-status-success)] mt-1">{totalResolved}</h3>
           </div>
           <div className="p-3 bg-[var(--color-status-success)]/10 rounded-lg text-[var(--color-status-success)]">
@@ -318,11 +320,11 @@ export const AlertsPage: React.FC = () => {
           <table className="w-full text-left text-xs text-gray-300">
             <thead className="bg-zinc-950 text-gray-400 uppercase font-medium border-b border-zinc-800">
               <tr>
-                <th className="p-3">Severidade</th>
-                <th className="p-3">Título / Descrição</th>
-                <th className="p-3">Origem</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Ações</th>
+                <th className="p-3">{t('Severidade')}</th>
+                <th className="p-3">{t('Título / Descrição')}</th>
+                <th className="p-3">{t('Origem')}</th>
+                <th className="p-3">{t('Status')}</th>
+                <th className="p-3 text-right">{t('Ações')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
@@ -369,7 +371,7 @@ export const AlertsPage: React.FC = () => {
                             onClick={() => handleAcknowledge(a.id!)}
                             className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs transition cursor-pointer"
                           >
-                            Reconhecer
+                            {t('Reconhecer')}
                           </button>
                         )}
                         {a.status !== 'resolved' && (
@@ -377,7 +379,7 @@ export const AlertsPage: React.FC = () => {
                             onClick={() => handleResolve(a.id!)}
                             className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-xs transition cursor-pointer"
                           >
-                            Resolver
+                            {t('Resolver')}
                           </button>
                         )}
                       </div>
