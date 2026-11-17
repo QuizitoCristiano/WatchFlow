@@ -114,8 +114,15 @@ function enforceInMemoryRateLimit(token: string): void {
 
 function requireBearerToken(request: ApiRequest): string {
   const authorization = header(request, 'authorization');
-  const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
+  const match = authorization?.match(/^Bearer ([A-Za-z0-9._~-]{20,8192})$/);
   if (!match) throw new HttpError(401, 'Credencial Bearer obrigatória.');
+  return match[1];
+}
+
+function requireCollectorToken(request: ApiRequest): string {
+  const authorization = header(request, 'authorization');
+  const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
+  if (!match) throw new HttpError(401, 'Credencial do coletor inválida.');
   return match[1];
 }
 
@@ -167,7 +174,7 @@ export function createIngestHandler(dependencies: IngestDependencies): ApiHandle
     if (!requireMethod(request, response)) return;
     try {
       requireJson(request);
-      const token = requireBearerToken(request);
+      const token = requireCollectorToken(request);
       enforceInMemoryRateLimit(token);
       const body = readJsonBody(request);
       const result = await dependencies.ingest(token, body);
