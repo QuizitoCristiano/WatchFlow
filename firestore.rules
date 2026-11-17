@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Every user document and subcollection is private to its authenticated owner.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Alerts are stored at the root for dashboard queries; ownership is enforced by userId.
+    match /alerts/{alertId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Collector credentials and their rotation state are server-only (Admin SDK).
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Default deny: collections must receive an explicit owner-aware rule.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
