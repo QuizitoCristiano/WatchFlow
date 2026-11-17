@@ -5,10 +5,8 @@ import { useAuth } from '@/contexts/useAuth';
 
 export const useDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const userId = user?.uid ?? 'usr_local_dev_001';
+  const userId = user?.uid ?? null;
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [isSeedingDemo, setIsSeedingDemo] = useState(false);
-  const [seedDemoError, setSeedDemoError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<{
     userId: string;
     version: number;
@@ -145,28 +143,6 @@ export const useDashboard = () => {
         ? dashboardData.error
         : null;
 
-  const seedDemoData = async () => {
-    if (!userId) {
-      setSeedDemoError('É necessário estar autenticado para criar dados de demonstração.');
-      return;
-    }
-
-    setIsSeedingDemo(true);
-    setSeedDemoError(null);
-    try {
-      const alertWarning = await dashboardService.seedDemoData(userId);
-      setRefreshVersion((version) => version + 1);
-      if (alertWarning) {
-        setSeedDemoError(`Dispositivo e métricas criados, mas o alerta de demonstração falhou: ${alertWarning}`);
-      }
-    } catch (seedError) {
-      const message = getErrorMessage(seedError);
-      console.error('Falha ao criar dados de demonstração do Dashboard:', seedError);
-      setSeedDemoError(`Não foi possível criar dados de demonstração: ${message}`);
-    } finally {
-      setIsSeedingDemo(false);
-    }
-  };
 
   return {
     summary: hasCurrentUserData ? dashboardData.summary : null,
@@ -175,9 +151,6 @@ export const useDashboard = () => {
     alerts: hasCurrentUserData ? dashboardData.alerts : [],
     loading,
     error,
-    isSeedingDemo,
-    seedDemoError,
-    seedDemoData,
   };
 };
 
