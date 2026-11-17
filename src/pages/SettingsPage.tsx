@@ -155,7 +155,7 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPreferences(p => ({ ...p, language: e.target.value as UserPreferences['language'] }))}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value="pt-BR">Português (Brasil)</option>
+                    <option value="pt-BR">{t('Português (Brasil)')}</option>
                     <option value="en-US">English (US)</option>
                   </select>
                 </div>
@@ -243,7 +243,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="border-t border-[var(--color-border-subtle)] pt-4 space-y-3">
                 <h3 className="text-sm font-semibold text-[var(--color-text-heading)]">{t('Categorias de alertas')}</h3>
-                <p className="text-xs text-[var(--color-text-muted)]">Preferências de entrega por categoria. A coleta e o histórico das métricas permanecem ativos; a integração com o dispatcher será concluída na próxima etapa.</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{t('Preferências de entrega por categoria. A coleta e o histórico das métricas permanecem ativos; a integração com o dispatcher será concluída na próxima etapa.')}</p>
                 {([
                   ['cpu', 'CPU'],
                   ['memory', 'Memória (RAM)'],
@@ -347,7 +347,7 @@ export const SettingsPage: React.FC = () => {
               <div className="p-4 bg-[var(--color-bg-app)] border border-[var(--color-border-subtle)] rounded-lg flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-[var(--color-text-heading)]">{t('Dispositivo Atual')}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Navegador Web • Ativo agora</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('Navegador Web • Ativo agora')}</p>
                 </div>
                 <button
                   type="button"
