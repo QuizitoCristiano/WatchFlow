@@ -180,9 +180,9 @@ export const dashboardService = {
     }
 
     // Fallback Local
-    const rawDevs = localStorage.getItem('wf_local_devices');
+    const rawDevs = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
     const devs: Device[] = rawDevs ? JSON.parse(rawDevs) : [];
-    const rawAlerts = localStorage.getItem('wf_local_alerts');
+    const rawAlerts = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
     const alerts: Alert[] = rawAlerts ? JSON.parse(rawAlerts) : [];
 
     const totalDevices = devs.length;
@@ -257,8 +257,8 @@ export const dashboardService = {
     }
 
     // Fallback Local
-    const histKey = 'wf_metrics_dev-local-machine';
-    const rawHist = localStorage.getItem(histKey);
+    const histKey = userId ? `wf_metrics:${userId}:dev-local-machine` : '';
+    const rawHist = histKey ? localStorage.getItem(histKey) : null;
     const stored = rawHist ? JSON.parse(rawHist) : [];
     const history: DashboardMetricPoint[] = stored.map((item: any) => ({
       timestamp: new Date(item.collectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -287,7 +287,7 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_devices');
+    const raw = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
     return raw ? JSON.parse(raw) : [];
   },
 
@@ -308,7 +308,7 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_alerts');
+    const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
     return raw ? JSON.parse(raw) : [];
   },
 
@@ -328,7 +328,7 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_alerts');
+    const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
     const list: Alert[] = raw ? JSON.parse(raw) : [];
     return list.filter(a => a.status === 'active').length;
   },
