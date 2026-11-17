@@ -29,7 +29,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'Quizito',
     name: 'Quizito Cristiano',
-    role: t('Desenvolvedor Full Stack & Arquiteto'),
+    role: 'Desenvolvedor Full Stack & Arquiteto',
     photoUrl: Quizito, // URL da foto (ex: '/kizito.png')
     responsibilities: [
       'Arquitetura geral do WatchFlow',
@@ -45,7 +45,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro2',
     name: 'Nome do Integrante',
-    role: t('UI/UX Designer & Frontend'),
+    role: 'UI/UX Designer & Frontend',
     photoUrl: '',
     responsibilities: [
       'Prototipação das Telas no Figma',
@@ -59,7 +59,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro3',
     name: 'Nome do Integrante',
-    role: t('Documentação & Engenharia de Requisitos'),
+    role: 'Documentação & Engenharia de Requisitos',
     photoUrl: '',
     responsibilities: [
       'Levantamento das Regras de Negócio (RNs)',
@@ -74,7 +74,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro4',
     name: 'Nome do Integrante',
-    role: t('Garantia de Qualidade (QA) & Testes'),
+    role: 'Garantia de Qualidade (QA) & Testes',
     photoUrl: '',
     responsibilities: [
       'Validação dos Fluxos de Navegação',
@@ -88,12 +88,12 @@ const TEAM_MEMBERS: TeamMember[] = [
 ];
 
 const STACK_TECHNOLOGIES = [
-  { name: 'React', desc: t('Interface Dinâmica e Componentizada'), icon: Code2, color: 'text-sky-400' },
-  { name: 'TypeScript', desc: t('Tipagem Estática e Segurança de Código'), icon: ShieldCheck, color: 'text-blue-400' },
-  { name: 'Firebase Firestore', desc: t('Banco NoSQL em Tempo Real'), icon: Flame, color: 'text-amber-500' },
-  { name: 'Firebase Auth', desc: t('Gestão Segura de Usuários'), icon: Zap, color: 'text-amber-400' },
-  { name: 'Tailwind CSS', desc: t('Estilização Moderna e Responsiva'), icon: Palette, color: 'text-teal-400' },
-  { name: 'Lucide Icons', desc: t('Padronização Visual da Interface'), icon: Layers, color: 'text-indigo-400' }
+  { name: 'React', desc: 'Interface Dinâmica e Componentizada', icon: Code2, color: 'text-sky-400' },
+  { name: 'TypeScript', desc: 'Tipagem Estática e Segurança de Código', icon: ShieldCheck, color: 'text-blue-400' },
+  { name: 'Firebase Firestore', desc: 'Banco NoSQL em Tempo Real', icon: Flame, color: 'text-amber-500' },
+  { name: 'Firebase Auth', desc: 'Gestão Segura de Usuários', icon: Zap, color: 'text-amber-400' },
+  { name: 'Tailwind CSS', desc: 'Estilização Moderna e Responsiva', icon: Palette, color: 'text-teal-400' },
+  { name: 'Lucide Icons', desc: 'Padronização Visual da Interface', icon: Layers, color: 'text-indigo-400' }
 ];
 
 export const EquipePage: React.FC = () => {
@@ -172,7 +172,7 @@ export const EquipePage: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-bold text-white">{member.name}</h3>
                     <span className="text-xs font-medium text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
-                      {member.role}
+                      {t(member.role)}
                     </span>
                   </div>
                 </div>
@@ -246,7 +246,7 @@ export const EquipePage: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-white">{tech.name}</h4>
-                  <p className="text-xs text-gray-400 mt-0.5">{tech.desc}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{t(tech.desc)}</p>
                 </div>
               </div>
             );
