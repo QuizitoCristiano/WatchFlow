@@ -29,7 +29,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'Quizito',
     name: 'Quizito Cristiano',
-    role: 'Desenvolvedor Full Stack & Arquiteto',
+    role: t('Desenvolvedor Full Stack & Arquiteto'),
     photoUrl: Quizito, // URL da foto (ex: '/kizito.png')
     responsibilities: [
       'Arquitetura geral do WatchFlow',
@@ -45,7 +45,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'membro2',
     name: 'Nome do Integrante',
-    role: 'UI/UX Designer & Frontend',
+    role: t('UI/UX Designer & Frontend'),
     photoUrl: '',
     responsibilities: [
       'Prototipação das Telas no Figma',
@@ -88,12 +88,12 @@ const TEAM_MEMBERS: TeamMember[] = [
 ];
 
 const STACK_TECHNOLOGIES = [
-  { name: 'React', desc: 'Interface Dinâmica e Componentizada', icon: Code2, color: 'text-sky-400' },
-  { name: 'TypeScript', desc: 'Tipagem Estática e Segurança de Código', icon: ShieldCheck, color: 'text-blue-400' },
-  { name: 'Firebase Firestore', desc: 'Banco NoSQL em Tempo Real', icon: Flame, color: 'text-amber-500' },
-  { name: 'Firebase Auth', desc: 'Gestão Segura de Usuários', icon: Zap, color: 'text-amber-400' },
-  { name: 'Tailwind CSS', desc: 'Estilização Moderna e Responsiva', icon: Palette, color: 'text-teal-400' },
-  { name: 'Lucide Icons', desc: 'Padronização Visual da Interface', icon: Layers, color: 'text-indigo-400' }
+  { name: 'React', desc: t('Interface Dinâmica e Componentizada'), icon: Code2, color: 'text-sky-400' },
+  { name: 'TypeScript', desc: t('Tipagem Estática e Segurança de Código'), icon: ShieldCheck, color: 'text-blue-400' },
+  { name: 'Firebase Firestore', desc: t('Banco NoSQL em Tempo Real'), icon: Flame, color: 'text-amber-500' },
+  { name: 'Firebase Auth', desc: t('Gestão Segura de Usuários'), icon: Zap, color: 'text-amber-400' },
+  { name: 'Tailwind CSS', desc: t('Estilização Moderna e Responsiva'), icon: Palette, color: 'text-teal-400' },
+  { name: 'Lucide Icons', desc: t('Padronização Visual da Interface'), icon: Layers, color: 'text-indigo-400' }
 ];
 
 export const EquipePage: React.FC = () => {
@@ -184,7 +184,7 @@ export const EquipePage: React.FC = () => {
                     {member.responsibilities.map((resp, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{resp}</span>
+                        <span>{t(resp)}</span>
                       </li>
                     ))}
                   </ul>
