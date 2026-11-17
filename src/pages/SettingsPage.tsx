@@ -241,7 +241,7 @@ export const SettingsPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={preferences.notifications[item.key]}
-                      onChange={(e) => updateNestedPref('notifications', item.key as keyof NotificationPreferences, e.target.checked)}
+                      onChange={(e) => updateNestedPref('notifications', item.key, e.target.checked)}
                       className="h-5 w-5 rounded border-[var(--color-border-strong)] accent-[var(--color-brand-primary)] cursor-pointer"
                     />
                   </div>
@@ -278,7 +278,7 @@ export const SettingsPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Período Padrão do Histórico</label>
                   <select
                     value={preferences.monitoring.defaultTimeRange}
-                    onChange={(e) => updateNestedPref('monitoring', 'defaultTimeRange', e.target.value)}
+                    onChange={(e) => updateNestedPref('monitoring', 'defaultTimeRange', e.target.value as UserPreferences['monitoring']['defaultTimeRange'])}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
                     <option value="1h">Última 1 hora</option>
@@ -315,7 +315,7 @@ export const SettingsPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={preferences.dashboard[w.key]}
-                      onChange={(e) => updateNestedPref('dashboard', w.key as keyof DashboardPreferences, e.target.checked)}
+                      onChange={(e) => updateNestedPref('dashboard', w.key, e.target.checked)}
                       className="h-4 w-4 rounded border-[var(--color-border-strong)] accent-[var(--color-brand-primary)]"
                     />
                     <span className="text-xs font-medium text-[var(--color-text-heading)]">{w.label}</span>
