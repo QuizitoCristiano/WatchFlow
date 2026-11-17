@@ -169,7 +169,7 @@ export const dashboardService = {
           avgDiskUsage: devicesWithMetrics > 0 ? Math.round(totalDisk / devicesWithMetrics) : null,
           diskUsedGb: devicesWithMetrics > 0 ? Number(totalDiskUsedGb.toFixed(2)) : null,
           diskTotalGb: devicesWithMetrics > 0 ? Number(totalDiskTotalGb.toFixed(2)) : null,
-          lastUpdatedAt: new Date().toISOString() as any,
+          lastUpdatedAt: new Date().toISOString(),
         };
       }
     } catch (e) {
@@ -256,14 +256,26 @@ export const dashboardService = {
     // Fallback Local
     const histKey = userId ? `wf_metrics:${userId}:dev-local-machine` : '';
     const rawHist = histKey ? localStorage.getItem(histKey) : null;
-    const stored = rawHist ? JSON.parse(rawHist) : [];
-    const history: DashboardMetricPoint[] = stored.map((item: any) => ({
-      timestamp: new Date(item.collectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      cpu: item.cpu?.usagePercent || 0,
-      memory: item.memory?.usedPercent || 0,
-      ...(typeof item.network?.bytesInSec === 'number' ? { downloadMbps: item.network.bytesInSec * 8 / 1_000_000 } : {}),
-      ...(typeof item.network?.bytesOutSec === 'number' ? { uploadMbps: item.network.bytesOutSec * 8 / 1_000_000 } : {}),
-    }));
+    const stored: unknown = rawHist ? JSON.parse(rawHist) : [];
+    const history: DashboardMetricPoint[] = Array.isArray(stored)
+      ? stored.flatMap((item): DashboardMetricPoint[] => {
+          const record = asRecord(item);
+          const date = record ? toDate(record.collectedAt) : null;
+          if (!record || !date) return [];
+          const cpu = metricValue(record, 'cpu', 'usagePercent');
+          const memory = metricValue(record, 'memory', 'usedPercent');
+          const network = asRecord(record.network);
+          const downloadBytes = finiteNumber(network?.bytesInSec);
+          const uploadBytes = finiteNumber(network?.bytesOutSec);
+          return [{
+            timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            ...(cpu === undefined ? {} : { cpu }),
+            ...(memory === undefined ? {} : { memory }),
+            ...(downloadBytes === undefined ? {} : { downloadMbps: downloadBytes * 8 / 1_000_000 }),
+            ...(uploadBytes === undefined ? {} : { uploadMbps: uploadBytes * 8 / 1_000_000 }),
+          }];
+        })
+      : [];
 
     return {
       history,
