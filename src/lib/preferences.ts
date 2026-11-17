@@ -35,6 +35,18 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
 
 
 
+function normalizeTimezone(value: unknown): string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 64) {
+    return DEFAULT_PREFERENCES.timezone;
+  }
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return value;
+  } catch {
+    return DEFAULT_PREFERENCES.timezone;
+  }
+}
+
 /** Merge persisted data with defaults so older documents remain compatible. */
 export function normalizePreferences(value: unknown): UserPreferences {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_PREFERENCES;
@@ -49,7 +61,7 @@ export function normalizePreferences(value: unknown): UserPreferences {
   const validRanges = ['1h', '24h', '7d', '30d'] as const;
   return {
     language: validLanguage,
-    timezone: typeof input.timezone === 'string' && input.timezone.length <= 64 ? input.timezone : DEFAULT_PREFERENCES.timezone,
+    timezone: normalizeTimezone(input.timezone),
     theme: validTheme,
     notifications: {
       enabled: typeof notifications.enabled === 'boolean' ? notifications.enabled : DEFAULT_PREFERENCES.notifications.enabled,
