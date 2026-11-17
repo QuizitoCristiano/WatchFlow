@@ -49,7 +49,7 @@ export const MetricasPage: React.FC = () => {
     : [];
   const loadingHistory = Boolean(
     userId && selectedDeviceId &&
-    (historyState?.userId !== userId || historyState.deviceId !== selectedDeviceId)
+    (historyState?.userId !== userId || historyState?.deviceId !== selectedDeviceId)
   );
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'gpu' | 'disk' | 'network'>('cpu');
