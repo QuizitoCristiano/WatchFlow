@@ -13,8 +13,10 @@ import {
 import type { UserPreferences } from '@/types';
 import { useAuth } from '@/contexts/useAuth';
 import { usePreferences } from '@/contexts/usePreferences';
+import { useI18n } from '@/i18n/useI18n';
 
 export const SettingsPage: React.FC = () => {
+  const { t } = useI18n();
   const { user, logout } = useAuth();
   const { preferences, setPreferences, savePreferences, isLoading } = usePreferences();
   const [activeSection, setActiveSection] = useState<string>('general');
@@ -75,10 +77,10 @@ export const SettingsPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--color-border-subtle)] pb-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-heading)]">
-            Configurações da Plataforma
+            {t('Configurações da Plataforma')}
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Personalize a experiência, tempos de atualização e comportamento do WatchFlow.
+            {t('Personalize a experiência, tempos de atualização e comportamento do WatchFlow.')}
           </p>
         </div>
 
@@ -92,13 +94,13 @@ export const SettingsPage: React.FC = () => {
         </button>
       </div>
 
-      {saveStatus === 'error' && <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">Não foi possível salvar as configurações. Verifique sua conexão e tente novamente.</div>}
+      {saveStatus === 'error' && <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">{t('Não foi possível salvar as configurações. Verifique sua conexão e tente novamente.')}</div>}
 
       {/* Feedback de salvamento */}
       {saveStatus === 'success' && (
         <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm">
           <CheckCircle2 size={18} />
-          <span>Configurações salvas com sucesso! (RN-CONFIG-03)</span>
+          <span>{t('Configurações salvas com sucesso! (RN-CONFIG-03)')}</span>
         </div>
       )}
 
@@ -108,12 +110,12 @@ export const SettingsPage: React.FC = () => {
         {/* Navegação de Seções */}
         <nav className="space-y-1">
           {[
-            { id: 'general', label: 'Geral & Região', icon: Globe },
-            { id: 'appearance', label: 'Aparência', icon: Sun },
-            { id: 'notifications', label: 'Notificações', icon: Bell },
-            { id: 'monitoring', label: 'Monitoramento', icon: Clock },
-            { id: 'dashboard', label: 'Widgets Dashboard', icon: LayoutGrid },
-            { id: 'session', label: 'Sessão & Segurança', icon: Moon },
+            { id: 'general', label: t('Geral & Região'), icon: Globe },
+            { id: 'appearance', label: t('Aparência'), icon: Sun },
+            { id: 'notifications', label: t('Notificações'), icon: Bell },
+            { id: 'monitoring', label: t('Monitoramento'), icon: Clock },
+            { id: 'dashboard', label: t('Widgets Dashboard'), icon: LayoutGrid },
+            { id: 'session', label: t('Sessão & Segurança'), icon: Moon },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -142,12 +144,12 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <Globe size={20} className="text-[var(--color-brand-primary)]" />
-                Idioma e Fuso Horário
+                {t('Idioma e Fuso Horário')}
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Idioma</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">{t('Idioma')}</label>
                   <select
                     value={preferences.language}
                     onChange={(e) => setPreferences(p => ({ ...p, language: e.target.value as UserPreferences['language'] }))}
@@ -159,14 +161,14 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Fuso Horário</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">{t('Fuso Horário')}</label>
                   <select
                     value={preferences.timezone}
                     onChange={(e) => setPreferences(p => ({ ...p, timezone: e.target.value }))}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value="America/Sao_Paulo">Brasília (GMT-3)</option>
-                    <option value="UTC">UTC (Universal Time)</option>
+                    <option value="America/Sao_Paulo">{t('Brasília (GMT-3)')}</option>
+                    <option value="UTC">{t('UTC (Universal Time)')}</option>
                   </select>
                 </div>
               </div>
@@ -178,14 +180,14 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <Sun size={20} className="text-[var(--color-brand-primary)]" />
-                Tema da Interface (RN-CONFIG-06)
+                {t('Tema da Interface (RN-CONFIG-06)')}
               </h2>
 
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { id: 'system', label: 'Sistema', icon: Monitor },
-                  { id: 'light', label: 'Claro', icon: Sun },
-                  { id: 'dark', label: 'Escuro', icon: Moon },
+                  { id: 'system', label: t('Sistema'), icon: Monitor },
+                  { id: 'light', label: t('Claro'), icon: Sun },
+                  { id: 'dark', label: t('Escuro'), icon: Moon },
                 ].map((t) => {
                   const Icon = t.icon;
                   const isSelected = preferences.theme === t.id;
@@ -213,16 +215,16 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <Bell size={20} className="text-[var(--color-brand-primary)]" />
-                Preferências de Alertas (RN-CONFIG-05)
+                {t('Preferências de Alertas (RN-CONFIG-05)')}
               </h2>
 
               <div className="space-y-3 divide-y divide-[var(--color-border-subtle)]">
                 {[
-                  { key: 'enabled' as const, label: 'Ativar Notificações Globais', desc: 'Permite o envio de alertas em tempo real' },
-                  { key: 'critical' as const, label: 'Alertas Críticos', desc: 'Notificar interrupções de serviço severas' },
-                  { key: 'warning' as const, label: 'Alertas de Atenção', desc: 'Notificar oscilações de CPU, RAM e disco' },
-                  { key: 'info' as const, label: 'Alertas Informativos', desc: 'Notificações operacionais e deploys' },
-                  { key: 'email' as const, label: 'Notificações por E-mail', desc: 'Preferência registrada; envio depende da integração de e-mail.' },
+                  { key: 'enabled' as const, label: t('Ativar Notificações Globais'), desc: t('Permite o envio de alertas em tempo real') },
+                  { key: 'critical' as const, label: t('Alertas Críticos'), desc: t('Notificar interrupções de serviço severas') },
+                  { key: 'warning' as const, label: t('Alertas de Atenção'), desc: t('Notificar oscilações de CPU, RAM e disco') },
+                  { key: 'info' as const, label: t('Alertas Informativos'), desc: t('Notificações operacionais e deploys') },
+                  { key: 'email' as const, label: t('Notificações por E-mail'), desc: t('Preferência registrada; envio depende da integração de e-mail.') },
                 ].map((item) => (
                   <div key={item.key} className="pt-3 flex items-center justify-between">
                     <div>
@@ -240,7 +242,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="border-t border-[var(--color-border-subtle)] pt-4 space-y-3">
-                <h3 className="text-sm font-semibold text-[var(--color-text-heading)]">Categorias de alertas</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-heading)]">{t('Categorias de alertas')}</h3>
                 <p className="text-xs text-[var(--color-text-muted)]">Preferências de entrega por categoria. A coleta e o histórico das métricas permanecem ativos; a integração com o dispatcher será concluída na próxima etapa.</p>
                 {([
                   ['cpu', 'CPU'],
@@ -264,36 +266,36 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <Clock size={20} className="text-[var(--color-brand-primary)]" />
-                Atualização do Dashboard (RN-CONFIG-04)
+                {t('Atualização do Dashboard (RN-CONFIG-04)')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Intervalo de atualização da tela</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">{t('Intervalo de atualização da tela')}</label>
                   <select
                     value={preferences.monitoring.refreshInterval}
                     onChange={(e) => updateNestedPref('monitoring', 'refreshInterval', Number(e.target.value) as UserPreferences['monitoring']['refreshInterval'])}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value={5}>5 segundos</option>
-                    <option value={15}>15 segundos</option>
-                    <option value={30}>30 segundos</option>
-                    <option value={60}>1 minuto</option>
-                    <option value={300}>5 minutos</option>
+                    <option value={5}>{t('5 segundos')}</option>
+                    <option value={15}>{t('15 segundos')}</option>
+                    <option value={30}>{t('30 segundos')}</option>
+                    <option value={60}>{t('1 minuto')}</option>
+                    <option value={300}>{t('5 minutos')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Período Padrão do Histórico</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">{t('Período Padrão do Histórico')}</label>
                   <select
                     value={preferences.monitoring.defaultTimeRange}
                     onChange={(e) => updateNestedPref('monitoring', 'defaultTimeRange', e.target.value as UserPreferences['monitoring']['defaultTimeRange'])}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value="1h">Última 1 hora</option>
-                    <option value="24h">Últimas 24 horas</option>
-                    <option value="7d">Últimos 7 dias</option>
-                    <option value="30d">Últimos 30 dias</option>
+                    <option value="1h">{t('Última 1 hora')}</option>
+                    <option value="24h">{t('Últimas 24 horas')}</option>
+                    <option value="7d">{t('Últimos 7 dias')}</option>
+                    <option value="30d">{t('Últimos 30 dias')}</option>
                   </select>
                 </div>
               </div>
@@ -305,17 +307,17 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-[var(--color-text-heading)] flex items-center gap-2">
                 <LayoutGrid size={20} className="text-[var(--color-brand-primary)]" />
-                Exibição de Widgets
+                {t('Exibição de Widgets')}
               </h2>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'cpu' as const, label: 'Uso de CPU' },
-                  { key: 'memory' as const, label: 'Uso de Memória' },
-                  { key: 'disk' as const, label: 'Capacidade de Disco' },
-                  { key: 'network' as const, label: 'Tráfego de Rede' },
-                  { key: 'availability' as const, label: 'SLA & Uptime' },
-                  { key: 'alerts' as const, label: 'Painel de Alertas' },
+                  { key: 'cpu' as const, label: t('Uso de CPU') },
+                  { key: 'memory' as const, label: t('Uso de Memória') },
+                  { key: 'disk' as const, label: t('Capacidade de Disco') },
+                  { key: 'network' as const, label: t('Tráfego de Rede') },
+                  { key: 'availability' as const, label: t('SLA & Uptime') },
+                  { key: 'alerts' as const, label: t('Painel de Alertas') },
                 ].map((w) => (
                   <label
                     key={w.key}
@@ -344,7 +346,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="p-4 bg-[var(--color-bg-app)] border border-[var(--color-border-subtle)] rounded-lg flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-[var(--color-text-heading)]">Dispositivo Atual</p>
+                  <p className="text-xs font-bold text-[var(--color-text-heading)]">{t('Dispositivo Atual')}</p>
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Navegador Web • Ativo agora</p>
                 </div>
                 <button
