@@ -58,13 +58,10 @@ export const SettingsPage: React.FC = () => {
     field: F,
     value: UserPreferences[K][F],
   ) => {
-    setPreferences((previous) => ({
-      ...previous,
-      [category]: {
-        ...previous[category],
-        [field]: value,
-      },
-    }));
+    setPreferences((previous) => {
+      const updatedCategory = { ...previous[category], [field]: value } as UserPreferences[K];
+      return { ...previous, [category]: updatedCategory };
+    });
   };
 
   const handleSave = async () => {
@@ -230,11 +227,11 @@ export const SettingsPage: React.FC = () => {
 
               <div className="space-y-3 divide-y divide-[var(--color-border-subtle)]">
                 {[
-                  { key: 'enabled', label: 'Ativar Notificações Globais', desc: 'Permite o envio de alertas em tempo real' },
-                  { key: 'critical', label: 'Alertas Críticos', desc: 'Notificar interrupções de serviço severas' },
-                  { key: 'warning', label: 'Alertas de Atenção', desc: 'Notificar oscilações de CPU, RAM e disco' },
-                  { key: 'info', label: 'Alertas Informativos', desc: 'Notificações operacionais e deploys' },
-                  { key: 'email', label: 'Notificações por E-mail', desc: 'Enviar resumo consolidado por e-mail' },
+                  { key: 'enabled' as const, label: 'Ativar Notificações Globais', desc: 'Permite o envio de alertas em tempo real' },
+                  { key: 'critical' as const, label: 'Alertas Críticos', desc: 'Notificar interrupções de serviço severas' },
+                  { key: 'warning' as const, label: 'Alertas de Atenção', desc: 'Notificar oscilações de CPU, RAM e disco' },
+                  { key: 'info' as const, label: 'Alertas Informativos', desc: 'Notificações operacionais e deploys' },
+                  { key: 'email' as const, label: 'Notificações por E-mail', desc: 'Enviar resumo consolidado por e-mail' },
                 ].map((item) => (
                   <div key={item.key} className="pt-3 flex items-center justify-between">
                     <div>
@@ -266,7 +263,7 @@ export const SettingsPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Intervalo de Atualização</label>
                   <select
                     value={preferences.monitoring.refreshInterval}
-                    onChange={(e) => updateNestedPref('monitoring', 'refreshInterval', Number(e.target.value))}
+                    onChange={(e) => updateNestedPref('monitoring', 'refreshInterval', Number(e.target.value) as UserPreferences['monitoring']['refreshInterval'])}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
                     <option value={5}>5 segundos</option>
@@ -304,12 +301,12 @@ export const SettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'cpu', label: 'Uso de CPU' },
-                  { key: 'memory', label: 'Uso de Memória' },
-                  { key: 'disk', label: 'Capacidade de Disco' },
-                  { key: 'network', label: 'Tráfego de Rede' },
-                  { key: 'availability', label: 'SLA & Uptime' },
-                  { key: 'alerts', label: 'Painel de Alertas' },
+                  { key: 'cpu' as const, label: 'Uso de CPU' },
+                  { key: 'memory' as const, label: 'Uso de Memória' },
+                  { key: 'disk' as const, label: 'Capacidade de Disco' },
+                  { key: 'network' as const, label: 'Tráfego de Rede' },
+                  { key: 'availability' as const, label: 'SLA & Uptime' },
+                  { key: 'alerts' as const, label: 'Painel de Alertas' },
                 ].map((w) => (
                   <label
                     key={w.key}
