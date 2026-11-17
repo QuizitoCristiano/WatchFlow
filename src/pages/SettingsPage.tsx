@@ -35,6 +35,20 @@ export const SettingsPage: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   useEffect(() => {
+    const root = document.documentElement;
+    const applyTheme = () => {
+      const resolved = preferences.theme === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        : preferences.theme;
+      root.dataset.theme = resolved;
+    };
+    applyTheme();
+    const media = window.matchMedia('(prefers-color-scheme: light)');
+    media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
+  }, [preferences.theme]);
+
+  useEffect(() => {
     if (!user?.uid) return;
     let active = true;
     void settingsService.getPreferences(user.uid)
@@ -231,7 +245,7 @@ export const SettingsPage: React.FC = () => {
                   { key: 'critical' as const, label: 'Alertas Críticos', desc: 'Notificar interrupções de serviço severas' },
                   { key: 'warning' as const, label: 'Alertas de Atenção', desc: 'Notificar oscilações de CPU, RAM e disco' },
                   { key: 'info' as const, label: 'Alertas Informativos', desc: 'Notificações operacionais e deploys' },
-                  { key: 'email' as const, label: 'Notificações por E-mail', desc: 'Enviar resumo consolidado por e-mail' },
+                  { key: 'email' as const, label: 'Notificações por E-mail', desc: 'Preferência registrada; envio depende da integração de e-mail.' },
                 ].map((item) => (
                   <div key={item.key} className="pt-3 flex items-center justify-between">
                     <div>
