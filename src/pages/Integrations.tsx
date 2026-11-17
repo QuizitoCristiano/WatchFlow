@@ -235,7 +235,7 @@ export const Integrations: React.FC = () => {
             Integrações & Agentes
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Cadastre configurações e execute uma verificação local; o envio ao Firestore ainda não está disponível.
+            Conecte máquinas com Node Exporter. As métricas são persistidas após a primeira coleta autenticada.
           </p>
         </div>
         <button
@@ -372,7 +372,7 @@ export const Integrations: React.FC = () => {
           </div>
           <h3 className="text-lg font-bold text-white mb-2">Nenhuma integração configurada</h3>
           <p className="text-zinc-400 text-sm mb-6">
-            Registre a configuração do Node Exporter, Telegraf ou Zabbix. A coleta automática ainda depende de um serviço de ingestão.
+            Cadastre uma conexão Node Exporter e provisione o Collector para começar a receber métricas reais.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -505,8 +505,6 @@ export const Integrations: React.FC = () => {
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition"
                 >
                   <option value="node_exporter">Prometheus Node Exporter</option>
-                  <option value="telegraf">Telegraf Agent</option>
-                  <option value="zabbix_agent">Zabbix Agent</option>
                 </select>
               </div>
 
