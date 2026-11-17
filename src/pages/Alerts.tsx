@@ -38,7 +38,12 @@ const getStoredLocalAlerts = (userId: string): Alert[] => {
   if (!userId) return [];
   try {
     const raw = localStorage.getItem(localAlertsKey(userId));
-    return raw ? JSON.parse(raw) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((alert): alert is Alert =>
+          typeof alert === 'object' && alert !== null &&
+          'userId' in alert && alert.userId === userId)
+      : [];
   } catch {
     return [];
   }
