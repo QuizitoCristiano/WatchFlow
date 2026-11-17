@@ -251,7 +251,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
   return {
     async provision(userId, integrationId, deviceId, tokenHash, issuedAt) {
       const integrationRef = db.doc(`users/${userId}/integrations/${integrationId}`);
-      const credentialStateRef = db.doc(`collectorCredentialState/${userId}_${integrationId}`);
+      const credentialStateId = createHash('sha256').update(`${userId}:${integrationId}`).digest('hex');
+      const credentialStateRef = db.doc(`collectorCredentialState/${credentialStateId}`);
       const newCredentialRef = credentialReference(db, tokenHash);
 
       await db.runTransaction(async (transaction) => {
