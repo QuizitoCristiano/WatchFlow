@@ -15,8 +15,10 @@ import {
 import type { UserProfile } from '@/types';
 import { profileService } from '@/lib/profile.service';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const ProfilePage: React.FC = () => {
+  const { t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const [profileState, setProfileState] = useState<{
     userId: string;
@@ -173,9 +175,7 @@ export const ProfilePage: React.FC = () => {
       {/* Cabeçalho */}
       <div className="border-b border-[var(--color-border-subtle)] pb-4">
         <h1 className="text-2xl font-bold text-[var(--color-text-heading)]">Meu Perfil</h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">
-          Gerencie suas informações pessoais e credenciais de acesso ao WatchFlow.
-        </p>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('Gerencie suas informações pessoais e credenciais de acesso ao WatchFlow.')}</p>
       </div>
 
       {/* Alerta de Feedback */}
@@ -230,17 +230,14 @@ export const ProfilePage: React.FC = () => {
           </div>
           <p className="text-sm text-[var(--color-text-muted)]">{profile.email}</p>
           <p className="text-xs text-[var(--color-text-muted)] flex items-center justify-center sm:justify-start gap-1 pt-1">
-            <ShieldCheck size={14} className="text-[var(--color-brand-primary)]" />
-            Permissão: <strong className="capitalize text-[var(--color-text-heading)]">{profile.role}</strong>
+            <ShieldCheck size={14} className="text-[var(--color-brand-primary)]" />{t('Permissão:')}<strong className="capitalize text-[var(--color-text-heading)]">{profile.role}</strong>
           </p>
         </div>
       </div>
 
       {/* Card 2: Formulário de Dados Pessoais */}
       <form onSubmit={handleSaveName} className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
-        <h3 className="text-md font-semibold text-[var(--color-text-heading)] border-b border-[var(--color-border-subtle)] pb-2">
-          Informações Cadastrais
-        </h3>
+        <h3 className="text-md font-semibold text-[var(--color-text-heading)] border-b border-[var(--color-border-subtle)] pb-2">{t('Informações Cadastrais')}</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -260,9 +257,7 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">
-              Endereço de E-mail
-            </label>
+            <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">{t('Endereço de E-mail')}</label>
             <div className="relative">
               <Mail size={18} className="absolute left-3 top-2.5 text-[var(--color-text-muted)]" />
               <input
@@ -320,16 +315,12 @@ export const ProfilePage: React.FC = () => {
       {/* Card 3: Segurança da Conta */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl p-6 space-y-4">
         <h3 className="text-md font-semibold text-[var(--color-text-heading)] border-b border-[var(--color-border-subtle)] pb-2 flex items-center gap-2">
-          <KeyRound size={18} className="text-[var(--color-brand-primary)]" />
-          Segurança da Conta (RN-PERFIL-03)
-        </h3>
+          <KeyRound size={18} className="text-[var(--color-brand-primary)]" />{t('Segurança da Conta (RN-PERFIL-03)')}</h3>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[var(--color-bg-app)] border border-[var(--color-border-subtle)] rounded-lg">
           <div>
             <p className="text-sm font-medium text-[var(--color-text-heading)]">Senha de Acesso</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Enviaremos um link de redefinição para o seu e-mail cadastrado.
-            </p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('Enviaremos um link de redefinição para o seu e-mail cadastrado.')}</p>
           </div>
           <button
             type="button"

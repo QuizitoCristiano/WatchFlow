@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n/useI18n';
 
 export const DispositivosPage: React.FC = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const userId = user?.uid;
 
@@ -105,7 +107,7 @@ export const DispositivosPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Server className="text-orange-500" /> Dispositivos Monitorados
+            <Server className="text-orange-500" /> {t('Dispositivos Monitorados')}
           </h1>
           <p className="text-gray-400 text-sm">
             Conecte este navegador e valide os eventos de APM no Sentry
@@ -150,7 +152,7 @@ export const DispositivosPage: React.FC = () => {
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">
-            Nenhum dispositivo monitorado
+            {t('Nenhum dispositivo monitorado')}
           </h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
             Clique em “Conectar Máquina Local” para vincular este navegador e enviar o evento de conexão ao Sentry.

@@ -20,8 +20,10 @@ import {
 } from '../services/integrationService';
 import type { Integration, IntegrationType } from '@/types';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const Integrations: React.FC = () => {
+  const { t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const userId = user?.uid || '';
 
@@ -256,7 +258,7 @@ export const Integrations: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between">
           <div>
-            <span className="text-xs text-zinc-400 uppercase font-semibold">Total de Agentes</span>
+            <span className="text-xs text-zinc-400 uppercase font-semibold">{t('Total de Agentes')}</span>
             <p className="text-2xl font-bold text-white mt-1">{totalIntegrations}</p>
           </div>
           <div className="p-3 bg-zinc-800 rounded-lg text-zinc-400">
@@ -266,7 +268,7 @@ export const Integrations: React.FC = () => {
 
         <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between">
           <div>
-            <span className="text-xs text-zinc-400 uppercase font-semibold">Conexões Ativas</span>
+            <span className="text-xs text-zinc-400 uppercase font-semibold">{t('Conexões Ativas')}</span>
             <p className="text-2xl font-bold text-emerald-400 mt-1">{onlineCount}</p>
           </div>
           <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
@@ -276,7 +278,7 @@ export const Integrations: React.FC = () => {
 
         <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between">
           <div>
-            <span className="text-xs text-zinc-400 uppercase font-semibold">Com Inconsistência</span>
+            <span className="text-xs text-zinc-400 uppercase font-semibold">{t('Com Inconsistência')}</span>
             <p className="text-2xl font-bold text-rose-400 mt-1">{offlineCount}</p>
           </div>
           <div className="p-3 bg-rose-500/10 rounded-lg text-rose-400">
@@ -307,7 +309,7 @@ export const Integrations: React.FC = () => {
 
       {actualIntegrations.some((integration) => integration.type === 'node_exporter') && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="font-semibold text-zinc-100">Coleta local do Node Exporter</h2>
+          <h2 className="font-semibold text-zinc-100">{t('Coleta local do Node Exporter')}</h2>
           <p className="mt-1 text-sm text-zinc-400">
             O Vercel não alcança IPs privados. Gere uma credencial de dispositivo e execute o coletor em um host da rede do agente. A credencial é exibida uma única vez; gerar outra revoga a anterior.
           </p>
@@ -375,7 +377,7 @@ export const Integrations: React.FC = () => {
           <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-400">
             <Plug className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Nenhuma integração configurada</h3>
+          <h3 className="text-lg font-bold text-white mb-2">{t('Nenhuma integração configurada')}</h3>
           <p className="text-zinc-400 text-sm mb-6">
             Cadastre uma conexão Node Exporter e provisione o Collector para começar a receber métricas reais.
           </p>
@@ -407,13 +409,13 @@ export const Integrations: React.FC = () => {
                       {displayStatus === 'online' && (
                         <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          Online
+                          {t('Online')}
                         </span>
                       )}
                       {(displayStatus === 'offline' || displayStatus === 'error') && (
                         <span className="flex items-center gap-1.5 text-xs text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-rose-500" />
-                          Offline
+                          {t('Offline')}
                         </span>
                       )}
                       {displayStatus === 'syncing' && (
@@ -441,16 +443,16 @@ export const Integrations: React.FC = () => {
                 {/* Métricas e Detalhes */}
                 <div className="border-t border-zinc-800/80 pt-3 space-y-2 text-xs text-zinc-400">
                   <div className="flex justify-between">
-                    <span>Última tentativa:</span>
+                    <span>{t('Última tentativa:')}</span>
                     <span className="text-zinc-300 font-mono">{formatDate(item.lastAttemptAt)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Última coleta bem-sucedida:</span>
+                    <span>{t('Última coleta bem-sucedida:')}</span>
                     <span className="text-zinc-300 font-mono">{formatDate(item.lastSuccessAt)}</span>
                   </div>
                   {item.lastError && <p className="text-rose-300">{item.lastError}</p>}
                   {item.type !== 'node_exporter' && (
-                    <p className="text-amber-300">Coletor para este agente ainda não implementado.</p>
+                    <p className="text-amber-300">{t('Coletor para este agente ainda não implementado.')}</p>
                   )}
                 </div>
 
@@ -491,7 +493,7 @@ export const Integrations: React.FC = () => {
 
             <form onSubmit={handleCreateIntegration} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Nome da Integração</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">{t('Nome da Integração')}</label>
                 <input
                   type="text"
                   required
@@ -509,12 +511,12 @@ export const Integrations: React.FC = () => {
                   onChange={(e) => setType(e.target.value as IntegrationType)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition"
                 >
-                  <option value="node_exporter">Prometheus Node Exporter</option>
+                  <option value="node_exporter">{t('Prometheus Node Exporter')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">URL / Endpoint do Agente</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">{t('URL / Endpoint do Agente')}</label>
                 <input
                   type="url"
                   required
@@ -531,7 +533,7 @@ export const Integrations: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2.5 rounded-lg transition"
                 >
-                  Cancelar
+                  {t('Cancelar')}
                 </button>
                 <button
                   type="submit"

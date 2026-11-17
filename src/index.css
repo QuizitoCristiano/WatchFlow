@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --bg-light: oklch(99% .003 25);
+}
+
 @theme {
   /* ==========================================
      1. FUNDOS E SUPERFÍCIES (Layer Backgrounds)
@@ -85,4 +89,25 @@
 
 .meteor-line-left {
   background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.4));
+}
+
+/* Theme tokens are runtime-overridable; light mode uses the WatchFlow neutral palette. */
+:root[data-theme='light'] {
+  --color-bg-app: var(--bg-light);
+  --color-bg-card: oklch(96% .004 25);
+  --color-bg-hover: oklch(92% .006 25);
+  --color-border-subtle: oklch(88% .008 25);
+  --color-border-strong: oklch(78% .012 25);
+  --color-text-heading: oklch(20% .015 25);
+  --color-text-body: oklch(30% .012 25);
+  --color-text-muted: oklch(45% .012 25);
+  --color-text-subtle: oklch(55% .01 25);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }

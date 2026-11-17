@@ -2,30 +2,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
 import { auth, db, isFirebaseConfigured } from '@/services/config';
 
-export const DEFAULT_PREFERENCES: UserPreferences = {
-  language: 'pt-BR',
-  timezone: 'America/Sao_Paulo',
-  theme: 'dark',
-  notifications: {
-    enabled: true,
-    critical: true,
-    warning: true,
-    info: false,
-    email: false,
-  },
-  monitoring: {
-    refreshInterval: 15,
-    defaultTimeRange: '24h',
-  },
-  dashboard: {
-    cpu: true,
-    memory: true,
-    disk: true,
-    network: true,
-    availability: true,
-    alerts: true,
-  },
-};
+import { DEFAULT_PREFERENCES, normalizePreferences } from '@/lib/preferences';
 
 const localPreferencesKey = (userId: string) => `wf_local_preferences:${userId}`;
 
@@ -44,19 +21,25 @@ export const settingsService = {
       const snapshot = await getDoc(userRef);
       if (!snapshot.exists()) return DEFAULT_PREFERENCES;
       const preferences = snapshot.data().preferences;
-      return preferences ? preferences as UserPreferences : DEFAULT_PREFERENCES;
+      return normalizePreferences(preferences);
     }
 
     const raw = localStorage.getItem(localPreferencesKey(userId));
-    return raw ? JSON.parse(raw) as UserPreferences : DEFAULT_PREFERENCES;
+    if (!raw) return DEFAULT_PREFERENCES;
+    try {
+      return normalizePreferences(JSON.parse(raw));
+    } catch {
+      return DEFAULT_PREFERENCES;
+    }
   },
 
   async updatePreferences(userId: string, preferences: UserPreferences): Promise<void> {
     assertUserScope(userId);
+    const safePreferences = normalizePreferences(preferences);
     if (isFirebaseConfigured && db) {
-      await updateDoc(doc(db, 'users', userId), { preferences });
+      await updateDoc(doc(db, 'users', userId), { preferences: safePreferences });
       return;
     }
-    localStorage.setItem(localPreferencesKey(userId), JSON.stringify(preferences));
+    localStorage.setItem(localPreferencesKey(userId), JSON.stringify(safePreferences));
   },
 };

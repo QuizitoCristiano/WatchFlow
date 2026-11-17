@@ -4,9 +4,11 @@ import { Mail, CheckCircle2, ArrowLeft, RefreshCw, AlertCircle, Bird } from "luc
 import { toast } from "sonner";
 import { FirebaseError } from "firebase/app";
 import { sendVerificationEmail, logoutUser } from "@/services/auth.service";
+import { useI18n } from '@/i18n/useI18n';
 import { HeroVisual } from "./HeroVisual";
 
 export const VerifyEmail = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const emailFromState = location.state?.email || "";
@@ -87,7 +89,7 @@ export const VerifyEmail = () => {
             className="flex items-center gap-2 text-xs md:text-sm text-text-muted hover:text-text-heading transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Voltar ao login</span>
+            <span>{t('Voltar ao login')}</span>
           </button>
         </div>
 

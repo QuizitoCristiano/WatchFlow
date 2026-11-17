@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f97316">
+  <title>Sem conexão | WatchFlow</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#09090b;color:#fafafa}
+    body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+    main{max-width:440px;text-align:center}
+    img{width:72px;height:72px;object-fit:contain;margin-bottom:20px}
+    h1{font-size:1.6rem;margin:0 0 12px}
+    p{color:#a1a1aa;line-height:1.6;margin:0 0 24px}
+    button{background:#f97316;color:#18181b;border:0;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
+    small{display:block;color:#71717a;margin-top:18px}
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/WatchFlow.png" alt="WatchFlow">
+    <h1>Você está sem conexão</h1>
+    <p>Não foi possível atualizar o WatchFlow. Os dados de monitoramento não são exibidos como atuais enquanto você estiver offline.</p>
+    <button type="button" onclick="location.reload()">Tentar novamente</button>
+    <small>Reconecte-se à internet para consultar os dispositivos e métricas.</small>
+  </main>
+</body>
+</html>

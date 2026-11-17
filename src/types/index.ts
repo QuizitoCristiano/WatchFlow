@@ -276,6 +276,14 @@ export interface NotificationPreferences {
   warning: boolean;
   info: boolean;
   email: boolean;
+  categories: {
+    cpu: boolean;
+    memory: boolean;
+    disk: boolean;
+    gpu: boolean;
+    deviceOffline: boolean;
+    integrationDown: boolean;
+  };
 }
 
 export interface MonitoringPreferences {
