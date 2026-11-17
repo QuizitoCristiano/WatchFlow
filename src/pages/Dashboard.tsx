@@ -47,7 +47,7 @@ export const Dashboard = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
-                <p className="text-sm text-text-subtle font-medium">Carregando métricas da infraestrutura...</p>
+                <p className="text-sm text-text-subtle font-medium">{t('Carregando métricas da infraestrutura...')}</p>
             </div>
         );
     }
@@ -109,7 +109,7 @@ export const Dashboard = () => {
                                 <TrendingUp className="w-3 h-3 mr-0.5" /> Média
                             </span>
                         </div>
-                        <p className="text-[11px] text-text-subtle">Média entre dispositivos com métrica</p>
+                        <p className="text-[11px] text-text-subtle">{t('Média entre dispositivos com métrica')}</p>
                     </div>
                     <div className="p-3 bg-brand-primary/10 text-brand-primary rounded-xl border border-brand-primary/20">
                         <Cpu className="w-6 h-6" />
@@ -156,7 +156,7 @@ export const Dashboard = () => {
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-text-heading">{formatMetric(summary?.globalSlaPercent, "%")}</span>
                         </div>
-                        <p className="text-[11px] text-text-subtle">SLA indisponível sem dados de disponibilidade</p>
+                        <p className="text-[11px] text-text-subtle">{t('SLA indisponível sem dados de disponibilidade')}</p>
                     </div>
                     <div className="p-3 bg-status-success/10 text-status-success rounded-xl border border-status-success/20">
                         <Activity className="w-6 h-6" />
@@ -172,7 +172,7 @@ export const Dashboard = () => {
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Cpu className="w-4 h-4 text-brand-primary" /> Histórico de Uso de CPU (%)
                         </h3>
-                        <span className="text-xs text-text-subtle">Últimas horas</span>
+                        <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
                         {metricsHistory.length > 0 ? (
@@ -198,7 +198,7 @@ export const Dashboard = () => {
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Server className="w-4 h-4 text-brand-primary" /> Histórico de Uso de Memória (%)
                         </h3>
-                        <span className="text-xs text-text-subtle">Últimas horas</span>
+                        <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
                         {metricsHistory.length > 0 ? (
@@ -244,7 +244,7 @@ export const Dashboard = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="text-xs text-text-subtle">Dados de disco indisponíveis.</div>
+                            <div className="text-xs text-text-subtle">{t('Dados de disco indisponíveis.')}</div>
                         )}
                     </div>
                     <div className="flex justify-around text-xs border-t border-border-subtle pt-3 text-text-muted">
@@ -295,7 +295,7 @@ export const Dashboard = () => {
                 {/* Tabela de Dispositivos */}
                 <div className="lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-text-heading">Status dos Dispositivos Monitorados</h3>
+                        <h3 className="text-sm font-bold text-text-heading">{t('Status dos Dispositivos Monitorados')}</h3>
                         <span className="text-xs text-brand-primary font-medium hover:underline cursor-pointer">
                             Ver todos ({summary?.totalDevices ?? 0})
                         </span>
@@ -308,13 +308,13 @@ export const Dashboard = () => {
                                     <th className="py-3 px-3">{t('Status')}</th>
                                     <th className="py-3 px-3">{t('CPU')}</th>
                                     <th className="py-3 px-3">RAM</th>
-                                    <th className="py-3 px-3">Latência</th>
+                                    <th className="py-3 px-3">{t('Latência')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-subtle">
                                 {devices.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-6 text-center text-text-subtle">Nenhum dispositivo cadastrado ainda.</td>
+                                        <td colSpan={5} className="py-6 text-center text-text-subtle">{t('Nenhum dispositivo cadastrado ainda.')}</td>
                                     </tr>
                                 ) : (
                                     devices.map((device) => (
@@ -322,7 +322,7 @@ export const Dashboard = () => {
                                             <td className="py-3 px-3 font-semibold text-text-heading">
                                                 {device.hostname}
                                                 {device.isDemoData && (
-                                                    <span className="ml-2 text-[10px] font-medium text-status-warning">Demonstração</span>
+                                                    <span className="ml-2 text-[10px] font-medium text-status-warning">{t('Demonstração')}</span>
                                                 )}
                                                 <span className="block text-[10px] font-normal text-text-subtle">{device.ip}</span>
                                             </td>
@@ -370,7 +370,7 @@ export const Dashboard = () => {
                     </div>
                     <div className="space-y-3">
                         {alerts.length === 0 ? (
-                            <p className="text-xs text-text-subtle py-4 text-center">Nenhum alerta ativo no momento.</p>
+                            <p className="text-xs text-text-subtle py-4 text-center">{t('Nenhum alerta ativo no momento.')}</p>
                         ) : (
                             alerts.map((alert) => (
                                 <div key={alert.id} className="p-3 rounded-xl bg-bg-app border border-border-subtle space-y-1">
@@ -382,7 +382,7 @@ export const Dashboard = () => {
                                             {alert.title}
                                         </span>
                                         {alert.isDemoData && (
-                                            <span className="text-[9px] font-medium uppercase text-status-warning">Demonstração</span>
+                                            <span className="text-[9px] font-medium uppercase text-status-warning">{t('Demonstração')}</span>
                                         )}
                                     </div>
                                     <p className="text-xs text-text-heading font-medium">{alert.deviceName || 'Dispositivo Desconhecido'}</p>
@@ -398,10 +398,10 @@ export const Dashboard = () => {
             <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-sm font-bold text-text-heading">Histórico de Disponibilidade e SLA</h3>
-                        <p className="text-xs text-text-subtle">Acompanhamento contínuo dos indicadores globais do produto</p>
+                        <h3 className="text-sm font-bold text-text-heading">{t('Histórico de Disponibilidade e SLA')}</h3>
+                        <p className="text-xs text-text-subtle">{t('Acompanhamento contínuo dos indicadores globais do produto')}</p>
                     </div>
-                    <span className="text-xs bg-bg-app px-3 py-1.5 rounded-xl border border-border-subtle text-text-muted font-medium">Período Recente</span>
+                    <span className="text-xs bg-bg-app px-3 py-1.5 rounded-xl border border-border-subtle text-text-muted font-medium">{t('Período Recente')}</span>
                 </div>
                 <div className="h-48 w-full">
                     {metricsHistory.length > 0 ? (
