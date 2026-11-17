@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import type React from 'react';
 import type { UserPreferences } from '@/types';
 import { DEFAULT_PREFERENCES, settingsService } from '@/lib/settings.service';
 import { useAuth } from '@/contexts/useAuth';
@@ -7,7 +8,8 @@ import { useAuth } from '@/contexts/useAuth';
 interface PreferencesContextValue {
   preferences: UserPreferences;
   isLoading: boolean;
-  savePreferences: (next: UserPreferences) => Promise<void>;
+  setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>>;
+  savePreferences: () => Promise<void>;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -48,15 +50,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => media.removeEventListener('change', applyTheme);
   }, [preferences.theme, state?.userId, userId]);
 
-  const savePreferences = async (next: UserPreferences) => {
-    if (!userId || user?.uid !== userId) throw new Error('Sessão inválida para salvar preferências.');
-    await settingsService.updatePreferences(userId, next);
-    setState({ userId, value: next });
+  const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
+    if (!userId) return;
+    setState((current) => {
+      const currentValue = current?.userId === userId ? current.value : DEFAULT_PREFERENCES;
+      return { userId, value: typeof action === 'function' ? action(currentValue) : action };
+    });
+  };
+
+  const savePreferences = async () => {
+    if (!userId || user?.uid !== userId || state?.userId !== userId) {
+      throw new Error('Sessão inválida para salvar preferências.');
+    }
+    await settingsService.updatePreferences(userId, state.value);
   };
 
   const value = useMemo(() => ({
     preferences,
     isLoading: authLoading || Boolean(userId && state?.userId !== userId),
+    setPreferences,
     savePreferences,
   }), [preferences, authLoading, userId, state?.userId]);
 
