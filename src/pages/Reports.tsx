@@ -257,7 +257,7 @@ export const ReportsPage: React.FC = () => {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">Nome do Relatório</label>
+                  <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">{t('Nome do Relatório')}</label>
                   <input
                     type="text"
                     value={reportName}
@@ -274,9 +274,9 @@ export const ReportsPage: React.FC = () => {
                     onChange={(e) => setReportType(e.target.value as ReportType)}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value="performance">Desempenho (CPU, RAM, Disco)</option>
-                    <option value="incidents">Incidentes (Alertas e Falhas)</option>
-                    <option value="availability">Disponibilidade (SLA, Uptime)</option>
+                    <option value="performance">{t('Desempenho (CPU, RAM, Disco)')}</option>
+                    <option value="incidents">{t('Incidentes (Alertas e Falhas)')}</option>
+                    <option value="availability">{t('Disponibilidade (SLA, Uptime)')}</option>
                   </select>
                 </div>
 
@@ -287,7 +287,7 @@ export const ReportsPage: React.FC = () => {
                     onChange={(e) => setDevice(e.target.value)}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
-                    <option value="all">Todos os Dispositivos</option>
+                    <option value="all">{t('Todos os Dispositivos')}</option>
                     <option value="srv-api-01">srv-api-01 (192.168.1.50)</option>
                     <option value="db-prod-cluster">db-prod-cluster (192.168.1.10)</option>
                   </select>
@@ -295,7 +295,7 @@ export const ReportsPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">Início</label>
+                    <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-1 uppercase">{t('Início')}</label>
                     <input
                       type="date"
                       value={startDate}
@@ -352,30 +352,30 @@ export const ReportsPage: React.FC = () => {
 
                   <div className="space-y-3 text-xs">
                     <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
-                      <span className="text-[var(--color-text-muted)]">Disponibilidade Esperada:</span>
+                      <span className="text-[var(--color-text-muted)]">{t('Disponibilidade Esperada:')}</span>
                       <span className="font-mono font-bold text-[var(--color-status-success)]">99,60%</span>
                     </div>
 
                     {reportType === 'performance' && (
                       <>
                         <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
-                          <span className="text-[var(--color-text-muted)]">CPU Média / Pico:</span>
+                          <span className="text-[var(--color-text-muted)]">{t('CPU Média / Pico:')}</span>
                           <span className="font-mono font-semibold text-[var(--color-text-heading)]">48,2% / 94,7%</span>
                         </div>
                         <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
-                          <span className="text-[var(--color-text-muted)]">RAM Média / Pico:</span>
+                          <span className="text-[var(--color-text-muted)]">{t('RAM Média / Pico:')}</span>
                           <span className="font-mono font-semibold text-[var(--color-text-heading)]">61,4% / 89,1%</span>
                         </div>
                       </>
                     )}
 
                     <div className="flex justify-between border-b border-[var(--color-border-subtle)] pb-2">
-                      <span className="text-[var(--color-text-muted)]">Total de Alertas Registrados:</span>
+                      <span className="text-[var(--color-text-muted)]">{t('Total de Alertas Registrados:')}</span>
                       <span className="font-mono font-bold text-[var(--color-status-warning)]">5 incidentes</span>
                     </div>
 
                     <div className="flex justify-between pb-2">
-                      <span className="text-[var(--color-text-muted)]">Estimativa de Registros:</span>
+                      <span className="text-[var(--color-text-muted)]">{t('Estimativa de Registros:')}</span>
                       <span className="font-mono text-[var(--color-text-subtle)]">~ 2.016 coletas</span>
                     </div>
                   </div>
