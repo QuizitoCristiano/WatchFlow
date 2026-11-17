@@ -69,12 +69,8 @@ export const Dashboard = () => {
             {/* Cabeçalho */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-heading">
-                        Visão Geral da Infraestrutura
-                    </h1>
-                    <p className="text-xs md:text-sm text-text-subtle mt-1">
-                        Monitoramento unificado de saúde, métricas e incidentes em tempo real.
-                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-heading">{t('Visão Geral da Infraestrutura')}</h1>
+                    <p className="text-xs md:text-sm text-text-subtle mt-1">{t('Monitoramento unificado de saúde, métricas e incidentes em tempo real.')}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-bg-card border border-border-subtle px-3 py-1.5 rounded-xl text-xs text-text-muted self-start md:self-auto">
                     <span className="w-2 h-2 rounded-full bg-text-subtle" />
@@ -90,9 +86,7 @@ export const Dashboard = () => {
 
 
             {metricsHistory.some((point) => point.isDemoData === true) && (
-                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-                    O histórico exibido é de demonstração. Quando houver amostras reais, elas serão mostradas separadamente, sem misturar dados de demonstração.
-                </p>
+                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">{t('O histórico exibido é de demonstração. Quando houver amostras reais, elas serão mostradas separadamente, sem misturar dados de demonstração.')}</p>
             )}
 
 
@@ -170,8 +164,7 @@ export const Dashboard = () => {
                 <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                            <Cpu className="w-4 h-4 text-brand-primary" /> Histórico de Uso de CPU (%)
-                        </h3>
+                            <Cpu className="w-4 h-4 text-brand-primary" />{t('Histórico de Uso de CPU (%)')}</h3>
                         <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
@@ -185,9 +178,7 @@ export const Dashboard = () => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
@@ -196,8 +187,7 @@ export const Dashboard = () => {
                 <div className={`${preferences.dashboard.memory ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                            <Server className="w-4 h-4 text-brand-primary" /> Histórico de Uso de Memória (%)
-                        </h3>
+                            <Server className="w-4 h-4 text-brand-primary" />{t('Histórico de Uso de Memória (%)')}</h3>
                         <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
@@ -211,9 +201,7 @@ export const Dashboard = () => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
@@ -224,8 +212,7 @@ export const Dashboard = () => {
                 {/* Disco Donut Chart */}
                 <div className={`${preferences.dashboard.disk ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4 flex flex-col justify-between`}>
                     <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-status-danger" /> Distribuição de Disco
-                    </h3>
+                        <HardDrive className="w-4 h-4 text-status-danger" />{t('Distribuição de Disco')}</h3>
                     <div className="h-44 w-full relative flex items-center justify-center">
                         {diskUsed !== null ? (
                             <>
@@ -282,9 +269,7 @@ export const Dashboard = () => {
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
