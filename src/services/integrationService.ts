@@ -108,8 +108,8 @@ export function validateIntegrationInput(input: {
   if (!name || name.length > 100) {
     throw new Error('Informe um nome com até 100 caracteres.');
   }
-  if (!['node_exporter', 'telegraf', 'zabbix_agent'].includes(input.type)) {
-    throw new Error('Selecione um tipo de agente válido.');
+  if (input.type !== 'node_exporter') {
+    throw new Error('O MVP do WatchFlow aceita somente Node Exporter.');
   }
 
   let endpoint: URL;
