@@ -1,12 +1,9 @@
 import {
   collection,
-  doc,
   getDocs,
   limit,
   orderBy,
   query,
-  runTransaction,
-  serverTimestamp,
   Timestamp,
   where,
 } from 'firebase/firestore';
@@ -333,45 +330,4 @@ export const dashboardService = {
     return list.filter(a => a.status === 'active').length;
   },
 
-  // 6. Semeia dados de demonstração
-  async seedDemoData(userId: string): Promise<string | null> {
-    if (!isFirebaseConfigured || !db) return null;
-    const deviceRef = doc(db, 'users', userId, 'devices', 'watchflow-demo-device');
-    const alertRef = doc(db, 'alerts', `watchflow-demo-${userId}`);
-    const now = new Date();
-
-    try {
-      await runTransaction(db, async (transaction) => {
-        const deviceSnapshot = await transaction.get(deviceRef);
-        if (!deviceSnapshot.exists()) {
-          transaction.set(deviceRef, {
-            userId,
-            integrationId: 'demo',
-            hostname: 'watchflow-demo',
-            ip: '127.0.0.1',
-            status: 'online',
-            isDemoData: true,
-            latestMetricsSummary: {
-              cpu: 41,
-              memory: 56,
-              memoryUsedGb: 8.96,
-              memoryTotalGb: 16,
-              disk: 49,
-              diskUsedGb: 125.44,
-              diskTotalGb: 256,
-              networkInBytesSec: 152_000,
-              networkOutBytesSec: 58_000,
-              latencyMs: 1,
-            },
-            lastSeen: Timestamp.fromDate(now),
-            createdAt: Timestamp.fromDate(now),
-            updatedAt: Timestamp.fromDate(now),
-          });
-        }
-      });
-      return null;
-    } catch (err) {
-      return err instanceof Error ? err.message : 'Falha ao criar dados de demonstração.';
-    }
-  },
 };
