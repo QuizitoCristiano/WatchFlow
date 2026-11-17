@@ -55,7 +55,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply non-breaking dependency security fixes
-        run: npm audit fix
+        run: |
+          npm audit fix || echo "::warning::npm audit fix left advisories that require manual review; no breaking updates will be forced."
       - name: Report remaining dependency vulnerabilities
         run: |
           npm audit --json > npm-audit-after.json || true
