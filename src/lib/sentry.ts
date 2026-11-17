@@ -5,7 +5,8 @@ import * as Sentry from "@sentry/react";
  * Projeto: watchflow-app (Organização: watchflow)
  */
 export function initSentry() {
-  const dsn = import.meta.env.VITE_SENTRY_DSN || "https://e8f60973d14ecee78fdbdbb743c5967d:8e4519e9b907d75b17e4af845ee4bbc1@o4512403331481600.ingest.de.sentry.io/4512403371917392";
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) return;
 
   try {
     Sentry.init({
@@ -13,7 +14,7 @@ export function initSentry() {
       integrations: [
         Sentry.browserTracingIntegration(),
       ],
-      tracesSampleRate: 1.0,
+      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
       tracePropagationTargets: ["localhost", /^https:\/\/.*\.vercel\.app/],
       environment: import.meta.env.MODE || "development",
       release: "watchflow@1.0.0",
@@ -29,19 +30,19 @@ export function initSentry() {
  * Envia uma mensagem ou exceção manual para o dashboard do Sentry
  * Garante nível de severidade e fingerprint para aparecer como Issue separada
  */
-export function captureAppException(error: Error | string | unknown, context?: Record<string, any>) {
+export function captureAppException(error: unknown, context?: Record<string, unknown>) {
   console.warn("📡 [WatchFlow APM] Despachando evento ao Sentry:", error, context);
 
   const errorObj = typeof error === 'string' ? new Error(error) : (error instanceof Error ? error : new Error(String(error)));
-  const metricTag = context?.metric || 'General';
+  const metricTag = typeof context?.metric === 'string' ? context.metric : 'General';
 
   Sentry.withScope((scope) => {
     scope.setLevel('fatal');
     scope.setFingerprint([errorObj.message, metricTag]);
     if (context) {
       scope.setExtras(context);
-      if (context.host) scope.setTag('host', context.host);
-      if (context.metric) scope.setTag('resource', context.metric);
+      if (typeof context.host === 'string') scope.setTag('host', context.host);
+      if (typeof context.metric === 'string') scope.setTag('resource', context.metric);
     }
     Sentry.captureException(errorObj);
   });
