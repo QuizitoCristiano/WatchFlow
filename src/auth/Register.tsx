@@ -13,9 +13,11 @@ import { toast } from "sonner";
 import { registerSchema } from "./LogSchema";
 import { useAuth } from "@/contexts/useAuth";
 import { logoutUser, sendVerificationEmail } from "@/services/auth.service";
+import { useI18n } from '@/i18n/useI18n';
 import { HeroVisual } from "./HeroVisual";
 
 export const Register = () => {
+  const { t } = useI18n();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -187,7 +189,7 @@ export const Register = () => {
                     </div>
 
                     <div className="flex items-center gap-2 text-xs md:text-sm text-text-muted">
-                        <span>Já tem uma conta?</span>
+                        <span>{t('Já tem uma conta?')}</span>
                         <Link
                             to="/login"
                             className="px-3 py-1.5 bg-bg-card hover:bg-bg-hover text-text-heading font-medium rounded-lg transition-colors border border-border-subtle"
@@ -244,7 +246,7 @@ export const Register = () => {
                             <div className="w-full border-t border-border-subtle"></div>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-bg-app px-2 text-text-subtle">ou com e-mail</span>
+                            <span className="bg-bg-app px-2 text-text-subtle">{t('ou com e-mail')}</span>
                         </div>
                     </div>
 
@@ -306,7 +308,7 @@ export const Register = () => {
 
                         {/* Confirmar Senha */}
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold text-text-muted">Confirmar Senha</label>
+                            <label className="block text-xs font-semibold text-text-muted">{t('Confirmar Senha')}</label>
                             <div className="relative">
                                 <Lock className="w-4 h-4 text-text-subtle absolute left-3.5 top-1/2 -translate-y-1/2" />
                                 <input

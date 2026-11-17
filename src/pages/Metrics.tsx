@@ -8,7 +8,6 @@ import {
   Cpu, 
   HardDrive, 
   Server, 
-  Clock, 
   RefreshCw, 
   Download, 
   FileText, 
@@ -29,46 +28,57 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts';
+import { useI18n } from '@/i18n/useI18n';
 
 export const MetricasPage: React.FC = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const userId = user?.uid;
 
-  // Estados principais
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  // State is tagged with the authenticated UID so account switches never flash another user's data.
+  const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
+  const [selectedDeviceState, setSelectedDeviceState] = useState<{ userId: string; id: string } | null>(null);
+  const selectedDeviceId = userId && selectedDeviceState?.userId === userId ? selectedDeviceState.id : '';
+  const setSelectedDeviceId = (id: string) => setSelectedDeviceState({ userId: userId ?? '', id });
+  const [historyState, setHistoryState] = useState<{
+    userId: string;
+    deviceId: string;
+    records: MetricPayload[];
+  } | null>(null);
+  const metricsHistory = useMemo(
+    () => userId && historyState?.userId === userId && historyState.deviceId === selectedDeviceId
+      ? historyState.records
+      : [],
+    [userId, historyState, selectedDeviceId],
+  );
+  const loadingHistory = Boolean(
+    userId && selectedDeviceId &&
+    (!historyState || historyState.userId !== userId || historyState.deviceId !== selectedDeviceId)
+  );
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'gpu' | 'disk' | 'network'>('cpu');
-  const [metricsHistory, setMetricsHistory] = useState<MetricPayload[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  // Busca dispositivos do usuário e garante a seleção padrão
   useEffect(() => {
     if (!userId) return;
-    const unsubscribe = subscribeToDevices(userId, (data) => {
-      setDevices(data);
-      if (data.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(data[0].id ?? '');
-      }
+    return subscribeToDevices(userId, (data) => {
+      setDevicesState({ userId, items: data });
+      setSelectedDeviceState((current) => {
+        if (current?.userId === userId && data.some((device) => device.id === current.id)) {
+          return current;
+        }
+        return { userId, id: data[0]?.id ?? '' };
+      });
     });
-    return () => unsubscribe();
-  }, [userId, selectedDeviceId]);
+  }, [userId]);
 
-  // Escuta histórico de métricas reais em tempo real
   useEffect(() => {
-    if (!userId || !selectedDeviceId) {
-      setMetricsHistory([]);
-      return;
-    }
-
-    setLoadingHistory(true);
-    const unsubscribe = subscribeToDeviceMetrics(userId, selectedDeviceId, 20, (records) => {
-      setMetricsHistory(records);
-      setLoadingHistory(false);
+    if (!userId || !selectedDeviceId) return;
+    return subscribeToDeviceMetrics(userId, selectedDeviceId, 20, (records) => {
+      setHistoryState({ userId, deviceId: selectedDeviceId, records });
     });
-
-    return () => unsubscribe();
-  }, [userId, selectedDeviceId, timeRange]);
+  }, [userId, selectedDeviceId, timeRange, refreshVersion]);
 
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId);
 
@@ -78,19 +88,19 @@ export const MetricasPage: React.FC = () => {
   const currentDisk = selectedDevice?.latestMetricsSummary?.disk ?? 0;
 
   // Formatação de data/hora
-  const formatMetricTime = (val: any) => {
-    if (!val) return '--:--';
-    if (typeof val === 'object' && 'toDate' in val && typeof val.toDate === 'function') {
-      return val.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formatMetricTime = (value: unknown) => {
+    let date: Date | null = null;
+    if (value instanceof Date) date = value;
+    else if (typeof value === 'string') {
+      const parsed = new Date(value);
+      if (Number.isFinite(parsed.getTime())) date = parsed;
+    } else if (typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function') {
+      const parsed = (value as { toDate: () => Date }).toDate();
+      if (parsed instanceof Date && Number.isFinite(parsed.getTime())) date = parsed;
     }
-    if (typeof val === 'string') {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      }
-      return val;
-    }
-    return '--:--';
+    return date
+      ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : typeof value === 'string' ? value : '--:--';
   };
 
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
@@ -148,7 +158,7 @@ export const MetricasPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Activity className="text-orange-500" /> Métricas Detalhadas
+            <Activity className="text-orange-500" /> {t('Métricas Detalhadas')}
           </h1>
           <p className="text-gray-400 text-sm">
             Telemetria em tempo real e análise histórica de performance
@@ -165,7 +175,7 @@ export const MetricasPage: React.FC = () => {
               className="bg-transparent text-sm text-white focus:outline-none cursor-pointer font-medium"
             >
               {devices.length === 0 ? (
-                <option value="">Nenhum dispositivo encontrado</option>
+                <option value="">{t('Nenhum dispositivo encontrado')}</option>
               ) : (
                 devices.map((device) => (
                   <option key={device.id} value={device.id} className="bg-zinc-900">
@@ -184,15 +194,15 @@ export const MetricasPage: React.FC = () => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="bg-transparent text-sm text-white focus:outline-none cursor-pointer"
             >
-              <option value="30m" className="bg-zinc-900">Últimos 30 minutos</option>
-              <option value="1h" className="bg-zinc-900">Última 1 hora</option>
-              <option value="6h" className="bg-zinc-900">Últimas 6 horas</option>
-              <option value="24h" className="bg-zinc-900">Últimas 24 horas</option>
+              <option value="30m" className="bg-zinc-900">{t('Últimos 30 minutos')}</option>
+              <option value="1h" className="bg-zinc-900">{t('Última 1 hora')}</option>
+              <option value="6h" className="bg-zinc-900">{t('Últimas 6 horas')}</option>
+              <option value="24h" className="bg-zinc-900">{t('Últimas 24 horas')}</option>
             </select>
           </div>
 
           <button 
-            onClick={() => setLoadingHistory(true)}
+            onClick={() => setRefreshVersion((version) => version + 1)}
             className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-gray-300 hover:text-white transition"
             title="Atualizar dados"
           >
@@ -204,9 +214,9 @@ export const MetricasPage: React.FC = () => {
       {!selectedDevice ? (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
-          <h3 className="text-lg font-medium text-white mb-1">Nenhum dispositivo cadastrado</h3>
+          <h3 className="text-lg font-medium text-white mb-1">{t('Nenhum dispositivo cadastrado')}</h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            Inicie o agente coletor local para registrar este computador no WatchFlow e visualizar gráficos em tempo real.
+            Cadastre uma integração Node Exporter e execute o Collector para vincular um dispositivo à sua conta.
           </p>
         </div>
       ) : (
@@ -217,7 +227,7 @@ export const MetricasPage: React.FC = () => {
             {/* CPU */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
-                <span className="flex items-center gap-1.5"><Cpu className="w-4 h-4 text-orange-500"/> CPU</span>
+                <span className="flex items-center gap-1.5"><Cpu className="w-4 h-4 text-orange-500"/> {t('CPU')}</span>
                 <span className={`px-2 py-0.5 rounded-full border text-xs ${
                   currentCpu > 80 
                     ? 'text-red-400 bg-red-500/10 border-red-500/20' 
@@ -240,7 +250,7 @@ export const MetricasPage: React.FC = () => {
             {/* RAM */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
-                <span className="flex items-center gap-1.5"><Activity className="w-4 h-4 text-blue-500"/> Memória</span>
+                <span className="flex items-center gap-1.5"><Activity className="w-4 h-4 text-blue-500"/> {t('Memória')}</span>
                 <span className="text-gray-400">
                   {selectedDevice.latestMetricsSummary?.memoryUsedGb ?? '-'} GB / {selectedDevice.latestMetricsSummary?.memoryTotalGb ?? '-'} GB
                 </span>
@@ -282,7 +292,7 @@ export const MetricasPage: React.FC = () => {
             {/* Disco */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
-                <span className="flex items-center gap-1.5"><HardDrive className="w-4 h-4 text-purple-500"/> Disco</span>
+                <span className="flex items-center gap-1.5"><HardDrive className="w-4 h-4 text-purple-500"/> {t('Disco')}</span>
                 <span className="text-gray-400">
                   {selectedDevice.latestMetricsSummary?.diskUsedGb ?? '-'} GB / {selectedDevice.latestMetricsSummary?.diskTotalGb ?? '-'} GB
                 </span>
@@ -297,7 +307,7 @@ export const MetricasPage: React.FC = () => {
 
             {/* Rede */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
-              <div className="text-xs text-gray-400 font-medium">Tráfego de Rede</div>
+              <div className="text-xs text-gray-400 font-medium">{t('Tráfego de Rede')}</div>
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-1 text-xs">
                   <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
@@ -379,7 +389,7 @@ export const MetricasPage: React.FC = () => {
               {chartData.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-500">
                   <Activity className="w-8 h-8 mb-2 animate-spin text-zinc-600" />
-                  <p className="text-sm">Aguardando dados de telemetria do coletor...</p>
+                  <p className="text-sm">{t('Aguardando dados de telemetria do coletor...')}</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -451,7 +461,7 @@ export const MetricasPage: React.FC = () => {
             {/* Tabela de Histórico Real */}
             <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-semibold text-gray-200">Amostras Recentes de Telemetria</h3>
+                <h3 className="text-sm font-semibold text-gray-200">{t('Amostras Recentes de Telemetria')}</h3>
                 <span className="text-xs text-gray-500">{metricsHistory.length} registros recebidos</span>
               </div>
 
@@ -460,9 +470,9 @@ export const MetricasPage: React.FC = () => {
                   <thead className="bg-zinc-950 text-gray-400 uppercase font-medium border-b border-zinc-800">
                     <tr>
                       <th className="p-3">Data/Hora</th>
-                      <th className="p-3">CPU</th>
+                      <th className="p-3">{t('CPU')}</th>
                       <th className="p-3">RAM</th>
-                      <th className="p-3">Disco</th>
+                      <th className="p-3">{t('Disco')}</th>
                       <th className="p-3">Rede (In/Out)</th>
                     </tr>
                   </thead>
@@ -508,7 +518,7 @@ export const MetricasPage: React.FC = () => {
                     <span className="font-mono text-white">{selectedDevice.hostname}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Endereço IP:</span>
+                    <span className="text-gray-400">{t('Endereço IP:')}</span>
                     <span className="font-mono text-white">{selectedDevice.ip}</span>
                   </div>
                   <div className="flex justify-between">
@@ -523,7 +533,7 @@ export const MetricasPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Última Coleta:</span>
+                    <span className="text-gray-400">{t('Última Coleta:')}</span>
                     <span className="text-gray-300">{formatLastSeen(selectedDevice.lastSeen)}</span>
                   </div>
                 </div>
@@ -554,18 +564,18 @@ export const MetricasPage: React.FC = () => {
                 <div className="space-y-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>Threshold CPU: &gt; 80%</span>
-                      <span className="text-emerald-400">Ativo</span>
+                      <span>{t('Threshold CPU: &gt; 80%')}</span>
+                      <span className="text-emerald-400">{t('Ativo')}</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Gera incidente caso consumo ultrapasse 80%.</p>
+                    <p className="text-gray-400 text-[11px]">{t('Gera incidente caso consumo ultrapasse 80%.')}</p>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-1">
                     <div className="flex justify-between font-medium text-amber-400">
-                      <span>Threshold RAM: &gt; 85%</span>
-                      <span className="text-emerald-400">Ativo</span>
+                      <span>{t('Threshold RAM: &gt; 85%')}</span>
+                      <span className="text-emerald-400">{t('Ativo')}</span>
                     </div>
-                    <p className="text-gray-400 text-[11px]">Notifica saturação de memória física.</p>
+                    <p className="text-gray-400 text-[11px]">{t('Notifica saturação de memória física.')}</p>
                   </div>
                 </div>
               </div>

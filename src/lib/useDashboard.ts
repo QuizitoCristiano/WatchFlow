@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import type { Alert, DashboardMetricPoint, DashboardSummary, Device } from '@/types';
 import { dashboardService } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/useAuth';
+import { usePreferences } from '@/contexts/usePreferences';
 
 export const useDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const userId = user?.uid ?? 'usr_local_dev_001';
+  const { preferences } = usePreferences();
+  const userId = user?.uid ?? null;
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [isSeedingDemo, setIsSeedingDemo] = useState(false);
-  const [seedDemoError, setSeedDemoError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<{
     userId: string;
     version: number;
@@ -45,7 +45,7 @@ export const useDashboard = () => {
 
       if (devicesResult.status === 'fulfilled') {
         try {
-          metricData = await dashboardService.getMetricsHistory(userId, storedDevices);
+          metricData = await dashboardService.getMetricsHistory(userId, storedDevices, preferences.monitoring.defaultTimeRange);
         } catch (loadError) {
           metricsError = loadError;
         }
@@ -123,15 +123,15 @@ export const useDashboard = () => {
     return () => {
       active = false;
     };
-  }, [authLoading, refreshVersion, userId]);
+  }, [authLoading, refreshVersion, userId, preferences.monitoring.defaultTimeRange]);
 
   useEffect(() => {
     if (authLoading || !userId) return;
     const refreshTimer = window.setInterval(() => {
       setRefreshVersion((version) => version + 1);
-    }, 60_000);
+    }, preferences.monitoring.refreshInterval * 1000);
     return () => window.clearInterval(refreshTimer);
-  }, [authLoading, userId]);
+  }, [authLoading, userId, preferences.monitoring.refreshInterval]);
 
   const hasCurrentUserData = userId !== null &&
     dashboardData?.userId === userId &&
@@ -145,28 +145,6 @@ export const useDashboard = () => {
         ? dashboardData.error
         : null;
 
-  const seedDemoData = async () => {
-    if (!userId) {
-      setSeedDemoError('É necessário estar autenticado para criar dados de demonstração.');
-      return;
-    }
-
-    setIsSeedingDemo(true);
-    setSeedDemoError(null);
-    try {
-      const alertWarning = await dashboardService.seedDemoData(userId);
-      setRefreshVersion((version) => version + 1);
-      if (alertWarning) {
-        setSeedDemoError(`Dispositivo e métricas criados, mas o alerta de demonstração falhou: ${alertWarning}`);
-      }
-    } catch (seedError) {
-      const message = getErrorMessage(seedError);
-      console.error('Falha ao criar dados de demonstração do Dashboard:', seedError);
-      setSeedDemoError(`Não foi possível criar dados de demonstração: ${message}`);
-    } finally {
-      setIsSeedingDemo(false);
-    }
-  };
 
   return {
     summary: hasCurrentUserData ? dashboardData.summary : null,
@@ -175,9 +153,6 @@ export const useDashboard = () => {
     alerts: hasCurrentUserData ? dashboardData.alerts : [],
     loading,
     error,
-    isSeedingDemo,
-    seedDemoError,
-    seedDemoData,
   };
 };
 

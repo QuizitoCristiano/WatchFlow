@@ -1,107 +1,98 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/services/deviceService';
+import { subscribeToDevices, deleteDevice, registerBrowserDevice } from '@/services/deviceService';
+import {
+  captureLocalDeviceConnected,
+  captureOverloadSimulation,
+  isSentryConfigured,
+} from '@/lib/sentry';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor, Flame } from 'lucide-react';
+import {
+  Server, HardDrive, Cpu, Activity, Trash2, Monitor,
+  Laptop, Flame, Loader2, ShieldCheck,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 import { toast } from 'sonner';
+import { useI18n } from '@/i18n/useI18n';
 
 export const DispositivosPage: React.FC = () => {
+  const { t } = useI18n();
   const { user } = useAuth();
   const userId = user?.uid;
 
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [search, setSearch] = useState('');
-  const [registering, setRegistering] = useState(false);
+  const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
 
   useEffect(() => {
     if (!userId) return;
-    const unsubscribe = subscribeToDevices(userId, setDevices);
-    return () => unsubscribe();
+    return subscribeToDevices(userId, (items) => setDevicesState({ userId, items }));
   }, [userId]);
 
-  // Polling em tempo real para sincronizar hardware e GPU ao vivo
-  useEffect(() => {
-    let isMounted = true;
-    const fetchLive = async () => {
-      try {
-        const res = await fetch('/api/system-metrics');
-        if (res.ok) {
-          const m = await res.json();
-          if (!isMounted) return;
-          setDevices((prev) =>
-            prev.map((d) => {
-              if (
-                d.hostname === 'srv-local-pc' ||
-                d.id === 'dev-local-machine' ||
-                d.ip === '127.0.0.1' ||
-                (d.hostname ?? '').toLowerCase().includes('local')
-              ) {
-                const isCritical =
-                  m.cpu.usagePercent >= 90 ||
-                  m.memory.usedPercent >= 90 ||
-                  (m.gpu && m.gpu.usagePercent >= 90);
-                return {
-                  ...d,
-                  status: isCritical
-                    ? 'critical'
-                    : m.cpu.usagePercent > 70 || m.memory.usedPercent > 80
-                    ? 'warning'
-                    : 'online',
-                  latestMetricsSummary: {
-                    ...d.latestMetricsSummary,
-                    cpu: m.cpu.usagePercent,
-                    memory: m.memory.usedPercent,
-                    disk: m.disk.usedPercent,
-                    gpu: m.gpu || {
-                      name: 'GPU',
-                      usagePercent: 20,
-                      temperatureC: 37,
-                      memoryUsedMb: 1346,
-                      memoryTotalMb: 6144,
-                    },
-                  },
-                  lastSeen: 'Agora mesmo',
-                };
-              }
-              return d;
-            })
-          );
-        }
-      } catch {
-        // ignora se offline
-      }
-    };
-
-    fetchLive();
-    const interval = setInterval(fetchLive, 2000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  const handleRegisterLocal = async () => {
+  const handleConnectLocal = async () => {
     if (!userId) {
-      toast.warning('Você precisa estar autenticado.');
+      toast.error('Faça login para conectar este dispositivo.');
       return;
     }
+
+    if (!isSentryConfigured()) {
+      toast.error('Sentry não configurado. Defina VITE_SENTRY_DSN no ambiente e reinicie o Vite.');
+      return;
+    }
+
+    setConnecting(true);
     try {
-      setRegistering(true);
-      await registerLocalDevice(userId, 'srv-local-pc');
+      await registerBrowserDevice(userId);
+
+      const deviceContext = {
+        browser: navigator.userAgent,
+        operatingSystem: navigator.platform || 'Não identificado',
+        platform: navigator.platform || 'Não informado',
+        language: navigator.language,
+        logicalProcessors: navigator.hardwareConcurrency ?? null,
+        deviceMemoryGb: null,
+        screen: `${window.screen.width}x${window.screen.height}`,
+        online: navigator.onLine,
+      };
+
+      const delivered = await captureLocalDeviceConnected(deviceContext);
+      if (delivered) {
+        toast.success('Dispositivo vinculado e evento enviado ao Sentry.');
+      } else {
+        toast.warning('Dispositivo vinculado, mas o Sentry não confirmou o envio. Confira o DSN e a rede.');
+      }
     } catch (error) {
-      console.error('Erro ao registrar dispositivo local:', error);
-      toast.error('Erro ao registrar máquina local.');
+      console.error('Falha ao conectar dispositivo local:', error);
+      toast.error('Não foi possível conectar o dispositivo local.');
     } finally {
-      setRegistering(false);
+      setConnecting(false);
     }
   };
 
-  // Busca segura evitando erros se hostname ou ip forem undefined
-  const filteredDevices = devices.filter(
-    (d) =>
-      (d.hostname ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (d.ip ?? '').includes(search)
-  );
+  const handleOverloadSimulation = async () => {
+    if (!isSentryConfigured()) {
+      toast.error('Sentry não configurado. Defina VITE_SENTRY_DSN no ambiente e reinicie o Vite.');
+      return;
+    }
+
+    setSimulating(true);
+    try {
+      const host = user?.displayName || user?.email || 'WatchFlow local browser';
+      const delivered = await captureOverloadSimulation(host);
+      if (delivered) {
+        toast.success('Evento de sobrecarga simulado e enviado ao Sentry.');
+      } else {
+        toast.warning('Evento gerado, mas o Sentry não confirmou o envio. Confira o DSN e a rede.');
+      }
+    } catch (error) {
+      console.error('Falha ao enviar simulação ao Sentry:', error);
+      toast.error('Não foi possível enviar a simulação ao Sentry.');
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  const filteredDevices = devices;
 
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
     if (!lastSeen) return 'N/A';
@@ -113,79 +104,59 @@ export const DispositivosPage: React.FC = () => {
 
   return (
     <div className="p-6 text-white max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Server className="text-orange-500" /> Dispositivos Monitorados
+            <Server className="text-orange-500" /> {t('Dispositivos Monitorados')}
           </h1>
           <p className="text-gray-400 text-sm">
-            Visualização de hosts e estatísticas de uso em tempo real
+            Conecte este navegador e valide os eventos de APM no Sentry
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar por host ou IP..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange-500"
-            />
-          </div>
-
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={async () => {
-              try {
-                await fetch('/api/trigger-stress');
-                toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% para acionar o Sentry.');
-              } catch (e) {
-                console.error(e);
-              }
-            }}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer shadow-lg shadow-red-900/30"
-            title="Simula carga extrema (>90%) para demonstrar os alertas críticos e o Sentry"
+            type="button"
+            onClick={handleOverloadSimulation}
+            disabled={simulating || connecting}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+            title="Envia um evento de demonstração ao Sentry; não gera carga real no computador."
           >
-            <Flame className="w-4 h-4 text-red-200 animate-pulse" />
-            <span>Simular Sobrecarga (Pico &gt; 90%)</span>
+            {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4" />}
+            <span>Simular Sobrecarga (&gt;90%)</span>
           </button>
 
           <button
-            onClick={handleRegisterLocal}
-            disabled={registering}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer disabled:opacity-50"
-            title="Registra a máquina local no Firestore para demonstrar monitoramento"
+            type="button"
+            onClick={handleConnectLocal}
+            disabled={connecting || simulating}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+            title="Vincula este navegador à conta e envia seu contexto técnico permitido ao Sentry."
           >
-            {registering ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Laptop className="w-4 h-4" />
-            )}
+            {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Laptop className="w-4 h-4" />}
             <span>Conectar Máquina Local</span>
           </button>
         </div>
       </div>
 
-      {/* Condicional para tratar tela vazia ou sem resultados */}
+      <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-100">
+        <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+        <p>
+          A conexão envia ao Sentry informações disponíveis no navegador. A simulação gera um evento
+          identificado como demonstração; não representa uso físico real de CPU, RAM ou GPU.
+          Métricas de hardware exigem um agente local, que será integrado posteriormente.
+        </p>
+      </div>
+
       {filteredDevices.length === 0 ? (
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">
-            {search ? 'Nenhum dispositivo encontrado' : 'Nenhum dispositivo monitorado'}
+            {t('Nenhum dispositivo monitorado')}
           </h3>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
-            {search
-              ? `Nenhum host ou IP corresponde à busca "${search}".`
-              : 'Conecte o agente de monitoramento ou clique no botão acima para registrar este computador no WatchFlow.'}
+          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+            Clique em “Conectar Máquina Local” para vincular este navegador e enviar o evento de conexão ao Sentry.
           </p>
-          <button
-            onClick={handleRegisterLocal}
-            disabled={registering}
-            className="inline-flex items-center gap-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 px-5 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Registrar Meu Computador Agora
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -204,81 +175,69 @@ export const DispositivosPage: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-lg">{device.hostname}</h3>
                     <span className="text-xs text-gray-400">{device.ip} • {distro}</span>
+                    {device.isDemoData && (
+                      <span className="block mt-1 text-xs text-orange-300">Vínculo de demonstração Sentry</span>
+                    )}
                   </div>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                      device.status === 'online'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : device.status === 'warning'
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}
-                  >
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                    device.status === 'online'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      : device.status === 'warning'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-red-500/10 text-red-400 border-red-500/20'
+                  }`}>
                     {device.status ? device.status.toUpperCase() : 'DESCONHECIDO'}
                   </span>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1"><Cpu className="w-3 h-3"/> CPU</span>
-                      <span>{cpu}%</span>
+                {device.isDemoData ? (
+                  <div className="rounded-lg bg-zinc-800/70 p-3 text-sm text-gray-300">
+                    Navegador vinculado. Métricas físicas de CPU, RAM, disco e GPU serão exibidas quando o agente local estiver integrado.
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 flex items-center gap-1"><Cpu className="w-3 h-3"/> CPU</span>
+                        <span>{cpu}%</span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-orange-500 h-full transition-all duration-500" style={{ width: `${Math.min(cpu, 100)}%` }} />
+                      </div>
                     </div>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-orange-500 h-full transition-all duration-500"
-                        style={{ width: `${Math.min(cpu, 100)}%` }}
-                      />
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 flex items-center gap-1"><Activity className="w-3 h-3"/> RAM</span>
+                        <span>{memory}%</span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${Math.min(memory, 100)}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 flex items-center gap-1"><HardDrive className="w-3 h-3"/> Disco</span>
+                        <span>{disk}%</span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${Math.min(disk, 100)}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'GPU'}>
+                          <Monitor className="w-3 h-3 text-emerald-400"/> GPU
+                        </span>
+                        <span>{device.latestMetricsSummary?.gpu?.usagePercent ?? 'N/A'}{device.latestMetricsSummary?.gpu ? '%' : ''}</span>
+                      </div>
                     </div>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1"><Activity className="w-3 h-3"/> RAM</span>
-                      <span>{memory}%</span>
-                    </div>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-500 h-full transition-all duration-500"
-                        style={{ width: `${Math.min(memory, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1"><HardDrive className="w-3 h-3"/> Disco</span>
-                      <span>{disk}%</span>
-                    </div>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-purple-500 h-full transition-all duration-500"
-                        style={{ width: `${Math.min(disk, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'GPU'}>
-                        <Monitor className="w-3 h-3 text-emerald-400"/> GPU
-                      </span>
-                      <span className={(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'text-red-400 font-bold' : ''}>
-                        {device.latestMetricsSummary?.gpu?.usagePercent ?? 20}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                        style={{ width: `${Math.min(device.latestMetricsSummary?.gpu?.usagePercent ?? 20, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs text-gray-500">
                   <span>Último visto: {formatLastSeen(device.lastSeen)}</span>
                   <button
+                    type="button"
                     onClick={() => userId && device.id && deleteDevice(userId, device.id)}
                     className="text-gray-400 hover:text-red-400 p-1 transition cursor-pointer"
                     title="Remover Dispositivo"
@@ -294,4 +253,5 @@ export const DispositivosPage: React.FC = () => {
     </div>
   );
 };
+
 export default DispositivosPage;

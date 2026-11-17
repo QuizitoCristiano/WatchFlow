@@ -1,10 +1,14 @@
+import { createHash } from 'node:crypto';
 import {
   FieldValue,
   Timestamp,
+  type DocumentReference,
   type DocumentSnapshot,
   type Firestore,
+  type Transaction,
 } from 'firebase-admin/firestore';
 import { HttpError } from './errors.ts';
+import { getMetricSeverity } from './alertPolicy.ts';
 import type {
   AuthenticatedCollector,
   CollectorIdentity,
@@ -14,6 +18,9 @@ import type {
 import type { CollectorRepository } from './service.ts';
 
 const MIN_WRITE_INTERVAL_MS = 15_000;
+const MIN_PROVISION_INTERVAL_MS = 60_000;
+const PROVISION_WINDOW_MS = 60 * 60_000;
+const MAX_PROVISIONS_PER_WINDOW = 5;
 const BUCKET_MS = 60 * 60_000;
 const WINDOW_BUCKETS = 24;
 
@@ -116,12 +123,103 @@ function metricDocument(sample: SuccessfulSample): DocumentData {
   return result;
 }
 
+type AlertMetric = { type: 'CPU_HIGH' | 'RAM_HIGH' | 'DISK_HIGH'; metric: string; value: number };
+
+function alertReference(db: Firestore, userId: string, deviceId: string, type: AlertMetric['type']) {
+  // Hashing creates a stable Firestore-safe ID without exposing identifiers in document names.
+  const id = createHash('sha256').update(`${userId}:${deviceId}:${type}`).digest('hex');
+  return db.doc(`alerts/collector-${id}`);
+}
+
+function updateMetricAlert(
+  transaction: Transaction,
+  reference: DocumentReference,
+  snapshot: DocumentSnapshot,
+  identity: CollectorIdentity,
+  deviceName: string,
+  metric: AlertMetric,
+  now: Date,
+): void {
+  const previous = getRecord(snapshot.data());
+  const severity = getMetricSeverity(metric.value);
+
+  if (!severity) {
+    if (previous.status === 'active' || previous.status === 'acknowledged') {
+      transaction.set(reference, {
+        status: 'resolved',
+        resolvedAt: Timestamp.fromDate(now),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    return;
+  }
+
+  const wasOpen = previous.status === 'active' || previous.status === 'acknowledged';
+  const threshold = severity === 'critical' ? 90 : 80;
+  transaction.set(reference, {
+    userId: identity.userId,
+    deviceId: identity.deviceId,
+    integrationId: identity.integrationId,
+    deviceName,
+    type: metric.type,
+    title: `${metric.metric}: uso elevado`,
+    description: `${metric.metric} está em ${metric.value.toFixed(1)}% (limite de atenção: 80%; crítico: 90%).`,
+    severity,
+    status: wasOpen && previous.status === 'acknowledged' ? 'acknowledged' : 'active',
+    isDemoData: false,
+    metricTriggered: {
+      metric: metric.metric,
+      value: Number(metric.value.toFixed(2)),
+      threshold,
+      operator: '>' as const,
+    },
+    firstDetectedAt: wasOpen && previous.firstDetectedAt instanceof Timestamp
+      ? previous.firstDetectedAt
+      : Timestamp.fromDate(now),
+    lastDetectedAt: Timestamp.fromDate(now),
+    resolvedAt: null,
+    createdAt: wasOpen && previous.createdAt ? previous.createdAt : FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
 function integrationReference(db: Firestore, identity: CollectorIdentity) {
   return db.doc(`users/${identity.userId}/integrations/${identity.integrationId}`);
 }
 
 function credentialReference(db: Firestore, tokenHash: string) {
   return db.doc(`collectorCredentials/${tokenHash}`);
+}
+
+export function validateNodeExporterEndpoint(value: unknown): void {
+  if (typeof value !== 'string' || value.length > 2048) {
+    throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
+  }
+  let endpoint: URL;
+  try {
+    endpoint = new URL(value);
+  } catch {
+    throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
+  }
+  const port = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
+  const hostname = endpoint.hostname.toLowerCase();
+  if (
+    !['http:', 'https:'].includes(endpoint.protocol) ||
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.search ||
+    endpoint.hash ||
+    endpoint.pathname !== '/metrics' ||
+    !['9100', '443'].includes(port) ||
+    (port === '443' && endpoint.protocol !== 'https:') ||
+    hostname === '169.254.169.254' ||
+    hostname.startsWith('169.254.') ||
+    hostname === '100.100.100.200' ||
+    hostname === 'metadata.google.internal' ||
+    hostname === 'metadata.azure.internal'
+  ) {
+    throw new HttpError(400, 'Endpoint do Node Exporter viola a política de protocolo, porta ou destino.');
+  }
 }
 
 function ensureOwner(
@@ -184,7 +282,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
   return {
     async provision(userId, integrationId, deviceId, tokenHash, issuedAt) {
       const integrationRef = db.doc(`users/${userId}/integrations/${integrationId}`);
-      const credentialStateRef = db.doc(`collectorCredentialState/${userId}_${integrationId}`);
+      const credentialStateId = createHash('sha256').update(`${userId}:${integrationId}`).digest('hex');
+      const credentialStateRef = db.doc(`collectorCredentialState/${credentialStateId}`);
       const newCredentialRef = credentialReference(db, tokenHash);
 
       await db.runTransaction(async (transaction) => {
@@ -199,9 +298,24 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
         if (integration.type !== 'node_exporter') {
           throw new HttpError(400, 'A ingestão ainda suporta somente Node Exporter.');
         }
+        validateNodeExporterEndpoint(integration.baseUrl);
+        const previousState = getRecord(stateSnapshot.data());
+        const lastRotation = previousState.rotatedAt;
+        if (lastRotation instanceof Timestamp && issuedAt.getTime() - lastRotation.toMillis() < MIN_PROVISION_INTERVAL_MS) {
+          throw new HttpError(429, 'Aguarde 60 segundos antes de gerar outra credencial.');
+        }
+        const windowStartedAt = previousState.rotationWindowStartedAt;
+        const windowIsCurrent = windowStartedAt instanceof Timestamp &&
+          issuedAt.getTime() - windowStartedAt.toMillis() < PROVISION_WINDOW_MS;
+        const rotationCount = windowIsCurrent && Number.isSafeInteger(previousState.rotationCount)
+          ? Number(previousState.rotationCount)
+          : 0;
+        if (rotationCount >= MAX_PROVISIONS_PER_WINDOW) {
+          throw new HttpError(429, 'Limite de 5 provisionamentos por hora atingido.');
+        }
         if (newCredentialSnapshot.exists) throw new HttpError(409, 'Não foi possível gerar uma credencial exclusiva.');
 
-        const previousHash = getRecord(stateSnapshot.data()).tokenHash;
+        const previousHash = previousState.tokenHash;
         const previousCredentialRef = typeof previousHash === 'string'
           ? credentialReference(db, previousHash)
           : null;
@@ -225,29 +339,45 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           tokenHash,
           rotatedAt: Timestamp.fromDate(issuedAt),
           expiresAt: Timestamp.fromDate(new Date(issuedAt.getTime() + 90 * 24 * 60 * 60_000)),
+          rotationWindowStartedAt: windowIsCurrent ? windowStartedAt : Timestamp.fromDate(issuedAt),
+          rotationCount: rotationCount + 1,
         });
       });
     },
 
     async getCredential(tokenHash): Promise<AuthenticatedCollector | null> {
-      const snapshot = await credentialReference(db, tokenHash).get();
-      if (!snapshot.exists) return null;
-      const data = getRecord(snapshot.data());
-      if (
-        typeof data.userId !== 'string' ||
-        typeof data.integrationId !== 'string' ||
-        typeof data.deviceId !== 'string' ||
-        !(data.expiresAt instanceof Timestamp) ||
-        data.expiresAt.toMillis() <= Date.now()
-      ) return null;
-      return {
-        identity: {
-          userId: data.userId,
-          integrationId: data.integrationId,
-          deviceId: data.deviceId,
-        },
-        tokenHash,
-      };
+      const reference = credentialReference(db, tokenHash);
+      return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(reference);
+        if (!snapshot.exists) return null;
+        const data = getRecord(snapshot.data());
+        const now = new Date();
+        if (
+          typeof data.userId !== 'string' ||
+          typeof data.integrationId !== 'string' ||
+          typeof data.deviceId !== 'string' ||
+          !(data.expiresAt instanceof Timestamp) ||
+          data.expiresAt.toMillis() <= now.getTime()
+        ) return null;
+
+        // Persist the request timestamp so the interval is enforced across serverless instances.
+        const lastRequestAt = data.lastRequestAt;
+        if (
+          lastRequestAt instanceof Timestamp &&
+          now.getTime() - lastRequestAt.toMillis() < MIN_WRITE_INTERVAL_MS
+        ) {
+          throw new HttpError(429, 'Limite de ingestão atingido. Aguarde pelo menos 15 segundos.');
+        }
+        transaction.update(reference, { lastRequestAt: Timestamp.fromDate(now) });
+        return {
+          identity: {
+            userId: data.userId,
+            integrationId: data.integrationId,
+            deviceId: data.deviceId,
+          },
+          tokenHash,
+        };
+      });
     },
 
     async recordSuccess(identity, tokenHash, sample, now) {
@@ -255,14 +385,25 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
       const deviceRef = db.doc(`users/${identity.userId}/devices/${identity.deviceId}`);
       const metricRef = deviceRef.collection('metrics').doc(sample.sampleId);
       const credentialRef = credentialReference(db, tokenHash);
+      const diskPercent = sample.filesystems.reduce((sum, filesystem) => sum + filesystem.usedBytes, 0) /
+        sample.filesystems.reduce((sum, filesystem) => sum + filesystem.totalBytes, 0) * 100;
+      const alertMetrics: AlertMetric[] = [
+        { type: 'CPU_HIGH', metric: 'CPU', value: sample.cpuUsagePercent },
+        { type: 'RAM_HIGH', metric: 'RAM', value: sample.memoryUsagePercent },
+        { type: 'DISK_HIGH', metric: 'Disco', value: diskPercent },
+      ];
+      const alertRefs = alertMetrics.map((metric) => alertReference(db, identity.userId, identity.deviceId, metric.type));
 
       return db.runTransaction(async (transaction) => {
-        const [integrationSnapshot, deviceSnapshot, metricSnapshot, credentialSnapshot] = await Promise.all([
+        const snapshots = await Promise.all([
           transaction.get(integrationRef),
           transaction.get(deviceRef),
           transaction.get(metricRef),
           transaction.get(credentialRef),
+          ...alertRefs.map((reference) => transaction.get(reference)),
         ]);
+        const [integrationSnapshot, deviceSnapshot, metricSnapshot, credentialSnapshot] = snapshots;
+        const alertSnapshots = snapshots.slice(4);
         const integration = ensureOwner(integrationSnapshot, identity);
         const credential = ensureCredential(credentialSnapshot, identity, now);
         if (metricSnapshot.exists) {
@@ -307,7 +448,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           integrationId: identity.integrationId,
           hostname: typeof integration.name === 'string' ? integration.name : identity.deviceId,
           ip: host,
-          status: 'online',
+          status: alertMetrics.some((metric) => metric.value >= 90) ? 'critical' :
+            alertMetrics.some((metric) => metric.value >= 80) ? 'warning' : 'online',
           isDemoData: false,
           lastSeen: Timestamp.fromDate(now),
           updatedAt: FieldValue.serverTimestamp(),
@@ -338,6 +480,19 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
           lastSuccessAt: Timestamp.fromDate(now),
           lastSync: Timestamp.fromDate(now),
           lastError: null,
+        });
+
+        // Alert lifecycle is evaluated in the same transaction as the metric write.
+        alertMetrics.forEach((metric, index) => {
+          updateMetricAlert(
+            transaction,
+            alertRefs[index],
+            alertSnapshots[index],
+            identity,
+            typeof integration.name === 'string' ? integration.name : identity.deviceId,
+            metric,
+            now,
+          );
         });
         return 'stored';
       });

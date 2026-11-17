@@ -15,10 +15,12 @@ import { FirebaseError } from "firebase/app";
 
 import { loginSchema } from "./LogSchema";
 import { useAuth } from "@/contexts/useAuth";
+import { useI18n } from '@/i18n/useI18n';
 import { HeroVisual } from "./HeroVisual";
 
 
 export const Login = () => {
+  const { t } = useI18n();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -133,7 +135,7 @@ export const Login = () => {
                     </div>
 
                     <div className="flex items-center gap-2 text-xs md:text-sm text-text-muted">
-                        <span>Não tem uma conta?</span>
+                        <span>{t('Não tem uma conta?')}</span>
                         <Link
                             to="/register"
                             className="px-3 py-1.5 bg-bg-card hover:bg-bg-hover text-text-heading font-medium rounded-lg transition-colors border border-border-subtle"
@@ -187,7 +189,7 @@ export const Login = () => {
                             <div className="w-full border-t border-border-subtle"></div>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-bg-app px-2 text-text-subtle">ou com e-mail</span>
+                            <span className="bg-bg-app px-2 text-text-subtle">{t('ou com e-mail')}</span>
                         </div>
                     </div>
 

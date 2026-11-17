@@ -1,59 +1,45 @@
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
-import { db, isFirebaseConfigured } from '@/services/config';
+import { auth, db, isFirebaseConfigured } from '@/services/config';
 
-export const DEFAULT_PREFERENCES: UserPreferences = {
-  language: 'pt-BR',
-  timezone: 'America/Sao_Paulo',
-  theme: 'dark',
-  notifications: {
-    enabled: true,
-    critical: true,
-    warning: true,
-    info: false,
-    email: false,
-  },
-  monitoring: {
-    refreshInterval: 15,
-    defaultTimeRange: '24h',
-  },
-  dashboard: {
-    cpu: true,
-    memory: true,
-    disk: true,
-    network: true,
-    availability: true,
-    alerts: true,
-  },
-};
+import { DEFAULT_PREFERENCES, normalizePreferences } from '@/lib/preferences';
 
-const LOCAL_STORAGE_KEY = 'wf_local_preferences';
+const localPreferencesKey = (userId: string) => `wf_local_preferences:${userId}`;
+
+function assertUserScope(userId: string): void {
+  if (!userId) throw new Error('Usuário não autenticado.');
+  if (isFirebaseConfigured && auth?.currentUser?.uid !== userId) {
+    throw new Error('A sessão não corresponde ao proprietário das preferências.');
+  }
+}
 
 export const settingsService = {
   async getPreferences(userId: string): Promise<UserPreferences> {
+    assertUserScope(userId);
     if (isFirebaseConfigured && db) {
-      try {
-        const userRef = doc(db, 'users', userId);
-        const snap = await getDoc(userRef);
-        if (snap.exists() && snap.data()?.preferences) {
-          return snap.data().preferences as UserPreferences;
-        }
-      } catch (error) {
-        console.error('Erro ao carregar configurações do Firestore:', error);
-      }
+      const userRef = doc(db, 'users', userId);
+      const snapshot = await getDoc(userRef);
+      if (!snapshot.exists()) return DEFAULT_PREFERENCES;
+      const preferences = snapshot.data().preferences;
+      return normalizePreferences(preferences);
     }
 
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_PREFERENCES;
+    const raw = localStorage.getItem(localPreferencesKey(userId));
+    if (!raw) return DEFAULT_PREFERENCES;
+    try {
+      return normalizePreferences(JSON.parse(raw));
+    } catch {
+      return DEFAULT_PREFERENCES;
+    }
   },
 
   async updatePreferences(userId: string, preferences: UserPreferences): Promise<void> {
+    assertUserScope(userId);
+    const safePreferences = normalizePreferences(preferences);
     if (isFirebaseConfigured && db) {
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, { preferences });
+      await updateDoc(doc(db, 'users', userId), { preferences: safePreferences });
       return;
     }
-
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(preferences));
+    localStorage.setItem(localPreferencesKey(userId), JSON.stringify(safePreferences));
   },
 };

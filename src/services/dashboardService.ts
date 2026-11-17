@@ -1,12 +1,9 @@
 import {
   collection,
-  doc,
   getDocs,
   limit,
   orderBy,
   query,
-  runTransaction,
-  serverTimestamp,
   Timestamp,
   where,
 } from 'firebase/firestore';
@@ -128,6 +125,10 @@ export const dashboardService = {
         let totalCpu = 0;
         let totalRam = 0;
         let totalDisk = 0;
+        let totalMemoryUsedGb = 0;
+        let totalMemoryTotalGb = 0;
+        let totalDiskUsedGb = 0;
+        let totalDiskTotalGb = 0;
         let devicesWithMetrics = 0;
 
         devicesSnap.forEach(docSnap => {
@@ -141,12 +142,17 @@ export const dashboardService = {
             totalCpu += d.latestMetricsSummary.cpu || 0;
             totalRam += d.latestMetricsSummary.memory || 0;
             totalDisk += d.latestMetricsSummary.disk || 0;
+            totalMemoryUsedGb += d.latestMetricsSummary.memoryUsedGb || 0;
+            totalMemoryTotalGb += d.latestMetricsSummary.memoryTotalGb || 0;
+            totalDiskUsedGb += d.latestMetricsSummary.diskUsedGb || 0;
+            totalDiskTotalGb += d.latestMetricsSummary.diskTotalGb || 0;
             devicesWithMetrics++;
           }
         });
 
         const activeAlertsCount = alertsSnap.size;
-        const globalSlaPercent = totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : 99.98;
+        // This is a current availability ratio, not a historical SLA calculation.
+        const globalSlaPercent = totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : null;
 
         return {
           totalDevices,
@@ -156,14 +162,14 @@ export const dashboardService = {
           devicesOffline,
           activeAlertsCount,
           globalSlaPercent,
-          avgCpuUsage: devicesWithMetrics > 0 ? Math.round(totalCpu / devicesWithMetrics) : 18,
-          avgRamUsage: devicesWithMetrics > 0 ? Math.round(totalRam / devicesWithMetrics) : 45,
-          ramUsedGb: 8,
-          ramTotalGb: 16,
-          avgDiskUsage: devicesWithMetrics > 0 ? Math.round(totalDisk / devicesWithMetrics) : 62,
-          diskUsedGb: 500,
-          diskTotalGb: 1000,
-          lastUpdatedAt: new Date().toISOString() as any,
+          avgCpuUsage: devicesWithMetrics > 0 ? Math.round(totalCpu / devicesWithMetrics) : null,
+          avgRamUsage: devicesWithMetrics > 0 ? Math.round(totalRam / devicesWithMetrics) : null,
+          ramUsedGb: devicesWithMetrics > 0 ? Number(totalMemoryUsedGb.toFixed(2)) : null,
+          ramTotalGb: devicesWithMetrics > 0 ? Number(totalMemoryTotalGb.toFixed(2)) : null,
+          avgDiskUsage: devicesWithMetrics > 0 ? Math.round(totalDisk / devicesWithMetrics) : null,
+          diskUsedGb: devicesWithMetrics > 0 ? Number(totalDiskUsedGb.toFixed(2)) : null,
+          diskTotalGb: devicesWithMetrics > 0 ? Number(totalDiskTotalGb.toFixed(2)) : null,
+          lastUpdatedAt: new Date().toISOString(),
         };
       }
     } catch (e) {
@@ -171,17 +177,27 @@ export const dashboardService = {
     }
 
     // Fallback Local
-    const rawDevs = localStorage.getItem('wf_local_devices');
-    const devs: Device[] = rawDevs ? JSON.parse(rawDevs) : [];
-    const rawAlerts = localStorage.getItem('wf_local_alerts');
-    const alerts: Alert[] = rawAlerts ? JSON.parse(rawAlerts) : [];
+    const rawDevs = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
+    const devs: Device[] = rawDevs ? (JSON.parse(rawDevs) as Device[]).filter((device) => device.userId === userId) : [];
+    const rawAlerts = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
+    const alerts: Alert[] = rawAlerts ? (JSON.parse(rawAlerts) as Alert[]).filter((alert) => alert.userId === userId) : [];
 
-    const totalDevices = devs.length || 1;
-    const devicesOnline = devs.filter(d => d.status === 'online').length || 1;
+    const totalDevices = devs.length;
+    const devicesOnline = devs.filter(d => d.status === 'online').length;
     const devicesWarning = devs.filter(d => d.status === 'warning').length;
     const devicesCritical = devs.filter(d => d.status === 'critical').length;
     const devicesOffline = totalDevices - (devicesOnline + devicesWarning + devicesCritical);
     const activeAlertsCount = alerts.filter(a => a.status === 'active').length;
+
+    const devicesWithMetrics = devs.filter((device) => device.latestMetricsSummary);
+    const average = (values: Array<number | undefined>): number | null => {
+      const available = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+      return available.length ? Math.round(available.reduce((sum, value) => sum + value, 0) / available.length) : null;
+    };
+    const sum = (values: Array<number | undefined>): number | null => {
+      const available = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+      return available.length ? Number(available.reduce((total, value) => total + value, 0).toFixed(2)) : null;
+    };
 
     return {
       totalDevices,
@@ -190,33 +206,36 @@ export const dashboardService = {
       devicesCritical,
       devicesOffline: Math.max(0, devicesOffline),
       activeAlertsCount,
-      globalSlaPercent: 99.95,
-      avgCpuUsage: devs[0]?.latestMetricsSummary?.cpu ?? 24,
-      avgRamUsage: devs[0]?.latestMetricsSummary?.memory ?? 58,
-      ramUsedGb: devs[0]?.latestMetricsSummary?.memoryUsedGb ?? 9.2,
-      ramTotalGb: devs[0]?.latestMetricsSummary?.memoryTotalGb ?? 16,
-      avgDiskUsage: devs[0]?.latestMetricsSummary?.disk ?? 70,
-      diskUsedGb: devs[0]?.latestMetricsSummary?.diskUsedGb ?? 700,
-      diskTotalGb: devs[0]?.latestMetricsSummary?.diskTotalGb ?? 1000,
-      lastUpdatedAt: new Date().toISOString() as any,
+      globalSlaPercent: totalDevices > 0 ? Number(((devicesOnline / totalDevices) * 100).toFixed(2)) : null,
+      avgCpuUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.cpu)),
+      avgRamUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memory)),
+      ramUsedGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memoryUsedGb)),
+      ramTotalGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.memoryTotalGb)),
+      avgDiskUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.disk)),
+      diskUsedGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskUsedGb)),
+      diskTotalGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskTotalGb)),
+      lastUpdatedAt: new Date().toISOString(),
     };
   },
 
   // 2. Busca o histórico de métricas para o gráfico temporal da home
   async getMetricsHistory(
     userId?: string, 
-    storedDevices?: Device[]
+    storedDevices?: Device[],
+    timeRange: '1h' | '24h' | '7d' | '30d' = '24h'
   ): Promise<DashboardMetricsResult> {
     if (isFirebaseConfigured && db && userId && storedDevices && storedDevices.length > 0) {
       const history: DashboardMetricPoint[] = [];
       const latestMetricsByDevice: Record<string, LatestMetricsSummary> = {};
       const errors: string[] = [];
+      const rangeMs: Record<typeof timeRange, number> = { '1h': 60 * 60_000, '24h': 24 * 60 * 60_000, '7d': 7 * 24 * 60 * 60_000, '30d': 30 * 24 * 60 * 60_000 };
+      const cutoff = Timestamp.fromDate(new Date(Date.now() - rangeMs[timeRange]));
 
       for (const dev of storedDevices.slice(0, 5)) {
         if (!dev.id) continue;
         try {
           const mRef = collection(db, 'users', userId, 'devices', dev.id, 'metrics');
-          const q = query(mRef, orderBy('collectedAt', 'desc'), limit(12));
+          const q = query(mRef, where('collectedAt', '>=', cutoff), orderBy('collectedAt', 'desc'), limit(100));
           const snap = await getDocs(q);
           const docs = snap.docs.reverse();
 
@@ -238,23 +257,33 @@ export const dashboardService = {
     }
 
     // Fallback Local
-    const histKey = 'wf_metrics_dev-local-machine';
-    const rawHist = localStorage.getItem(histKey);
-    const stored = rawHist ? JSON.parse(rawHist) : [];
-    const history: DashboardMetricPoint[] = stored.map((item: any) => ({
-      timestamp: new Date(item.collectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      cpu: item.cpu?.usagePercent || 0,
-      memory: item.memory?.usedPercent || 0,
-      downloadMbps: 12.5,
-      uploadMbps: 5.2,
-    }));
+    const histKey = userId ? `wf_metrics:${userId}:dev-local-machine` : '';
+    const rawHist = histKey ? localStorage.getItem(histKey) : null;
+    const stored: unknown = rawHist ? JSON.parse(rawHist) : [];
+    const rangeMs: Record<typeof timeRange, number> = { '1h': 60 * 60_000, '24h': 24 * 60 * 60_000, '7d': 7 * 24 * 60 * 60_000, '30d': 30 * 24 * 60 * 60_000 };
+    const cutoff = Date.now() - rangeMs[timeRange];
+    const history: DashboardMetricPoint[] = Array.isArray(stored)
+      ? stored.flatMap((item): DashboardMetricPoint[] => {
+          const record = asRecord(item);
+          const date = record ? toDate(record.collectedAt) : null;
+          if (!record || !date || date.getTime() < cutoff) return [];
+          const cpu = metricValue(record, 'cpu', 'usagePercent');
+          const memory = metricValue(record, 'memory', 'usedPercent');
+          const network = asRecord(record.network);
+          const downloadBytes = finiteNumber(network?.bytesInSec);
+          const uploadBytes = finiteNumber(network?.bytesOutSec);
+          return [{
+            timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            ...(cpu === undefined ? {} : { cpu }),
+            ...(memory === undefined ? {} : { memory }),
+            ...(downloadBytes === undefined ? {} : { downloadMbps: downloadBytes * 8 / 1_000_000 }),
+            ...(uploadBytes === undefined ? {} : { uploadMbps: uploadBytes * 8 / 1_000_000 }),
+          }];
+        })
+      : [];
 
     return {
-      history: history.length > 0 ? history : [
-        { timestamp: '10:00', cpu: 22, memory: 54, downloadMbps: 10, uploadMbps: 4 },
-        { timestamp: '10:15', cpu: 35, memory: 58, downloadMbps: 14, uploadMbps: 6 },
-        { timestamp: '10:30', cpu: 28, memory: 55, downloadMbps: 11, uploadMbps: 5 },
-      ],
+      history,
       latestMetricsByDevice: {},
       errors: [],
     };
@@ -272,8 +301,8 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_devices');
-    return raw ? JSON.parse(raw) : [];
+    const raw = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
+    return raw ? (JSON.parse(raw) as Device[]).filter((device) => device.userId === userId) : [];
   },
 
   // 4. Busca os alertas recentes
@@ -293,8 +322,8 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_alerts');
-    return raw ? JSON.parse(raw) : [];
+    const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
+    return raw ? (JSON.parse(raw) as Alert[]).filter((alert) => alert.userId === userId) : [];
   },
 
   // 5. Contagem de alertas ativos
@@ -313,50 +342,9 @@ export const dashboardService = {
       }
     }
 
-    const raw = localStorage.getItem('wf_local_alerts');
-    const list: Alert[] = raw ? JSON.parse(raw) : [];
+    const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
+    const list: Alert[] = raw ? (JSON.parse(raw) as Alert[]).filter((alert) => alert.userId === userId) : [];
     return list.filter(a => a.status === 'active').length;
   },
 
-  // 6. Semeia dados de demonstração
-  async seedDemoData(userId: string): Promise<string | null> {
-    if (!isFirebaseConfigured || !db) return null;
-    const deviceRef = doc(db, 'users', userId, 'devices', 'watchflow-demo-device');
-    const alertRef = doc(db, 'alerts', `watchflow-demo-${userId}`);
-    const now = new Date();
-
-    try {
-      await runTransaction(db, async (transaction) => {
-        const deviceSnapshot = await transaction.get(deviceRef);
-        if (!deviceSnapshot.exists()) {
-          transaction.set(deviceRef, {
-            userId,
-            integrationId: 'demo',
-            hostname: 'watchflow-demo',
-            ip: '127.0.0.1',
-            status: 'online',
-            isDemoData: true,
-            latestMetricsSummary: {
-              cpu: 41,
-              memory: 56,
-              memoryUsedGb: 8.96,
-              memoryTotalGb: 16,
-              disk: 49,
-              diskUsedGb: 125.44,
-              diskTotalGb: 256,
-              networkInBytesSec: 152_000,
-              networkOutBytesSec: 58_000,
-              latencyMs: 1,
-            },
-            lastSeen: Timestamp.fromDate(now),
-            createdAt: Timestamp.fromDate(now),
-            updatedAt: Timestamp.fromDate(now),
-          });
-        }
-      });
-      return null;
-    } catch (err) {
-      return err instanceof Error ? err.message : 'Falha ao criar dados de demonstração.';
-    }
-  },
 };
