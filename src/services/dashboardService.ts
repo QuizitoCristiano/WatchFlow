@@ -178,9 +178,9 @@ export const dashboardService = {
 
     // Fallback Local
     const rawDevs = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
-    const devs: Device[] = rawDevs ? JSON.parse(rawDevs) : [];
+    const devs: Device[] = rawDevs ? (JSON.parse(rawDevs) as Device[]).filter((device) => device.userId === userId) : [];
     const rawAlerts = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
-    const alerts: Alert[] = rawAlerts ? JSON.parse(rawAlerts) : [];
+    const alerts: Alert[] = rawAlerts ? (JSON.parse(rawAlerts) as Alert[]).filter((alert) => alert.userId === userId) : [];
 
     const totalDevices = devs.length;
     const devicesOnline = devs.filter(d => d.status === 'online').length;
@@ -297,7 +297,7 @@ export const dashboardService = {
     }
 
     const raw = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (JSON.parse(raw) as Device[]).filter((device) => device.userId === userId) : [];
   },
 
   // 4. Busca os alertas recentes
@@ -318,7 +318,7 @@ export const dashboardService = {
     }
 
     const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (JSON.parse(raw) as Alert[]).filter((alert) => alert.userId === userId) : [];
   },
 
   // 5. Contagem de alertas ativos
@@ -338,7 +338,7 @@ export const dashboardService = {
     }
 
     const raw = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
-    const list: Alert[] = raw ? JSON.parse(raw) : [];
+    const list: Alert[] = raw ? (JSON.parse(raw) as Alert[]).filter((alert) => alert.userId === userId) : [];
     return list.filter(a => a.status === 'active').length;
   },
 
