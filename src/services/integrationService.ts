@@ -1,51 +1,46 @@
-import { registerLocalDevice } from '@/services/deviceService';
 import { auth, db, isFirebaseConfigured } from '@/services/config';
-import type { Integration, IntegrationStatus, IntegrationType } from '@/types';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  serverTimestamp, 
-  query, 
-  orderBy 
+import type { Integration, IntegrationType } from '@/types';
+import {
+  collection,
+  doc,
+  addDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 
-const LOCAL_STORAGE_KEY = 'wf_local_integrations';
+function localIntegrationsKey(userId: string): string {
+  return `wf_local_integrations:${userId}`;
+}
 
-const getStoredLocalIntegrations = (): Integration[] => {
+function assertUserScope(userId: string): void {
+  if (!userId) throw new Error('Usuário não autenticado.');
+  if (isFirebaseConfigured && auth?.currentUser?.uid !== userId) {
+    throw new Error('A sessão não corresponde ao proprietário das integrações.');
+  }
+}
+
+function readLocalIntegrations(userId: string): Integration[] {
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [
-      {
-        id: 'int_local_node_exporter',
-        userId: 'usr_local_dev_001',
-        name: 'Node Exporter (Host Local)',
-        type: 'node_exporter',
-        baseUrl: 'http://localhost:5173/api/system-metrics',
-        status: 'online',
-        version: '1.9.0',
-        lastSync: new Date().toISOString() as any,
-        createdAt: new Date().toISOString() as any,
-      }
-    ];
+    const raw = localStorage.getItem(localIntegrationsKey(userId));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is Integration =>
+          typeof item === 'object' && item !== null &&
+          'userId' in item && item.userId === userId)
+      : [];
   } catch {
     return [];
   }
-};
+}
 
-const saveStoredLocalIntegrations = (list: Integration[]) => {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-};
-
-const getAuthenticatedUid = (uid: string): string => {
-  if (!isFirebaseConfigured || !auth) return uid;
-  const authenticatedUid = auth.currentUser?.uid;
-  if (!authenticatedUid) return uid;
-  return authenticatedUid;
-};
+function writeLocalIntegrations(userId: string, integrations: Integration[]): void {
+  localStorage.setItem(localIntegrationsKey(userId), JSON.stringify(integrations));
+  window.dispatchEvent(new Event('wf_integrations_updated'));
+}
 
 export interface ProvisionedCollectorConfig {
   token: string;
@@ -57,12 +52,14 @@ export async function provisionCollectorCredential(
   userId: string,
   integrationId: string,
 ): Promise<ProvisionedCollectorConfig> {
-  const uid = getAuthenticatedUid(userId);
+  assertUserScope(userId);
   const currentUser = auth?.currentUser;
-  if (!currentUser || currentUser.uid !== uid) {
+  if (!currentUser || currentUser.uid !== userId) {
     throw new Error('Sessão Firebase não está disponível para provisionar o coletor.');
   }
-  if (!integrationId.trim()) throw new Error('Identificador de integração inválido.');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(integrationId)) {
+    throw new Error('Identificador de integração inválido.');
+  }
 
   const idToken = await currentUser.getIdToken();
   const response = await fetch('/api/collector/provision', {
@@ -74,13 +71,10 @@ export async function provisionCollectorCredential(
       accept: 'application/json',
     },
     body: JSON.stringify({ integrationId }),
+    signal: AbortSignal.timeout(10_000),
   });
-  let result: unknown;
-  try {
-    result = await response.json() as unknown;
-  } catch {
-    throw new Error(`O endpoint de provisionamento respondeu com HTTP ${response.status}.`);
-  }
+
+  const result: unknown = await response.json().catch(() => null);
   const data = typeof result === 'object' && result !== null
     ? result as Record<string, unknown>
     : {};
@@ -127,6 +121,16 @@ export function validateIntegrationInput(input: {
   if (endpoint.protocol !== 'http:' && endpoint.protocol !== 'https:') {
     throw new Error('O endpoint deve usar HTTP ou HTTPS.');
   }
+  if (endpoint.username || endpoint.password || endpoint.hash || endpoint.search) {
+    throw new Error('A URL não pode conter credenciais, parâmetros ou fragmentos.');
+  }
+  if (endpoint.href.length > 2048) throw new Error('A URL excede o limite permitido.');
+  if (input.type === 'node_exporter' && endpoint.port && endpoint.port !== '9100') {
+    throw new Error('Para Node Exporter, utilize a porta padrão 9100.');
+  }
+  if (input.type === 'node_exporter' && endpoint.port === '9100' && endpoint.protocol === 'https:') {
+    throw new Error('A porta 9100 do Node Exporter deve utilizar HTTP na rede privada ou um proxy HTTPS configurado.');
+  }
 
   return { name, type: input.type, baseUrl: endpoint.toString() };
 }
@@ -136,58 +140,49 @@ const getIntegrationsCollection = (uid: string) => {
   return collection(db, 'users', uid, 'integrations');
 };
 
-/**
- * Escuta em tempo real todas as integrações do usuário (Firestore ou Local)
- */
 export const subscribeToIntegrations = (
-  userId: string, 
+  userId: string,
   callback: (integrations: Integration[]) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ) => {
+  assertUserScope(userId);
+
   if (isFirebaseConfigured && db) {
-    const q = query(getIntegrationsCollection(userId)!, orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      const integrations = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as Integration[];
-      callback(integrations);
-    }, (err) => {
-      if (onError) onError(err);
-      else console.error('Erro na subscrição de integrações:', err);
-    });
+    const integrationsQuery = query(getIntegrationsCollection(userId)!, orderBy('createdAt', 'desc'));
+    return onSnapshot(integrationsQuery, (snapshot) => {
+      callback(snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
+      })).filter((item) => item.userId === userId) as Integration[]);
+    }, (error) => onError?.(error));
   }
 
-  // Fallback Local
-  const emitLocal = () => {
-    callback(getStoredLocalIntegrations());
-  };
-
+  const emitLocal = () => callback(readLocalIntegrations(userId));
   emitLocal();
-  const interval = setInterval(emitLocal, 3000);
   window.addEventListener('storage', emitLocal);
-
+  window.addEventListener('wf_integrations_updated', emitLocal);
   return () => {
-    clearInterval(interval);
     window.removeEventListener('storage', emitLocal);
+    window.removeEventListener('wf_integrations_updated', emitLocal);
   };
 };
 
-/**
- * Adiciona uma nova integração
- */
 export const addIntegration = async (
   userId: string,
   input: { name: string; type: IntegrationType; baseUrl: string },
 ) => {
-  const uid = getAuthenticatedUid(userId);
+  assertUserScope(userId);
   const data = validateIntegrationInput(input);
 
   if (isFirebaseConfigured && db) {
-    const newIntegration = {
+    const currentUser = auth?.currentUser;
+    if (!currentUser || currentUser.uid !== userId) {
+      throw new Error('Sessão autenticada inválida.');
+    }
+    return addDoc(getIntegrationsCollection(userId)!, {
       ...data,
-      userId: uid,
-      status: 'pending' as const,
+      userId,
+      status: 'pending',
       lastSync: null,
       createdAt: serverTimestamp(),
       lastAttemptAt: null,
@@ -195,105 +190,35 @@ export const addIntegration = async (
       lastError: null,
       attemptsLast24h: 0,
       successesLast24h: 0,
-    };
-
-    return addDoc(getIntegrationsCollection(uid)!, newIntegration);
+    });
   }
 
-  // Local
-  const list = getStoredLocalIntegrations();
-  const newLocal: Integration = {
+  const integration: Integration = {
     ...data,
-    id: `int_${Date.now()}`,
-    userId: uid,
-    status: 'online',
-    lastSync: new Date().toISOString() as any,
-    createdAt: new Date().toISOString() as any,
+    id: `int_${crypto.randomUUID()}`,
+    userId,
+    status: 'pending',
+    createdAt: new Date().toISOString() as Integration['createdAt'],
+    lastSync: null,
   };
-  list.unshift(newLocal);
-  saveStoredLocalIntegrations(list);
-  window.dispatchEvent(new Event('storage'));
-
-  // Dispara Auto-Discovery local
-  try {
-    await registerLocalDevice(uid);
-  } catch (err) {
-    console.warn(err);
-  }
-
-  return { id: newLocal.id };
+  writeLocalIntegrations(userId, [integration, ...readLocalIntegrations(userId)]);
+  return { id: integration.id };
 };
 
-/**
- * Testa a conexão com o endpoint da integração
- */
-export const testAndSyncIntegration = async (
-  userId: string, 
-  integrationId: string, 
-  baseUrl: string
-) => {
-  if (isFirebaseConfigured && db) {
-    const integrationDocRef = doc(db, 'users', userId, 'integrations', integrationId);
-    await updateDoc(integrationDocRef, { status: 'syncing' });
-
-    try {
-      const cleanUrl = baseUrl.trim().replace(/\/+$/, '');
-      const targetUrl = cleanUrl.endsWith('/metrics') ? cleanUrl : `${cleanUrl}/metrics`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-      await fetch(targetUrl, { 
-        method: 'GET',
-        mode: 'no-cors',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      await updateDoc(integrationDocRef, {
-        status: 'online',
-        lastSync: serverTimestamp(),
-      });
-      return true;
-    } catch {
-      await updateDoc(integrationDocRef, {
-        status: 'offline',
-        lastSync: serverTimestamp(),
-      });
-      return false;
-    }
-  }
-
-  // Local (Auto-Discovery em Ação!)
-  const list = getStoredLocalIntegrations();
-  const item = list.find(i => i.id === integrationId);
-  if (item) {
-    item.status = 'online';
-    item.lastSync = new Date().toISOString() as any;
-    saveStoredLocalIntegrations(list);
-    window.dispatchEvent(new Event('storage'));
-
-    try {
-      await registerLocalDevice(userId);
-    } catch (e) {
-      console.error('Erro no auto-discovery:', e);
-    }
-  }
-  return true;
-};
-
-/**
- * Remove uma integração
- */
 export const deleteIntegration = async (userId: string, integrationId: string) => {
-  if (isFirebaseConfigured && db) {
-    const uid = getAuthenticatedUid(userId);
-    const docRef = doc(db, 'users', uid, 'integrations', integrationId);
-    return await deleteDoc(docRef);
+  assertUserScope(userId);
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(integrationId)) {
+    throw new Error('Identificador de integração inválido.');
   }
 
-  const list = getStoredLocalIntegrations().filter(i => i.id !== integrationId);
-  saveStoredLocalIntegrations(list);
-  window.dispatchEvent(new Event('storage'));
+  if (isFirebaseConfigured && db) {
+    const currentUser = auth?.currentUser;
+    if (!currentUser || currentUser.uid !== userId) throw new Error('Sessão autenticada inválida.');
+    return deleteDoc(doc(db, 'users', userId, 'integrations', integrationId));
+  }
+
+  writeLocalIntegrations(
+    userId,
+    readLocalIntegrations(userId).filter((integration) => integration.id !== integrationId),
+  );
 };
