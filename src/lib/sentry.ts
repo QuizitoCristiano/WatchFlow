@@ -11,60 +11,88 @@ type LocalDeviceContext = {
   online: boolean;
 };
 
-/**
- * Inicialização da APM Sentry no WatchFlow.
- * O DSN deve ser fornecido por VITE_SENTRY_DSN no ambiente de execução.
- */
-export function initSentry(): void {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (!dsn) {
-    console.warn("[APM] Sentry não inicializado: VITE_SENTRY_DSN não configurado.");
-    return;
-  }
+const isProduction = import.meta.env.PROD;
 
-  try {
-    Sentry.init({
-      dsn,
-      integrations: [Sentry.browserTracingIntegration()],
-      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-      tracePropagationTargets: ["localhost", /^https:\/\/.*\.vercel\.app/],
-      environment: import.meta.env.MODE || "development",
-      release: "watchflow@1.0.0",
-    });
-    console.info("[APM] Sentry inicializado.");
-  } catch (error) {
-    console.error("[APM] Falha ao inicializar o Sentry:", error);
-  }
-}
-
-export function isSentryConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_SENTRY_DSN);
-}
-
-/** Envia exceções reais do frontend ao Sentry. */
-export function captureAppException(
-  error: unknown,
-  context?: Record<string, unknown>,
-): void {
-  const errorObj = error instanceof Error
-    ? error
-    : new Error(typeof error === "string" ? error : String(error));
-
-  Sentry.withScope((scope) => {
-    scope.setLevel("error");
-    if (context) {
-      scope.setExtras(context);
-      if (typeof context.host === "string") scope.setTag("host", context.host);
-      if (typeof context.metric === "string") scope.setTag("resource", context.metric);
+function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+  if (event.request) {
+    delete event.request.cookies;
+    delete event.request.data;
+    delete event.request.env;
+    if (event.request.headers) {
+      const headers = { ...event.request.headers };
+      for (const key of Object.keys(headers)) {
+        if (/authorization|cookie|token|secret|password|api[-_]?key/i.test(key)) headers[key] = "[Filtered]";
+      }
+      event.request.headers = headers;
     }
-    Sentry.captureException(errorObj);
+    if (event.request.url) {
+      try {
+        const url = new URL(event.request.url);
+        url.search = "";
+        url.hash = "";
+        event.request.url = url.toString();
+      } catch {
+        event.request.url = "[Filtered URL]";
+      }
+    }
+  }
+  if (event.user) {
+    delete event.user.email;
+    delete event.user.ip_address;
+    delete event.user.username;
+    delete event.user.id;
+  }
+  return event;
+}
+
+/** Inicializa a APM do frontend. Sem DSN, a aplicação segue normalmente. */
+export function initSentry(): void {
+  const dsn = import.meta.env.VITE_SENTRY_DSN?.trim();
+  if (!dsn) return;
+
+  Sentry.init({
+    dsn,
+    environment: import.meta.env.MODE || "development",
+    release: import.meta.env.VITE_APP_RELEASE || "watchflow@1.0.0",
+    integrations: [Sentry.browserTracingIntegration()],
+    sendDefaultPii: false,
+    tracesSampleRate: isProduction ? 0.1 : 1,
+    tracePropagationTargets: [
+      /^https:\/\/watch-flow-six\.vercel\.app\//,
+      /^https:\/\/.*\.vercel\.app\//,
+      /^http:\/\/localhost(?::\d+)?\//,
+    ],
+    beforeSend: scrubSensitiveData,
+    enabled: true,
+    debug: !isProduction && import.meta.env.VITE_SENTRY_DEBUG === "true",
   });
 }
 
-/**
- * Registra no Sentry que o usuário solicitou a conexão deste navegador.
- * Os dados são metadados disponíveis no navegador, não métricas físicas de CPU.
- */
+export function isSentryConfigured(): boolean {
+  return Boolean(import.meta.env.VITE_SENTRY_DSN?.trim());
+}
+
+/** Registra exceções operacionais sem anexar payloads ou dados pessoais. */
+export function captureAppException(
+  error: unknown,
+  context?: Record<string, string | number | boolean | null>,
+): void {
+  const normalized = error instanceof Error ? error : new Error(String(error));
+  Sentry.withScope((scope) => {
+    scope.setLevel("error");
+    scope.setTag("application", "watchflow");
+    if (context) {
+      for (const [key, value] of Object.entries(context)) {
+        if (value !== null && /^(host|metric|module|operation|integration|device_id)$/i.test(key)) {
+          scope.setTag(key, String(value));
+        }
+      }
+    }
+    Sentry.captureException(normalized);
+  });
+}
+
+/** Registra metadados de conectividade do navegador, não métricas físicas de CPU. */
 export async function captureLocalDeviceConnected(device: LocalDeviceContext): Promise<boolean> {
   Sentry.withScope((scope) => {
     scope.setLevel("info");
@@ -75,10 +103,7 @@ export async function captureLocalDeviceConnected(device: LocalDeviceContext): P
   return Sentry.flush(2000);
 }
 
-/**
- * Envia uma simulação identificada como demonstração. Não gera carga real
- * na máquina e não deve ser interpretada como telemetria física.
- */
+/** Evento explicitamente sintético; não representa carga real da máquina. */
 export async function captureOverloadSimulation(host: string): Promise<boolean> {
   const simulatedMetrics = {
     cpuUsagePercent: 94,
@@ -87,7 +112,6 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
     simulated: true,
     durationSeconds: 12,
   };
-
   Sentry.withScope((scope) => {
     scope.setLevel("warning");
     scope.setTag("feature", "overload-demo");
@@ -98,9 +122,10 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
   return Sentry.flush(2000);
 }
 
-/** Mantido para testes manuais controlados da integração APM. */
+/** Erro sintético permitido em desenvolvimento; bloqueado em produção por padrão. */
 export function triggerTestErrorForAPM(): void {
-  Sentry.captureException(
-    new Error("WatchFlow APM Test Error: falha controlada para validar a integração"),
-  );
+  if (isProduction && import.meta.env.VITE_SENTRY_ALLOW_TEST_ERRORS !== "true") return;
+  Sentry.captureException(new Error("WatchFlow Sentry test: controlled frontend exception"), {
+    tags: { test_event: "true", application: "watchflow" },
+  });
 }

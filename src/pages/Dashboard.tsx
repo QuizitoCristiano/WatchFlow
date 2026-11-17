@@ -1,4 +1,5 @@
 import { useDashboard } from "@/lib/useDashboard";
+import { usePreferences } from "@/contexts/usePreferences";
 import { 
     Cpu, 
     HardDrive, 
@@ -26,8 +27,11 @@ import {
     YAxis, 
     Tooltip 
 } from "recharts";
+import { useI18n } from '@/i18n/useI18n';
 
 export const Dashboard = () => {
+  const { t } = useI18n();
+    const { preferences } = usePreferences();
     // 1. Consumindo os dados e o estado de loading do custom hook
     const {
         summary,
@@ -43,7 +47,7 @@ export const Dashboard = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
-                <p className="text-sm text-text-subtle font-medium">Carregando métricas da infraestrutura...</p>
+                <p className="text-sm text-text-subtle font-medium">{t('Carregando métricas da infraestrutura...')}</p>
             </div>
         );
     }
@@ -65,12 +69,8 @@ export const Dashboard = () => {
             {/* Cabeçalho */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-heading">
-                        Visão Geral da Infraestrutura
-                    </h1>
-                    <p className="text-xs md:text-sm text-text-subtle mt-1">
-                        Monitoramento unificado de saúde, métricas e incidentes em tempo real.
-                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-heading">{t('Visão Geral da Infraestrutura')}</h1>
+                    <p className="text-xs md:text-sm text-text-subtle mt-1">{t('Monitoramento unificado de saúde, métricas e incidentes em tempo real.')}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-bg-card border border-border-subtle px-3 py-1.5 rounded-xl text-xs text-text-muted self-start md:self-auto">
                     <span className="w-2 h-2 rounded-full bg-text-subtle" />
@@ -86,9 +86,7 @@ export const Dashboard = () => {
 
 
             {metricsHistory.some((point) => point.isDemoData === true) && (
-                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-                    O histórico exibido é de demonstração. Quando houver amostras reais, elas serão mostradas separadamente, sem misturar dados de demonstração.
-                </p>
+                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">{t('O histórico exibido é de demonstração. Quando houver amostras reais, elas serão mostradas separadamente, sem misturar dados de demonstração.')}</p>
             )}
 
 
@@ -96,16 +94,16 @@ export const Dashboard = () => {
             {/* SEÇÃO 1: KPIs Principais (Dados dinâmicos do summary) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* KPI CPU */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
-                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de CPU</span>
+                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{t('Uso de CPU')}</span>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-text-heading">{formatMetric(summary?.avgCpuUsage, "%")}</span>
                             <span className="text-xs text-status-warning flex items-center font-semibold">
                                 <TrendingUp className="w-3 h-3 mr-0.5" /> Média
                             </span>
                         </div>
-                        <p className="text-[11px] text-text-subtle">Média entre dispositivos com métrica</p>
+                        <p className="text-[11px] text-text-subtle">{t('Média entre dispositivos com métrica')}</p>
                     </div>
                     <div className="p-3 bg-brand-primary/10 text-brand-primary rounded-xl border border-brand-primary/20">
                         <Cpu className="w-6 h-6" />
@@ -113,7 +111,7 @@ export const Dashboard = () => {
                 </div>
 
                 {/* KPI RAM */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.memory ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de RAM</span>
                         <div className="flex items-baseline gap-2">
@@ -129,7 +127,7 @@ export const Dashboard = () => {
                 </div>
 
                 {/* KPI Disco */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.disk ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de Disco</span>
                         <div className="flex items-baseline gap-2">
@@ -146,13 +144,13 @@ export const Dashboard = () => {
                 </div>
 
                 {/* KPI SLA */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
-                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Disponibilidade</span>
+                        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{t('Disponibilidade')}</span>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-text-heading">{formatMetric(summary?.globalSlaPercent, "%")}</span>
                         </div>
-                        <p className="text-[11px] text-text-subtle">SLA indisponível sem dados de disponibilidade</p>
+                        <p className="text-[11px] text-text-subtle">{t('SLA indisponível sem dados de disponibilidade')}</p>
                     </div>
                     <div className="p-3 bg-status-success/10 text-status-success rounded-xl border border-status-success/20">
                         <Activity className="w-6 h-6" />
@@ -163,12 +161,11 @@ export const Dashboard = () => {
             {/* SEÇÃO 2: Gráficos de Evolução (CPU e RAM) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* CPU Line Chart */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                            <Cpu className="w-4 h-4 text-brand-primary" /> Histórico de Uso de CPU (%)
-                        </h3>
-                        <span className="text-xs text-text-subtle">Últimas horas</span>
+                            <Cpu className="w-4 h-4 text-brand-primary" />{t('Histórico de Uso de CPU (%)')}</h3>
+                        <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
                         {metricsHistory.length > 0 ? (
@@ -181,20 +178,17 @@ export const Dashboard = () => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
 
                 {/* RAM Line Chart */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.memory ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                            <Server className="w-4 h-4 text-brand-primary" /> Histórico de Uso de Memória (%)
-                        </h3>
-                        <span className="text-xs text-text-subtle">Últimas horas</span>
+                            <Server className="w-4 h-4 text-brand-primary" />{t('Histórico de Uso de Memória (%)')}</h3>
+                        <span className="text-xs text-text-subtle">{t('Últimas horas')}</span>
                     </div>
                     <div className="h-56 w-full">
                         {metricsHistory.length > 0 ? (
@@ -207,9 +201,7 @@ export const Dashboard = () => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
@@ -218,10 +210,9 @@ export const Dashboard = () => {
             {/* SEÇÕES 3 e 4: Disco (Rosca) e Rede (Área) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Disco Donut Chart */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4 flex flex-col justify-between">
+                <div className={`${preferences.dashboard.disk ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4 flex flex-col justify-between`}>
                     <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-status-danger" /> Distribuição de Disco
-                    </h3>
+                        <HardDrive className="w-4 h-4 text-status-danger" />{t('Distribuição de Disco')}</h3>
                     <div className="h-44 w-full relative flex items-center justify-center">
                         {diskUsed !== null ? (
                             <>
@@ -240,7 +231,7 @@ export const Dashboard = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="text-xs text-text-subtle">Dados de disco indisponíveis.</div>
+                            <div className="text-xs text-text-subtle">{t('Dados de disco indisponíveis.')}</div>
                         )}
                     </div>
                     <div className="flex justify-around text-xs border-t border-border-subtle pt-3 text-text-muted">
@@ -256,7 +247,7 @@ export const Dashboard = () => {
                 </div>
 
                 {/* Rede Area Chart */}
-                <div className="lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.network ? '' : 'hidden'} lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Network className="w-4 h-4 text-brand-primary" /> Tráfego de Rede (Mbps)
@@ -278,9 +269,7 @@ export const Dashboard = () => {
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">
-                                Histórico de métricas indisponível.
-                            </div>
+                            <div className="flex h-full items-center justify-center text-xs text-text-subtle">{t('Histórico de métricas indisponível.')}</div>
                         )}
                     </div>
                 </div>
@@ -291,7 +280,7 @@ export const Dashboard = () => {
                 {/* Tabela de Dispositivos */}
                 <div className="lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-text-heading">Status dos Dispositivos Monitorados</h3>
+                        <h3 className="text-sm font-bold text-text-heading">{t('Status dos Dispositivos Monitorados')}</h3>
                         <span className="text-xs text-brand-primary font-medium hover:underline cursor-pointer">
                             Ver todos ({summary?.totalDevices ?? 0})
                         </span>
@@ -300,17 +289,17 @@ export const Dashboard = () => {
                         <table className="w-full text-left text-xs text-text-body">
                             <thead className="text-[11px] uppercase text-text-muted border-b border-border-subtle bg-bg-app/50">
                                 <tr>
-                                    <th className="py-3 px-3">Dispositivo</th>
-                                    <th className="py-3 px-3">Status</th>
-                                    <th className="py-3 px-3">CPU</th>
+                                    <th className="py-3 px-3">{t('Dispositivo')}</th>
+                                    <th className="py-3 px-3">{t('Status')}</th>
+                                    <th className="py-3 px-3">{t('CPU')}</th>
                                     <th className="py-3 px-3">RAM</th>
-                                    <th className="py-3 px-3">Latência</th>
+                                    <th className="py-3 px-3">{t('Latência')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-subtle">
                                 {devices.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-6 text-center text-text-subtle">Nenhum dispositivo cadastrado ainda.</td>
+                                        <td colSpan={5} className="py-6 text-center text-text-subtle">{t('Nenhum dispositivo cadastrado ainda.')}</td>
                                     </tr>
                                 ) : (
                                     devices.map((device) => (
@@ -318,19 +307,19 @@ export const Dashboard = () => {
                                             <td className="py-3 px-3 font-semibold text-text-heading">
                                                 {device.hostname}
                                                 {device.isDemoData && (
-                                                    <span className="ml-2 text-[10px] font-medium text-status-warning">Demonstração</span>
+                                                    <span className="ml-2 text-[10px] font-medium text-status-warning">{t('Demonstração')}</span>
                                                 )}
                                                 <span className="block text-[10px] font-normal text-text-subtle">{device.ip}</span>
                                             </td>
                                             <td className="py-3 px-3">
                                                 {device.status === 'online' && (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-success/10 text-status-success border border-status-success/20">
-                                                        <CheckCircle2 className="w-3 h-3" /> Online
+                                                        <CheckCircle2 className="w-3 h-3" /> {t('Online')}
                                                     </span>
                                                 )}
                                                 {device.status === 'offline' && (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-danger/10 text-status-danger border border-status-danger/20">
-                                                        <XCircle className="w-3 h-3" /> Offline
+                                                        <XCircle className="w-3 h-3" /> {t('Offline')}
                                                     </span>
                                                 )}
                                                 {device.status === 'warning' && (
@@ -357,7 +346,7 @@ export const Dashboard = () => {
                 </div>
 
                 {/* Feed de Alertas Recentes */}
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.alerts ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-status-warning" /> Alertas Recentes
@@ -366,7 +355,7 @@ export const Dashboard = () => {
                     </div>
                     <div className="space-y-3">
                         {alerts.length === 0 ? (
-                            <p className="text-xs text-text-subtle py-4 text-center">Nenhum alerta ativo no momento.</p>
+                            <p className="text-xs text-text-subtle py-4 text-center">{t('Nenhum alerta ativo no momento.')}</p>
                         ) : (
                             alerts.map((alert) => (
                                 <div key={alert.id} className="p-3 rounded-xl bg-bg-app border border-border-subtle space-y-1">
@@ -378,7 +367,7 @@ export const Dashboard = () => {
                                             {alert.title}
                                         </span>
                                         {alert.isDemoData && (
-                                            <span className="text-[9px] font-medium uppercase text-status-warning">Demonstração</span>
+                                            <span className="text-[9px] font-medium uppercase text-status-warning">{t('Demonstração')}</span>
                                         )}
                                     </div>
                                     <p className="text-xs text-text-heading font-medium">{alert.deviceName || 'Dispositivo Desconhecido'}</p>
@@ -391,13 +380,13 @@ export const Dashboard = () => {
             </div>
 
             {/* SEÇÃO 7: Histórico de SLA */}
-            <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+            <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-sm font-bold text-text-heading">Histórico de Disponibilidade e SLA</h3>
-                        <p className="text-xs text-text-subtle">Acompanhamento contínuo dos indicadores globais do produto</p>
+                        <h3 className="text-sm font-bold text-text-heading">{t('Histórico de Disponibilidade e SLA')}</h3>
+                        <p className="text-xs text-text-subtle">{t('Acompanhamento contínuo dos indicadores globais do produto')}</p>
                     </div>
-                    <span className="text-xs bg-bg-app px-3 py-1.5 rounded-xl border border-border-subtle text-text-muted font-medium">Período Recente</span>
+                    <span className="text-xs bg-bg-app px-3 py-1.5 rounded-xl border border-border-subtle text-text-muted font-medium">{t('Período Recente')}</span>
                 </div>
                 <div className="h-48 w-full">
                     {metricsHistory.length > 0 ? (

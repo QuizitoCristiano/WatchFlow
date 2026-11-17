@@ -16,8 +16,10 @@ import {
     X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const MainLayout = () => {
+  const { t } = useI18n();
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -39,19 +41,19 @@ export const MainLayout = () => {
 
     const menuItems = [
         // --- MÓDULO PRINCIPAL ---
-        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { label: 'Integrações', path: '/integrations', icon: Plug },
-        { label: 'Dispositivos', path: '/devices', icon: Server },
-        { label: 'Métricas', path: '/metrics', icon: Activity },
+        { label: t('Dashboard'), path: '/dashboard', icon: LayoutDashboard },
+        { label: t('Integrações'), path: '/integrations', icon: Plug },
+        { label: t('Dispositivos'), path: '/devices', icon: Server },
+        { label: t('Métricas'), path: '/metrics', icon: Activity },
 
         // --- GESTÃO & ALERTAS ---
-        { label: 'Alertas', path: '/alerts', icon: Bell },
-        { label: 'Relatórios', path: '/reports', icon: FileSpreadsheet },
+        { label: t('Alertas'), path: '/alerts', icon: Bell },
+        { label: t('Relatórios'), path: '/reports', icon: FileSpreadsheet },
 
         // --- CONFIGURAÇÃO & ACADÊMICO ---
-        { label: 'Configurações', path: '/settings', icon: Settings },
-        { label: 'Perfil', path: '/profile', icon: User },
-        { label: 'Sobre Nós', path: '/about', icon: Users },
+        { label: t('Configurações'), path: '/settings', icon: Settings },
+        { label: t('Perfil'), path: '/profile', icon: User },
+        { label: t('Sobre Nós'), path: '/about', icon: Users },
     ];
 
     // Obtém até duas iniciais (ex: "JB" para João Batista)
@@ -219,7 +221,7 @@ export const MainLayout = () => {
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-status-danger bg-status-danger/10 rounded-lg hover:bg-status-danger/20 transition-colors"
                             >
                                 <LogOut className="w-4 h-4" />
-                                Sair
+                                {t('Sair')}
                             </button>
                         </div>
                     </div>
@@ -245,7 +247,7 @@ export const MainLayout = () => {
                                     onClick={() => handleNavigation('/about')} 
                                     className="hover:text-text-heading transition-colors cursor-pointer"
                                 >
-                                    Sobre Nós
+                                    {t('Sobre Nós')}
                                 </button>
                                 <span>•</span>
                                 <span className="font-mono bg-bg-app px-2 py-0.5 rounded border border-border-subtle">

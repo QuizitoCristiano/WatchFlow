@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WifiOff, ArrowLeft, LayoutDashboard, Bird, AlertTriangle } from 'lucide-react';
+import { useI18n } from '@/i18n/useI18n';
 
 export const NotFound: React.FC = () => {
+  const { t } = useI18n();
     const navigate = useNavigate();
 
     const handleGoBack = () => {
@@ -47,7 +49,7 @@ export const NotFound: React.FC = () => {
                         <WifiOff className="w-10 h-10 text-status-danger animate-pulse" />
                     </div>
                     <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-status-danger text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-lg">
-                        Offline
+                        {t('Offline')}
                     </div>
                 </div>
 
@@ -79,7 +81,7 @@ export const NotFound: React.FC = () => {
                 className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand-primary text-white hover:bg-brand-primary/90 text-sm font-semibold transition-all duration-200 shadow-lg shadow-brand-primary/20 cursor-pointer active:scale-95"
             >
                 <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                {t('Dashboard')}
             </button>
                 </div>
             </main>

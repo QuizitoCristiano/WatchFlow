@@ -4,9 +4,11 @@ import { Bird, Mail, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { FirebaseError } from "firebase/app";
 import { HeroVisual } from "./HeroVisual";
+import { useI18n } from '@/i18n/useI18n';
 import { useAuth } from "@/contexts/useAuth";
 
 export const ForgotPassword = () => {
+  const { t } = useI18n();
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +75,7 @@ export const ForgotPassword = () => {
                         className="flex items-center gap-2 text-xs md:text-sm text-text-muted hover:text-text-heading transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span>Voltar ao login</span>
+                        <span>{t('Voltar ao login')}</span>
                     </Link>
                 </div>
 
@@ -125,7 +127,7 @@ export const ForgotPassword = () => {
                             <div className="w-12 h-12 bg-status-success/10 text-status-success rounded-full flex items-center justify-center mx-auto">
                                 <CheckCircle2 className="w-6 h-6" />
                             </div>
-                            <h2 className="text-xl font-bold text-text-heading">E-mail enviado!</h2>
+                            <h2 className="text-xl font-bold text-text-heading">{t('E-mail enviado!')}</h2>
                             <p className="text-xs text-text-subtle leading-relaxed">
                                 Verifique a sua caixa de entrada no e-mail <strong className="text-text-heading">{email}</strong> para prosseguir com a redefinição de senha.
                             </p>
