@@ -15,7 +15,6 @@ import {
     Loader2,
 } from "lucide-react";
 import { 
-import { useI18n } from '@/i18n/useI18n';
     ResponsiveContainer, 
     LineChart, 
     Line, 
@@ -28,6 +27,7 @@ import { useI18n } from '@/i18n/useI18n';
     YAxis, 
     Tooltip 
 } from "recharts";
+import { useI18n } from '@/i18n/useI18n';
 
 export const Dashboard = () => {
   const { t } = useI18n();
