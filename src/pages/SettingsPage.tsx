@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Globe,
   Sun,
@@ -10,59 +10,15 @@ import {
   Save,
   CheckCircle2,
 } from 'lucide-react';
-import { DEFAULT_PREFERENCES } from '../lib/settings.service';
 import type { UserPreferences } from '@/types';
-import { settingsService } from '@/lib/settings.service';
 import { useAuth } from '@/contexts/useAuth';
+import { usePreferences } from '@/contexts/PreferencesProvider';
 
 export const SettingsPage: React.FC = () => {
-  const { user } = useAuth();
-  const [preferenceState, setPreferenceState] = useState<{ userId: string; value: UserPreferences } | null>(null);
-  const preferences = user && preferenceState?.userId === user.uid
-    ? preferenceState.value
-    : DEFAULT_PREFERENCES;
-  const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
-    const userId = user?.uid ?? '';
-    setPreferenceState((current) => {
-      const currentValue = current?.userId === userId ? current.value : DEFAULT_PREFERENCES;
-      return {
-        userId,
-        value: typeof action === 'function' ? action(currentValue) : action,
-      };
-    });
-  };
+  const { user, logout } = useAuth();
+  const { preferences, setPreferences, savePreferences, isLoading } = usePreferences();
   const [activeSection, setActiveSection] = useState<string>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const applyTheme = () => {
-      const resolved = preferences.theme === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-        : preferences.theme;
-      root.dataset.theme = resolved;
-    };
-    applyTheme();
-    const media = window.matchMedia('(prefers-color-scheme: light)');
-    media.addEventListener('change', applyTheme);
-    return () => media.removeEventListener('change', applyTheme);
-  }, [preferences.theme]);
-
-  useEffect(() => {
-    if (!user?.uid) return;
-    let active = true;
-    void settingsService.getPreferences(user.uid)
-      .then((value) => {
-        if (active) setPreferenceState({ userId: user.uid, value });
-      })
-      .catch((error: unknown) => {
-        console.error('Falha ao carregar preferências do usuário autenticado:', error);
-        if (active) setSaveStatus('error');
-      });
-    return () => {
-      active = false;
-    };
-  }, [user?.uid]);
 
   const updateNestedPref = <
     K extends 'notifications' | 'monitoring' | 'dashboard',
@@ -78,17 +34,36 @@ export const SettingsPage: React.FC = () => {
     });
   };
 
+  const updateNotificationCategory = (key: keyof UserPreferences['notifications']['categories'], value: boolean) => {
+    setPreferences((previous) => ({
+      ...previous,
+      notifications: {
+        ...previous.notifications,
+        categories: { ...previous.notifications.categories, [key]: value },
+      },
+    }));
+  };
+
   const handleSave = async () => {
-    if (!user?.uid) {
+    if (!user?.uid || isLoading) {
       setSaveStatus('error');
       return;
     }
     setSaveStatus('saving');
     try {
-      await settingsService.updatePreferences(user.uid, preferences);
+      await savePreferences();
       setSaveStatus('success');
     } catch (error: unknown) {
       console.error('Falha ao salvar preferências:', error);
+      setSaveStatus('error');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Falha ao encerrar sessão:', error);
       setSaveStatus('error');
     }
   };
@@ -109,13 +84,15 @@ export const SettingsPage: React.FC = () => {
 
         <button
           onClick={handleSave}
-          disabled={saveStatus === 'saving'}
+          disabled={saveStatus === 'saving' || isLoading}
           className="inline-flex items-center justify-center gap-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] text-white font-medium px-5 py-2.5 rounded-lg transition-colors shadow-md disabled:opacity-50"
         >
           <Save size={18} />
           {saveStatus === 'saving' ? 'Salvando...' : 'Salvar Alterações'}
         </button>
       </div>
+
+      {saveStatus === 'error' && <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">Não foi possível salvar as configurações. Verifique sua conexão e tente novamente.</div>}
 
       {/* Feedback de salvamento */}
       {saveStatus === 'success' && (
@@ -261,6 +238,24 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              <div className="border-t border-[var(--color-border-subtle)] pt-4 space-y-3">
+                <h3 className="text-sm font-semibold text-[var(--color-text-heading)]">Categorias de alertas</h3>
+                <p className="text-xs text-[var(--color-text-muted)]">Desative apenas os avisos que não deseja receber. A coleta e o histórico das métricas continuam ativos.</p>
+                {([
+                  ['cpu', 'CPU'],
+                  ['memory', 'Memória (RAM)'],
+                  ['disk', 'Disco'],
+                  ['gpu', 'GPU'],
+                  ['deviceOffline', 'Dispositivo offline'],
+                  ['integrationDown', 'Integração indisponível'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="flex items-center justify-between gap-3 py-2">
+                    <span className="text-sm text-[var(--color-text-body)]">{label}</span>
+                    <input type="checkbox" checked={preferences.notifications.categories[key]} onChange={(event) => updateNotificationCategory(key, event.target.checked)} className="h-5 w-5 accent-[var(--color-brand-primary)]" />
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
@@ -354,6 +349,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <button
                   type="button"
+                  onClick={handleLogout}
                   className="px-3 py-1.5 text-xs font-semibold bg-[var(--color-status-danger)]/10 text-[var(--color-status-danger)] rounded-lg hover:bg-[var(--color-status-danger)]/20 transition-colors"
                 >
                   Sair da Conta
