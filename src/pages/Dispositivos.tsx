@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToDevices, deleteDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Monitor } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
 
 export const DispositivosPage: React.FC = () => {
@@ -10,7 +10,6 @@ export const DispositivosPage: React.FC = () => {
 
   const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
   const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!userId) return;
@@ -18,11 +17,7 @@ export const DispositivosPage: React.FC = () => {
   }, [userId]);
 
   // Busca segura evitando erros se hostname ou ip forem undefined
-  const filteredDevices = devices.filter(
-    (d) =>
-      (d.hostname ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (d.ip ?? '').includes(search)
-  );
+  const filteredDevices = devices;
 
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
     if (!lastSeen) return 'N/A';
@@ -52,12 +47,10 @@ export const DispositivosPage: React.FC = () => {
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">
-            {search ? 'Nenhum dispositivo encontrado' : 'Nenhum dispositivo monitorado'}
+            Nenhum dispositivo monitorado
           </h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
-            {search
-              ? `Nenhum host ou IP corresponde à busca "${search}".`
-              : 'Cadastre uma integração Node Exporter e execute o Collector para vincular uma máquina à sua conta.'}
+            Cadastre uma integração Node Exporter e execute o Collector para vincular uma máquina à sua conta.
           </p>
 
         </div>
