@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Globe,
   Sun,
@@ -11,36 +11,73 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { DEFAULT_PREFERENCES } from '../lib/settings.service';
-import type { UserPreferences } from '@/types';
+import type { UserPreferences, NotificationPreferences, DashboardPreferences, MonitoringPreferences } from '@/types';
+import { settingsService } from '@/lib/settings.service';
+import { useAuth } from '@/contexts/useAuth';
 
 export const SettingsPage: React.FC = () => {
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const { user } = useAuth();
+  const [preferenceState, setPreferenceState] = useState<{ userId: string; value: UserPreferences } | null>(null);
+  const preferences = preferenceState?.userId === user?.uid
+    ? preferenceState.value
+    : DEFAULT_PREFERENCES;
+  const setPreferences: React.Dispatch<React.SetStateAction<UserPreferences>> = (action) => {
+    const userId = user?.uid ?? '';
+    setPreferenceState((current) => {
+      const currentValue = current?.userId === userId ? current.value : DEFAULT_PREFERENCES;
+      return {
+        userId,
+        value: typeof action === 'function' ? action(currentValue) : action,
+      };
+    });
+  };
   const [activeSection, setActiveSection] = useState<string>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
-  // Handlers genéricos para atualização imutável do estado
-  const updateNestedPref = <K extends keyof UserPreferences>(
+  useEffect(() => {
+    if (!user?.uid) return;
+    let active = true;
+    void settingsService.getPreferences(user.uid)
+      .then((value) => {
+        if (active) setPreferenceState({ userId: user.uid, value });
+      })
+      .catch((error: unknown) => {
+        console.error('Falha ao carregar preferências do usuário autenticado:', error);
+        if (active) setSaveStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.uid]);
+
+  const updateNestedPref = <
+    K extends 'notifications' | 'monitoring' | 'dashboard',
+    F extends keyof UserPreferences[K],
+  >(
     category: K,
-    field: keyof UserPreferences[K],
-    value: any
+    field: F,
+    value: UserPreferences[K][F],
   ) => {
-    setPreferences(prev => ({
-      ...prev,
+    setPreferences((previous) => ({
+      ...previous,
       [category]: {
-        ...(prev[category] as object),
+        ...previous[category],
         [field]: value,
       },
     }));
   };
 
   const handleSave = async () => {
+    if (!user?.uid) {
+      setSaveStatus('error');
+      return;
+    }
     setSaveStatus('saving');
     try {
-      // Simulação da chamada do service: await settingsService.updatePreferences(userId, preferences);
-      await new Promise(res => setTimeout(res, 600));
+      await settingsService.updatePreferences(user.uid, preferences);
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch {
+    } catch (error: unknown) {
+      console.error('Falha ao salvar preferências:', error);
       setSaveStatus('error');
     }
   };
@@ -125,7 +162,7 @@ export const SettingsPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase">Idioma</label>
                   <select
                     value={preferences.language}
-                    onChange={(e) => setPreferences(p => ({ ...p, language: e.target.value as any }))}
+                    onChange={(e) => setPreferences(p => ({ ...p, language: e.target.value as UserPreferences['language'] }))}
                     className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-strong)] text-[var(--color-text-heading)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-brand-primary)]"
                   >
                     <option value="pt-BR">Português (Brasil)</option>
@@ -167,7 +204,7 @@ export const SettingsPage: React.FC = () => {
                   return (
                     <button
                       key={t.id}
-                      onClick={() => setPreferences(p => ({ ...p, theme: t.id as any }))}
+                      onClick={() => setPreferences(p => ({ ...p, theme: t.id as UserPreferences['theme'] }))}
                       className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                         isSelected
                           ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] font-bold'
@@ -206,8 +243,8 @@ export const SettingsPage: React.FC = () => {
                     </div>
                     <input
                       type="checkbox"
-                      checked={!!(preferences.notifications as any)[item.key]}
-                      onChange={(e) => updateNestedPref('notifications', item.key as any, e.target.checked)}
+                      checked={preferences.notifications[item.key]}
+                      onChange={(e) => updateNestedPref('notifications', item.key as keyof NotificationPreferences, e.target.checked)}
                       className="h-5 w-5 rounded border-[var(--color-border-strong)] accent-[var(--color-brand-primary)] cursor-pointer"
                     />
                   </div>
@@ -280,8 +317,8 @@ export const SettingsPage: React.FC = () => {
                   >
                     <input
                       type="checkbox"
-                      checked={!!(preferences.dashboard as any)[w.key]}
-                      onChange={(e) => updateNestedPref('dashboard', w.key as any, e.target.checked)}
+                      checked={preferences.dashboard[w.key]}
+                      onChange={(e) => updateNestedPref('dashboard', w.key as keyof DashboardPreferences, e.target.checked)}
                       className="h-4 w-4 rounded border-[var(--color-border-strong)] accent-[var(--color-brand-primary)]"
                     />
                     <span className="text-xs font-medium text-[var(--color-text-heading)]">{w.label}</span>
