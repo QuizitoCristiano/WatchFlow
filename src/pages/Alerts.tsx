@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { 
   collection, 
@@ -47,57 +47,50 @@ const getStoredLocalAlerts = (userId: string): Alert[] => {
 export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid ?? '';
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [, setLoading] = useState<boolean>(true);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [alertsState, setAlertsState] = useState<{ userId: string; items: Alert[] } | null>(null);
+  const alerts = alertsState?.userId === userId ? alertsState.items : [];
+  const [selectedAlertState, setSelectedAlertState] = useState<{ userId: string; alert: Alert } | null>(null);
+  const selectedAlert = selectedAlertState?.userId === userId ? selectedAlertState.alert : null;
+  const setSelectedAlert = (alert: Alert | null) => {
+    setSelectedAlertState(alert ? { userId, alert } : null);
+  };
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const refreshAlerts = () => {
-    setAlerts(getStoredLocalAlerts(userId));
-  };
+  const refreshAlerts = useCallback(() => {
+    setAlertsState({ userId, items: getStoredLocalAlerts(userId) });
+  }, [userId]);
 
   useEffect(() => {
-    if (!userId) {
-      setAlerts([]);
-      setLoading(false);
-      return;
-    }
-    if (isFirebaseConfigured && db && user?.uid) {
-      const q = query(
+    if (!userId) return;
+
+    if (isFirebaseConfigured && db) {
+      const alertsQuery = query(
         collection(db, 'alerts'),
-        where('userId', '==', user.uid)
+        where('userId', '==', userId),
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      return onSnapshot(alertsQuery, (snapshot) => {
         const docsData: Alert[] = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
         })) as Alert[];
-
-        setAlerts(docsData);
-        setLoading(false);
+        setAlertsState({ userId, items: docsData });
       }, (error) => {
-        console.error("Erro ao buscar alertas:", error);
-        setLoading(false);
+        console.error('Erro ao buscar alertas do usuário autenticado:', error);
       });
-
-      return () => unsubscribe();
     }
 
-    // Modo Local
+    // Local development data is isolated by the authenticated local account ID.
     refreshAlerts();
-    setLoading(false);
-
-    // Ouve atualizações em tempo real disparadas pelo polling de telemetria
     window.addEventListener('wf_alerts_updated', refreshAlerts);
     window.addEventListener('storage', refreshAlerts);
     return () => {
       window.removeEventListener('wf_alerts_updated', refreshAlerts);
       window.removeEventListener('storage', refreshAlerts);
     };
-  }, [user?.uid]);
+  }, [userId, refreshAlerts]);
 
   // Contadores para os Cards de Topo
   const openCriticals = alerts.filter(a => a.status === 'active' && a.severity === 'critical').length;
@@ -132,7 +125,7 @@ export const AlertsPage: React.FC = () => {
     }
 
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
-    setAlerts(updated);
+    setAlertsState({ userId, items: updated });
     localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
     toast.info('Alerta reconhecido pela equipe de monitoramento.');
   };
@@ -197,7 +190,6 @@ export const AlertsPage: React.FC = () => {
       toast.info('O histórico persistido é mantido para auditoria.');
       return;
     }
-    setAlerts([]);
     localStorage.removeItem(localAlertsKey(userId));
     window.dispatchEvent(new Event('wf_alerts_updated'));
     toast.info('Histórico local de alertas foi limpo.');
