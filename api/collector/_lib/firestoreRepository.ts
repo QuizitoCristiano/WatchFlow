@@ -191,7 +191,7 @@ function credentialReference(db: Firestore, tokenHash: string) {
   return db.doc(`collectorCredentials/${tokenHash}`);
 }
 
-function validateNodeExporterEndpoint(value: unknown): void {
+export function validateNodeExporterEndpoint(value: unknown): void {
   if (typeof value !== 'string' || value.length > 2048) {
     throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
   }
