@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { UserPreferences } from '@/types';
 import { useAuth } from '@/contexts/useAuth';
-import { usePreferences } from '@/contexts/PreferencesProvider';
+import { usePreferences } from '@/contexts/usePreferences';
 
 export const SettingsPage: React.FC = () => {
   const { user, logout } = useAuth();
