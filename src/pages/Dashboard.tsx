@@ -36,9 +36,6 @@ export const Dashboard = () => {
         alerts,
         loading,
         error,
-        isSeedingDemo,
-        seedDemoError,
-        seedDemoData,
     } = useDashboard();
 
     // Estado de carregamento elegante enquanto o Firestore responde
@@ -87,11 +84,6 @@ export const Dashboard = () => {
                 </div>
             )}
 
-            {seedDemoError && (
-                <div className="rounded-xl border border-status-danger/30 bg-status-danger/10 p-4 text-sm text-status-danger" role="alert">
-                    {seedDemoError}
-                </div>
-            )}
 
             {metricsHistory.some((point) => point.isDemoData === true) && (
                 <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
@@ -99,21 +91,7 @@ export const Dashboard = () => {
                 </p>
             )}
 
-            {(devices.length === 0 || metricsHistory.length === 0 || alerts.length === 0) && (
-                <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-text-muted">
-                        Faltam dispositivos, histórico ou alertas para exibir. Você pode criar registros de demonstração identificados; nenhum documento existente será sobrescrito.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => void seedDemoData()}
-                        disabled={isSeedingDemo}
-                        className="shrink-0 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                    >
-                        {isSeedingDemo ? 'Criando demonstração...' : 'Criar dados de demonstração'}
-                    </button>
-                </div>
-            )}
+
 
             {/* SEÇÃO 1: KPIs Principais (Dados dinâmicos do summary) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
