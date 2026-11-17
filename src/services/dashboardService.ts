@@ -214,7 +214,7 @@ export const dashboardService = {
       avgDiskUsage: average(devicesWithMetrics.map((device) => device.latestMetricsSummary?.disk)),
       diskUsedGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskUsedGb)),
       diskTotalGb: sum(devicesWithMetrics.map((device) => device.latestMetricsSummary?.diskTotalGb)),
-      lastUpdatedAt: new Date().toISOString() as any,
+      lastUpdatedAt: new Date().toISOString(),
     };
   },
 
