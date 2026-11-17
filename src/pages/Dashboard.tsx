@@ -98,8 +98,7 @@ export const Dashboard = () => {
             {/* SEÇÃO 1: KPIs Principais (Dados dinâmicos do summary) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* KPI CPU */}
-                {preferences.dashboard.cpu && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de CPU</span>
                         <div className="flex items-baseline gap-2">
@@ -113,14 +112,10 @@ export const Dashboard = () => {
                     <div className="p-3 bg-brand-primary/10 text-brand-primary rounded-xl border border-brand-primary/20">
                         <Cpu className="w-6 h-6" />
                     </div>
-
-                )}
-
-                                </div>
+                </div>
 
                 {/* KPI RAM */}
-                {preferences.dashboard.memory && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.memory ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de RAM</span>
                         <div className="flex items-baseline gap-2">
@@ -133,14 +128,10 @@ export const Dashboard = () => {
                     <div className="p-3 bg-brand-primary/10 text-brand-primary rounded-xl border border-brand-primary/20">
                         <Server className="w-6 h-6" />
                     </div>
-
-                )}
-
-                                </div>
+                </div>
 
                 {/* KPI Disco */}
-                {preferences.dashboard.disk && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.disk ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Uso de Disco</span>
                         <div className="flex items-baseline gap-2">
@@ -154,14 +145,10 @@ export const Dashboard = () => {
                     <div className="p-3 bg-status-danger/10 text-status-danger rounded-xl border border-status-danger/20">
                         <HardDrive className="w-6 h-6" />
                     </div>
-
-                )}
-
-                                </div>
+                </div>
 
                 {/* KPI SLA */}
-                {preferences.dashboard.availability && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+                <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm`}>
                     <div className="space-y-1">
                         <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Disponibilidade</span>
                         <div className="flex items-baseline gap-2">
@@ -172,17 +159,13 @@ export const Dashboard = () => {
                     <div className="p-3 bg-status-success/10 text-status-success rounded-xl border border-status-success/20">
                         <Activity className="w-6 h-6" />
                     </div>
-
-                )}
-
-                                </div>
+                </div>
             </div>
 
             {/* SEÇÃO 2: Gráficos de Evolução (CPU e RAM) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* CPU Line Chart */}
-                {preferences.dashboard.cpu && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.cpu ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Cpu className="w-4 h-4 text-brand-primary" /> Histórico de Uso de CPU (%)
@@ -205,14 +188,10 @@ export const Dashboard = () => {
                             </div>
                         )}
                     </div>
-
-                )}
-
-                                </div>
+                </div>
 
                 {/* RAM Line Chart */}
-                {preferences.dashboard.memory && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.memory ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Server className="w-4 h-4 text-brand-primary" /> Histórico de Uso de Memória (%)
@@ -235,17 +214,13 @@ export const Dashboard = () => {
                             </div>
                         )}
                     </div>
-
-                )}
-
-                                </div>
+                </div>
             </div>
 
             {/* SEÇÕES 3 e 4: Disco (Rosca) e Rede (Área) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Disco Donut Chart */}
-                {preferences.dashboard.disk && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4 flex flex-col justify-between">
+                <div className={`${preferences.dashboard.disk ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4 flex flex-col justify-between`}>
                     <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                         <HardDrive className="w-4 h-4 text-status-danger" /> Distribuição de Disco
                     </h3>
@@ -280,14 +255,10 @@ export const Dashboard = () => {
                             <span>Livre: {formatMetric(diskFree, " GB")}</span>
                         </div>
                     </div>
-
-                )}
-
-                                </div>
+                </div>
 
                 {/* Rede Area Chart */}
-                {preferences.dashboard.network && (
-                <div className="lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.network ? '' : 'hidden'} lg:col-span-2 p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <Network className="w-4 h-4 text-brand-primary" /> Tráfego de Rede (Mbps)
@@ -314,10 +285,7 @@ export const Dashboard = () => {
                             </div>
                         )}
                     </div>
-
-                )}
-
-                                </div>
+                </div>
             </div>
 
             {/* SEÇÃO 5 e 6: Tabela de Dispositivos e Alertas Recentes */}
@@ -391,8 +359,7 @@ export const Dashboard = () => {
                 </div>
 
                 {/* Feed de Alertas Recentes */}
-                {preferences.dashboard.alerts && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+                <div className={`${preferences.dashboard.alerts ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-status-warning" /> Alertas Recentes
@@ -422,15 +389,11 @@ export const Dashboard = () => {
                             ))
                         )}
                     </div>
-
-                )}
-
-                                </div>
+                </div>
             </div>
 
             {/* SEÇÃO 7: Histórico de SLA */}
-            {preferences.dashboard.availability && (
-                <div className="p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4">
+            <div className={`${preferences.dashboard.availability ? '' : 'hidden'} p-5 bg-bg-card rounded-2xl border border-border-subtle space-y-4`}>
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="text-sm font-bold text-text-heading">Histórico de Disponibilidade e SLA</h3>
@@ -454,10 +417,7 @@ export const Dashboard = () => {
                         </div>
                     )}
                 </div>
-
-                )}
-
-                            </div>
+            </div>
         </div>
     );
 };
