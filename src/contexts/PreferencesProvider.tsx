@@ -1,18 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
+import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import type { UserPreferences } from '@/types';
+import { PreferencesContext } from '@/contexts/PreferencesContext';
 import { DEFAULT_PREFERENCES } from '@/lib/preferences';
 import { settingsService } from '@/lib/settings.service';
 import { useAuth } from '@/contexts/useAuth';
-
-interface PreferencesContextValue {
-  preferences: UserPreferences;
-  isLoading: boolean;
-  setPreferences: Dispatch<SetStateAction<UserPreferences>>;
-  savePreferences: () => Promise<void>;
-}
-
-const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: authLoading } = useAuth();
@@ -21,10 +13,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const preferences = state?.userId === userId && userId ? state.value : DEFAULT_PREFERENCES;
 
   useEffect(() => {
-    if (authLoading || !userId) {
-      setState(null);
-      return;
-    }
+    if (authLoading || !userId) return;
     let active = true;
     void settingsService.getPreferences(userId).then((value) => {
       if (active) setState({ userId, value });
@@ -53,7 +42,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const media = window.matchMedia('(prefers-color-scheme: light)');
     media.addEventListener('change', applyTheme);
     return () => media.removeEventListener('change', applyTheme);
-  }, [preferences.theme, state?.userId, userId]);
+  }, [preferences.theme, preferences.language, state?.userId, userId]);
 
   const setPreferences: Dispatch<SetStateAction<UserPreferences>> = (action) => {
     if (!userId || state?.userId !== userId) return;
@@ -70,18 +59,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     await settingsService.updatePreferences(userId, state.value);
   };
 
-  const value = useMemo(() => ({
-    preferences,
-    isLoading: authLoading || Boolean(userId && state?.userId !== userId),
-    setPreferences,
-    savePreferences,
-  }), [preferences, authLoading, userId, state?.userId]);
-
-  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
-}
-
-export function usePreferences() {
-  const context = useContext(PreferencesContext);
-  if (!context) throw new Error('usePreferences deve ser usado dentro de PreferencesProvider.');
-  return context;
+  return (
+    <PreferencesContext.Provider value={{
+      preferences,
+      isLoading: authLoading || Boolean(userId && state?.userId !== userId),
+      setPreferences,
+      savePreferences,
+    }}>
+      {children}
+    </PreferencesContext.Provider>
+  );
 }
