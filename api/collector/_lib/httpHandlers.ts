@@ -26,9 +26,10 @@ interface IngestDependencies {
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
-const MIN_REQUEST_INTERVAL_MS = 15_000;
+const IP_RATE_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_IP_WINDOW = 300;
 const MAX_RATE_LIMIT_KEYS = 5_000;
-const recentRequestsByToken = new Map<string, number>();
+const recentRequestsByIp = new Map<string, { windowStartedAt: number; count: number }>();
 
 function header(request: ApiRequest, name: string): string | undefined {
   const headers = request.headers ?? {};
@@ -91,23 +92,32 @@ function readJsonBody(request: ApiRequest): unknown {
   return body;
 }
 
-function enforceInMemoryRateLimit(token: string): void {
+function enforceIpRateLimit(request: ApiRequest): void {
+  const forwardedFor = header(request, 'x-forwarded-for');
+  const realIp = header(request, 'x-real-ip');
+  const candidateIp = (forwardedFor ?? realIp ?? 'unknown').split(',')[0].trim();
+  const ipKey = candidateIp.length > 0 && candidateIp.length <= 64 ? candidateIp : 'unknown';
   const now = Date.now();
-  const previousRequest = recentRequestsByToken.get(token);
-  if (previousRequest !== undefined && now - previousRequest < MIN_REQUEST_INTERVAL_MS) {
-    throw new HttpError(429, 'Limite de requisições atingido. Aguarde pelo menos 15 segundos.');
-  }
+  const current = recentRequestsByIp.get(ipKey);
+  const window = !current || now - current.windowStartedAt >= IP_RATE_WINDOW_MS
+    ? { windowStartedAt: now, count: 0 }
+    : current;
 
-  recentRequestsByToken.set(token, now);
-  if (recentRequestsByToken.size > MAX_RATE_LIMIT_KEYS) {
-    for (const [key, timestamp] of recentRequestsByToken) {
-      if (now - timestamp > 60_000) recentRequestsByToken.delete(key);
-      if (recentRequestsByToken.size <= MAX_RATE_LIMIT_KEYS) break;
+  if (window.count >= MAX_REQUESTS_PER_IP_WINDOW) {
+    throw new HttpError(429, 'Limite de 300 requisições por minuto por origem atingido.');
+  }
+  window.count += 1;
+  recentRequestsByIp.set(ipKey, window);
+
+  if (recentRequestsByIp.size > MAX_RATE_LIMIT_KEYS) {
+    for (const [key, value] of recentRequestsByIp) {
+      if (now - value.windowStartedAt >= IP_RATE_WINDOW_MS) recentRequestsByIp.delete(key);
+      if (recentRequestsByIp.size <= MAX_RATE_LIMIT_KEYS) break;
     }
-    while (recentRequestsByToken.size > MAX_RATE_LIMIT_KEYS) {
-      const oldestKey = recentRequestsByToken.keys().next().value;
+    while (recentRequestsByIp.size > MAX_RATE_LIMIT_KEYS) {
+      const oldestKey = recentRequestsByIp.keys().next().value;
       if (oldestKey === undefined) break;
-      recentRequestsByToken.delete(oldestKey);
+      recentRequestsByIp.delete(oldestKey);
     }
   }
 }
@@ -174,8 +184,8 @@ export function createIngestHandler(dependencies: IngestDependencies): ApiHandle
     if (!requireMethod(request, response)) return;
     try {
       requireJson(request);
+      enforceIpRateLimit(request);
       const token = requireCollectorToken(request);
-      enforceInMemoryRateLimit(token);
       const body = readJsonBody(request);
       const result = await dependencies.ingest(token, body);
       send(response, 200, result);
