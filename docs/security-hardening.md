@@ -40,7 +40,7 @@ A política padrão de entrada deve permanecer bloqueada. Remova regras genéric
 
 - A API rejeita métodos HTTP não suportados, JSON inválido e payloads acima de 64 KiB.
 - O Collector limita a resposta do Node Exporter a 5 MiB e usa timeout de rede.
-- A ingestão exige token Bearer individual, payload validado e intervalo mínimo de 15 segundos entre gravações.
+- A API aplica limite best-effort de 300 requisições por minuto por origem em cada instância; a ingestão também persiste um intervalo mínimo de 15 segundos por credencial entre requisições, inclusive entre instâncias.
 - O provisionamento limita a rotação a uma solicitação por minuto e cinco por hora por integração.
 - A credencial é armazenada como HMAC/hash no backend, expira em 90 dias e é revogada quando rotacionada.
 
