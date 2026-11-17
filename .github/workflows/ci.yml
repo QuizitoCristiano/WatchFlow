@@ -2,9 +2,9 @@ name: WatchFlow CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, main]
   push:
-    branches: [main, "feat/**"]
+    branches: [develop, main, "feat/**", "fix/**"]
 
 permissions:
   contents: read
@@ -45,7 +45,8 @@ jobs:
       - run: npm ci
       - name: Typecheck and production build
         run: npm run build
-  audit-fix:
+
+  dependency-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,16 +55,38 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply non-breaking dependency security fixes
-        run: npm audit fix
-      - name: Report remaining dependency vulnerabilities
+      - name: Generate dependency audit report
+        shell: bash
         run: |
-          npm audit --json > npm-audit-after.json || true
-          node -e "const report = require('./npm-audit-after.json'); const entries = Object.entries(report.vulnerabilities || {}).map(([name, item]) => ({ name, severity: item.severity, direct: item.isDirect, range: item.range, fixAvailable: item.fixAvailable })); console.log(JSON.stringify({ totals: report.metadata?.vulnerabilities, packages: entries }, null, 2));"
-      - name: Upload reviewed lockfile and audit report
+          npm audit --json > npm-audit.json || true
+          node --input-type=commonjs -e "
+            const fs = require('node:fs');
+            const report = JSON.parse(fs.readFileSync('npm-audit.json', 'utf8'));
+            const totals = report.metadata?.vulnerabilities ?? {};
+            const packages = Object.entries(report.vulnerabilities ?? {}).map(([name, item]) => ({
+              name,
+              severity: item.severity,
+              direct: item.isDirect,
+              range: item.range,
+              fixAvailable: item.fixAvailable
+            }));
+            const summary = [
+              '# Dependency audit',
+              '',
+              '| Critical | High | Moderate | Low | Total |',
+              '|---:|---:|---:|---:|---:|',
+              `|${totals.critical ?? 0}|${totals.high ?? 0}|${totals.moderate ?? 0}|${totals.low ?? 0}|${totals.total ?? 0}|`,
+              '',
+              '## Affected packages',
+              '',
+              ...packages.map(p => `- **${p.name}** — ${p.severity}; direct: ${p.direct}; range: ${p.range}; fixAvailable: ${JSON.stringify(p.fixAvailable)}`)
+            ].join('\\n');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\\n');
+            console.log(JSON.stringify({ totals, packages }, null, 2));
+          "
+      - name: Upload dependency audit report
         uses: actions/upload-artifact@v4
         with:
-          name: watchflow-audit-fix
-          path: |
-            package-lock.json
-            npm-audit-after.json
+          name: watchflow-dependency-audit
+          path: npm-audit.json
+          if-no-files-found: error
