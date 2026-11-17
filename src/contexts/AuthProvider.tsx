@@ -41,10 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(isFirebaseConfigured && Boolean(auth));
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
-      setIsLoading(false);
-      return;
-    }
+    if (!isFirebaseConfigured || !auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
