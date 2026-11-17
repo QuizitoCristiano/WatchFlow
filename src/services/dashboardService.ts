@@ -221,18 +221,21 @@ export const dashboardService = {
   // 2. Busca o histórico de métricas para o gráfico temporal da home
   async getMetricsHistory(
     userId?: string, 
-    storedDevices?: Device[]
+    storedDevices?: Device[],
+    timeRange: '1h' | '24h' | '7d' | '30d' = '24h'
   ): Promise<DashboardMetricsResult> {
     if (isFirebaseConfigured && db && userId && storedDevices && storedDevices.length > 0) {
       const history: DashboardMetricPoint[] = [];
       const latestMetricsByDevice: Record<string, LatestMetricsSummary> = {};
       const errors: string[] = [];
+      const rangeMs: Record<typeof timeRange, number> = { '1h': 60 * 60_000, '24h': 24 * 60 * 60_000, '7d': 7 * 24 * 60 * 60_000, '30d': 30 * 24 * 60 * 60_000 };
+      const cutoff = Timestamp.fromDate(new Date(Date.now() - rangeMs[timeRange]));
 
       for (const dev of storedDevices.slice(0, 5)) {
         if (!dev.id) continue;
         try {
           const mRef = collection(db, 'users', userId, 'devices', dev.id, 'metrics');
-          const q = query(mRef, orderBy('collectedAt', 'desc'), limit(12));
+          const q = query(mRef, where('collectedAt', '>=', cutoff), orderBy('collectedAt', 'desc'), limit(100));
           const snap = await getDocs(q);
           const docs = snap.docs.reverse();
 
@@ -257,11 +260,13 @@ export const dashboardService = {
     const histKey = userId ? `wf_metrics:${userId}:dev-local-machine` : '';
     const rawHist = histKey ? localStorage.getItem(histKey) : null;
     const stored: unknown = rawHist ? JSON.parse(rawHist) : [];
+    const rangeMs: Record<typeof timeRange, number> = { '1h': 60 * 60_000, '24h': 24 * 60 * 60_000, '7d': 7 * 24 * 60 * 60_000, '30d': 30 * 24 * 60 * 60_000 };
+    const cutoff = Date.now() - rangeMs[timeRange];
     const history: DashboardMetricPoint[] = Array.isArray(stored)
       ? stored.flatMap((item): DashboardMetricPoint[] => {
           const record = asRecord(item);
           const date = record ? toDate(record.collectedAt) : null;
-          if (!record || !date) return [];
+          if (!record || !date || date.getTime() < cutoff) return [];
           const cpu = metricValue(record, 'cpu', 'usagePercent');
           const memory = metricValue(record, 'memory', 'usedPercent');
           const network = asRecord(record.network);
