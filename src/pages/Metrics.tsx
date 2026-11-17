@@ -44,9 +44,12 @@ export const MetricasPage: React.FC = () => {
     deviceId: string;
     records: MetricPayload[];
   } | null>(null);
-  const metricsHistory = userId && historyState?.userId === userId && historyState.deviceId === selectedDeviceId
-    ? historyState.records
-    : [];
+  const metricsHistory = useMemo(
+    () => userId && historyState?.userId === userId && historyState.deviceId === selectedDeviceId
+      ? historyState.records
+      : [],
+    [userId, historyState, selectedDeviceId],
+  );
   const loadingHistory = Boolean(
     userId && selectedDeviceId &&
     (!historyState || historyState.userId !== userId || historyState.deviceId !== selectedDeviceId)
