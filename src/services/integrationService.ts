@@ -121,8 +121,8 @@ export function validateIntegrationInput(input: {
   if (endpoint.protocol !== 'http:' && endpoint.protocol !== 'https:') {
     throw new Error('O endpoint deve usar HTTP ou HTTPS.');
   }
-  if (endpoint.username || endpoint.password || endpoint.hash || endpoint.search) {
-    throw new Error('A URL não pode conter credenciais, parâmetros ou fragmentos.');
+  if (endpoint.username || endpoint.password || endpoint.hash || endpoint.search || endpoint.pathname !== '/metrics') {
+    throw new Error('A URL deve apontar para /metrics e não pode conter credenciais, parâmetros ou fragmentos.');
   }
   if (endpoint.href.length > 2048) throw new Error('A URL excede o limite permitido.');
   if (input.type === 'node_exporter') {
