@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Alert, DashboardMetricPoint, DashboardSummary, Device } from '@/types';
 import { dashboardService } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/useAuth';
-import { usePreferences } from '@/contexts/PreferencesProvider';
+import { usePreferences } from '@/contexts/usePreferences';
 
 export const useDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
