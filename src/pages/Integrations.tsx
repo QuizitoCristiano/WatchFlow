@@ -20,8 +20,10 @@ import {
 } from '../services/integrationService';
 import type { Integration, IntegrationType } from '@/types';
 import { useAuth } from '@/contexts/useAuth';
+import { useI18n } from '@/i18n/useI18n';
 
 export const Integrations: React.FC = () => {
+  const { t } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const userId = user?.uid || '';
 
@@ -407,13 +409,13 @@ export const Integrations: React.FC = () => {
                       {displayStatus === 'online' && (
                         <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          Online
+                          {t('Online')}
                         </span>
                       )}
                       {(displayStatus === 'offline' || displayStatus === 'error') && (
                         <span className="flex items-center gap-1.5 text-xs text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md font-medium">
                           <span className="w-2 h-2 rounded-full bg-rose-500" />
-                          Offline
+                          {t('Offline')}
                         </span>
                       )}
                       {displayStatus === 'syncing' && (
@@ -531,7 +533,7 @@ export const Integrations: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2.5 rounded-lg transition"
                 >
-                  Cancelar
+                  {t('Cancelar')}
                 </button>
                 <button
                   type="submit"
