@@ -39,10 +39,10 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
 export function normalizePreferences(value: unknown): UserPreferences {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_PREFERENCES;
   const input = value as Partial<UserPreferences>;
-  const notifications = input.notifications && typeof input.notifications === 'object' ? input.notifications : {};
-  const categories = notifications.categories && typeof notifications.categories === 'object' ? notifications.categories : {};
-  const monitoring = input.monitoring && typeof input.monitoring === 'object' ? input.monitoring : {};
-  const dashboard = input.dashboard && typeof input.dashboard === 'object' ? input.dashboard : {};
+  const notifications: Partial<UserPreferences['notifications']> = input.notifications && typeof input.notifications === 'object' ? input.notifications : {};
+  const categories: Partial<UserPreferences['notifications']['categories']> = notifications.categories && typeof notifications.categories === 'object' ? notifications.categories : {};
+  const monitoring: Partial<UserPreferences['monitoring']> = input.monitoring && typeof input.monitoring === 'object' ? input.monitoring : {};
+  const dashboard: Partial<UserPreferences['dashboard']> = input.dashboard && typeof input.dashboard === 'object' ? input.dashboard : {};
   const validTheme = input.theme === 'light' || input.theme === 'dark' || input.theme === 'system' ? input.theme : DEFAULT_PREFERENCES.theme;
   const validLanguage = input.language === 'en-US' || input.language === 'pt-BR' ? input.language : DEFAULT_PREFERENCES.language;
   const validIntervals = [5, 15, 30, 60, 300] as const;
