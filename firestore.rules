@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'user'
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'role', 'createdAt', 'updatedAt', 'name', 'photoURL'
+        ]);
+      allow update: if isOwner(userId)
+        && resource.data.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'photoURL', 'preferences', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /users/{userId}/integrations/{integrationId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'name', 'type', 'baseUrl', 'userId', 'status', 'lastSync',
+          'createdAt', 'lastAttemptAt', 'lastSuccessAt', 'lastError',
+          'attemptsLast24h', 'successesLast24h'
+        ])
+        && request.resource.data.userId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.type == 'node_exporter'
+        && request.resource.data.baseUrl is string
+        && request.resource.data.baseUrl.size() <= 2048
+        && (request.resource.data.baseUrl.matches('^http://[A-Za-z0-9.-]+:9100/metrics$')
+          || request.resource.data.baseUrl.matches('^https://[A-Za-z0-9.-]+(:443|:9100)?/metrics$'))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      allow update: if false;
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create, update: if false;
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

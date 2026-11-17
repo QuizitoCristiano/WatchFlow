@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { 
   collection, 
@@ -6,22 +6,23 @@ import {
   where, 
   onSnapshot, 
   doc, 
-  updateDoc, 
-  serverTimestamp 
+  updateDoc,
+  serverTimestamp,
+  getDocs,
+  writeBatch,
+  limit 
 } from 'firebase/firestore';
 import { 
   AlertTriangle, 
   AlertCircle, 
   CheckCircle2, 
   Search, 
-  Flame,
   CheckCheck,
   Trash2,
   X,
   Server,
   Clock,
   Activity,
-  ChevronRight
 } from 'lucide-react';
 import { db, isFirebaseConfigured } from '@/services/config';
 import { useAuth } from '@/contexts/useAuth';
@@ -30,12 +31,18 @@ import { toast } from 'sonner';
 import { ALERT_STATUS_LABELS, type Alert } from '../types';
 import { formatDate, formatTime } from '../lib/formatters';
 
-const LOCAL_STORAGE_KEY = 'wf_local_alerts';
+const localAlertsKey = (userId: string) => `wf_local_alerts:${userId}`;
 
-const getStoredLocalAlerts = (): Alert[] => {
+const getStoredLocalAlerts = (userId: string): Alert[] => {
+  if (!userId) return [];
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = localStorage.getItem(localAlertsKey(userId));
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((alert): alert is Alert =>
+          typeof alert === 'object' && alert !== null &&
+          'userId' in alert && alert.userId === userId)
+      : [];
   } catch {
     return [];
   }
@@ -43,53 +50,54 @@ const getStoredLocalAlerts = (): Alert[] => {
 
 export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
-  const userId = user?.uid ?? 'usr_local_dev_001';
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [, setLoading] = useState<boolean>(true);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const userId = user?.uid ?? '';
+  const [alertsState, setAlertsState] = useState<{ userId: string; items: Alert[] } | null>(null);
+  const [localRevision, setLocalRevision] = useState(0);
+  const localAlerts = useMemo(() => getStoredLocalAlerts(userId), [userId, localRevision]);
+  const alerts = isFirebaseConfigured && db
+    ? (userId && alertsState?.userId === userId ? alertsState.items : [])
+    : localAlerts;
+  const [selectedAlertState, setSelectedAlertState] = useState<{ userId: string; alert: Alert } | null>(null);
+  const selectedAlert = selectedAlertState?.userId === userId ? selectedAlertState.alert : null;
+  const setSelectedAlert = (alert: Alert | null) => {
+    setSelectedAlertState(alert ? { userId, alert } : null);
+  };
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const refreshAlerts = () => {
-    setAlerts(getStoredLocalAlerts());
-  };
+  const refreshAlerts = useCallback(() => {
+    setLocalRevision((revision) => revision + 1);
+  }, []);
 
   useEffect(() => {
-    if (isFirebaseConfigured && db && user?.uid) {
-      const q = query(
+    if (!userId) return;
+
+    if (isFirebaseConfigured && db) {
+      const alertsQuery = query(
         collection(db, 'alerts'),
-        where('userId', '==', user.uid)
+        where('userId', '==', userId),
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      return onSnapshot(alertsQuery, (snapshot) => {
         const docsData: Alert[] = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
         })) as Alert[];
-
-        setAlerts(docsData);
-        setLoading(false);
+        setAlertsState({ userId, items: docsData });
       }, (error) => {
-        console.error("Erro ao buscar alertas:", error);
-        setLoading(false);
+        console.error('Erro ao buscar alertas do usuário autenticado:', error);
       });
-
-      return () => unsubscribe();
     }
 
-    // Modo Local
-    refreshAlerts();
-    setLoading(false);
-
-    // Ouve atualizações em tempo real disparadas pelo polling de telemetria
+    // Local development data is read from the current account's own storage key.
     window.addEventListener('wf_alerts_updated', refreshAlerts);
     window.addEventListener('storage', refreshAlerts);
     return () => {
       window.removeEventListener('wf_alerts_updated', refreshAlerts);
       window.removeEventListener('storage', refreshAlerts);
     };
-  }, [user?.uid]);
+  }, [userId, refreshAlerts]);
 
   // Contadores para os Cards de Topo
   const openCriticals = alerts.filter(a => a.status === 'active' && a.severity === 'critical').length;
@@ -124,46 +132,76 @@ export const AlertsPage: React.FC = () => {
     }
 
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'acknowledged' as const } : a);
-    setAlerts(updated);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
+    setLocalRevision((revision) => revision + 1);
     toast.info('Alerta reconhecido pela equipe de monitoramento.');
   };
 
-  // Ação de Resolver individualmente
-  const handleResolve = (id: string) => {
+  // Firestore remains the source of truth when a Firebase session is active.
+  const handleResolve = async (id: string) => {
+    if (isFirebaseConfigured && db && user?.uid) {
+      try {
+        await updateDoc(doc(db, 'alerts', id), {
+          status: 'resolved',
+          resolvedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        toast.success('Alerta resolvido com sucesso!');
+      } catch {
+        toast.error('Não foi possível resolver o alerta. Verifique suas permissões.');
+      }
+      return;
+    }
+
     const updated = alerts.map(a => a.id === id ? { ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() } : a);
-    setAlerts(updated);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
+    setLocalRevision((revision) => revision + 1);
     window.dispatchEvent(new Event('wf_alerts_updated'));
     toast.success('Alerta resolvido com sucesso!');
   };
 
-  // Resolver Todos
-  const handleResolveAll = () => {
+  // Batch keeps the action efficient while limiting each commit to Firestore's safe write size.
+  const handleResolveAll = async () => {
+    if (isFirebaseConfigured && db && user?.uid) {
+      try {
+        const snapshot = await getDocs(query(
+          collection(db, 'alerts'),
+          where('userId', '==', user.uid),
+          where('status', 'in', ['active', 'acknowledged']),
+          limit(450),
+        ));
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((item) => batch.update(item.ref, {
+          status: 'resolved',
+          resolvedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }));
+        await batch.commit();
+        toast.success(`${snapshot.size} alerta(s) resolvido(s).`);
+      } catch {
+        toast.error('Não foi possível resolver os alertas.');
+      }
+      return;
+    }
+
     const updated = alerts.map(a => ({ ...a, status: 'resolved' as const, resolvedAt: new Date().toISOString() }));
-    setAlerts(updated);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(localAlertsKey(userId), JSON.stringify(updated));
+    setLocalRevision((revision) => revision + 1);
     window.dispatchEvent(new Event('wf_alerts_updated'));
     toast.success('Todos os incidentes foram marcados como resolvidos.');
   };
 
-  // Limpar Histórico
+  // Persistent incident history is retained for auditability in the MVP.
   const handleClearHistory = () => {
-    setAlerts([]);
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    if (isFirebaseConfigured && db && user?.uid) {
+      toast.info('O histórico persistido é mantido para auditoria.');
+      return;
+    }
+    localStorage.removeItem(localAlertsKey(userId));
     window.dispatchEvent(new Event('wf_alerts_updated'));
-    toast.info('Histórico de alertas foi limpo.');
+    toast.info('Histórico local de alertas foi limpo.');
   };
 
-  // Simular Carga Extrema
-  const handleTriggerStress = async () => {
-    try {
-      await fetch('/api/trigger-stress');
-      toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% em instantes.');
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -180,14 +218,7 @@ export const AlertsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleTriggerStress}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shadow-lg shadow-red-900/30"
-            title="Gera carga simulada >90% por 12s para testar o Sentry"
-          >
-            <Flame className="w-4 h-4 animate-pulse" />
-            <span>Simular Sobrecarga</span>
-          </button>
+
 
           {alerts.length > 0 && (
             <>

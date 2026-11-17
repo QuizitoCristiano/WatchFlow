@@ -8,7 +8,6 @@ import {
   Cpu, 
   HardDrive, 
   Server, 
-  Clock, 
   RefreshCw, 
   Download, 
   FileText, 
@@ -34,41 +33,50 @@ export const MetricasPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid;
 
-  // Estados principais
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  // State is tagged with the authenticated UID so account switches never flash another user's data.
+  const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
+  const [selectedDeviceState, setSelectedDeviceState] = useState<{ userId: string; id: string } | null>(null);
+  const selectedDeviceId = userId && selectedDeviceState?.userId === userId ? selectedDeviceState.id : '';
+  const setSelectedDeviceId = (id: string) => setSelectedDeviceState({ userId: userId ?? '', id });
+  const [historyState, setHistoryState] = useState<{
+    userId: string;
+    deviceId: string;
+    records: MetricPayload[];
+  } | null>(null);
+  const metricsHistory = useMemo(
+    () => userId && historyState?.userId === userId && historyState.deviceId === selectedDeviceId
+      ? historyState.records
+      : [],
+    [userId, historyState, selectedDeviceId],
+  );
+  const loadingHistory = Boolean(
+    userId && selectedDeviceId &&
+    (!historyState || historyState.userId !== userId || historyState.deviceId !== selectedDeviceId)
+  );
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeChartMetric, setActiveChartMetric] = useState<'cpu' | 'ram' | 'gpu' | 'disk' | 'network'>('cpu');
-  const [metricsHistory, setMetricsHistory] = useState<MetricPayload[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  // Busca dispositivos do usuário e garante a seleção padrão
   useEffect(() => {
     if (!userId) return;
-    const unsubscribe = subscribeToDevices(userId, (data) => {
-      setDevices(data);
-      if (data.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(data[0].id ?? '');
-      }
+    return subscribeToDevices(userId, (data) => {
+      setDevicesState({ userId, items: data });
+      setSelectedDeviceState((current) => {
+        if (current?.userId === userId && data.some((device) => device.id === current.id)) {
+          return current;
+        }
+        return { userId, id: data[0]?.id ?? '' };
+      });
     });
-    return () => unsubscribe();
-  }, [userId, selectedDeviceId]);
+  }, [userId]);
 
-  // Escuta histórico de métricas reais em tempo real
   useEffect(() => {
-    if (!userId || !selectedDeviceId) {
-      setMetricsHistory([]);
-      return;
-    }
-
-    setLoadingHistory(true);
-    const unsubscribe = subscribeToDeviceMetrics(userId, selectedDeviceId, 20, (records) => {
-      setMetricsHistory(records);
-      setLoadingHistory(false);
+    if (!userId || !selectedDeviceId) return;
+    return subscribeToDeviceMetrics(userId, selectedDeviceId, 20, (records) => {
+      setHistoryState({ userId, deviceId: selectedDeviceId, records });
     });
-
-    return () => unsubscribe();
-  }, [userId, selectedDeviceId, timeRange]);
+  }, [userId, selectedDeviceId, timeRange, refreshVersion]);
 
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId);
 
@@ -78,19 +86,19 @@ export const MetricasPage: React.FC = () => {
   const currentDisk = selectedDevice?.latestMetricsSummary?.disk ?? 0;
 
   // Formatação de data/hora
-  const formatMetricTime = (val: any) => {
-    if (!val) return '--:--';
-    if (typeof val === 'object' && 'toDate' in val && typeof val.toDate === 'function') {
-      return val.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formatMetricTime = (value: unknown) => {
+    let date: Date | null = null;
+    if (value instanceof Date) date = value;
+    else if (typeof value === 'string') {
+      const parsed = new Date(value);
+      if (Number.isFinite(parsed.getTime())) date = parsed;
+    } else if (typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function') {
+      const parsed = (value as { toDate: () => Date }).toDate();
+      if (parsed instanceof Date && Number.isFinite(parsed.getTime())) date = parsed;
     }
-    if (typeof val === 'string') {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      }
-      return val;
-    }
-    return '--:--';
+    return date
+      ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : typeof value === 'string' ? value : '--:--';
   };
 
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
@@ -192,7 +200,7 @@ export const MetricasPage: React.FC = () => {
           </div>
 
           <button 
-            onClick={() => setLoadingHistory(true)}
+            onClick={() => setRefreshVersion((version) => version + 1)}
             className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-gray-300 hover:text-white transition"
             title="Atualizar dados"
           >
@@ -206,7 +214,7 @@ export const MetricasPage: React.FC = () => {
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">Nenhum dispositivo cadastrado</h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            Inicie o agente coletor local para registrar este computador no WatchFlow e visualizar gráficos em tempo real.
+            Cadastre uma integração Node Exporter e execute o Collector para vincular um dispositivo à sua conta.
           </p>
         </div>
       ) : (

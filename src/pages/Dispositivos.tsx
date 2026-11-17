@@ -1,107 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToDevices, deleteDevice, registerLocalDevice } from '@/services/deviceService';
+import { subscribeToDevices, deleteDevice } from '@/services/deviceService';
 import type { Device } from '@/types';
-import { Server, HardDrive, Cpu, Activity, Trash2, Search, Plus, Laptop, Loader2, Monitor, Flame } from 'lucide-react';
+import { Server, HardDrive, Cpu, Activity, Trash2, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/useAuth';
-import { toast } from 'sonner';
 
 export const DispositivosPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid;
 
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [search, setSearch] = useState('');
-  const [registering, setRegistering] = useState(false);
+  const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
+  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
 
   useEffect(() => {
     if (!userId) return;
-    const unsubscribe = subscribeToDevices(userId, setDevices);
-    return () => unsubscribe();
+    return subscribeToDevices(userId, (items) => setDevicesState({ userId, items }));
   }, [userId]);
 
-  // Polling em tempo real para sincronizar hardware e GPU ao vivo
-  useEffect(() => {
-    let isMounted = true;
-    const fetchLive = async () => {
-      try {
-        const res = await fetch('/api/system-metrics');
-        if (res.ok) {
-          const m = await res.json();
-          if (!isMounted) return;
-          setDevices((prev) =>
-            prev.map((d) => {
-              if (
-                d.hostname === 'srv-local-pc' ||
-                d.id === 'dev-local-machine' ||
-                d.ip === '127.0.0.1' ||
-                (d.hostname ?? '').toLowerCase().includes('local')
-              ) {
-                const isCritical =
-                  m.cpu.usagePercent >= 90 ||
-                  m.memory.usedPercent >= 90 ||
-                  (m.gpu && m.gpu.usagePercent >= 90);
-                return {
-                  ...d,
-                  status: isCritical
-                    ? 'critical'
-                    : m.cpu.usagePercent > 70 || m.memory.usedPercent > 80
-                    ? 'warning'
-                    : 'online',
-                  latestMetricsSummary: {
-                    ...d.latestMetricsSummary,
-                    cpu: m.cpu.usagePercent,
-                    memory: m.memory.usedPercent,
-                    disk: m.disk.usedPercent,
-                    gpu: m.gpu || {
-                      name: 'GPU',
-                      usagePercent: 20,
-                      temperatureC: 37,
-                      memoryUsedMb: 1346,
-                      memoryTotalMb: 6144,
-                    },
-                  },
-                  lastSeen: 'Agora mesmo',
-                };
-              }
-              return d;
-            })
-          );
-        }
-      } catch {
-        // ignora se offline
-      }
-    };
-
-    fetchLive();
-    const interval = setInterval(fetchLive, 2000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  const handleRegisterLocal = async () => {
-    if (!userId) {
-      toast.warning('Você precisa estar autenticado.');
-      return;
-    }
-    try {
-      setRegistering(true);
-      await registerLocalDevice(userId, 'srv-local-pc');
-    } catch (error) {
-      console.error('Erro ao registrar dispositivo local:', error);
-      toast.error('Erro ao registrar máquina local.');
-    } finally {
-      setRegistering(false);
-    }
-  };
-
   // Busca segura evitando erros se hostname ou ip forem undefined
-  const filteredDevices = devices.filter(
-    (d) =>
-      (d.hostname ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (d.ip ?? '').includes(search)
-  );
+  const filteredDevices = devices;
 
   const formatLastSeen = (lastSeen: Device['lastSeen']) => {
     if (!lastSeen) return 'N/A';
@@ -123,48 +39,7 @@ export const DispositivosPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar por host ou IP..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange-500"
-            />
-          </div>
-
-          <button
-            onClick={async () => {
-              try {
-                await fetch('/api/trigger-stress');
-                toast.error('⚡ Pico de sobrecarga ativado! CPU/RAM/GPU ultrapassarão 90% para acionar o Sentry.');
-              } catch (e) {
-                console.error(e);
-              }
-            }}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer shadow-lg shadow-red-900/30"
-            title="Simula carga extrema (>90%) para demonstrar os alertas críticos e o Sentry"
-          >
-            <Flame className="w-4 h-4 text-red-200 animate-pulse" />
-            <span>Simular Sobrecarga (Pico &gt; 90%)</span>
-          </button>
-
-          <button
-            onClick={handleRegisterLocal}
-            disabled={registering}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer disabled:opacity-50"
-            title="Registra a máquina local no Firestore para demonstrar monitoramento"
-          >
-            {registering ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Laptop className="w-4 h-4" />
-            )}
-            <span>Conectar Máquina Local</span>
-          </button>
-        </div>
+        <p className="text-xs text-zinc-500">Os dispositivos aparecem aqui somente depois de serem vinculados à sua conta por uma integração autenticada.</p>
       </div>
 
       {/* Condicional para tratar tela vazia ou sem resultados */}
@@ -172,20 +47,12 @@ export const DispositivosPage: React.FC = () => {
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-12 text-center text-gray-400">
           <Server className="w-12 h-12 mx-auto mb-3 text-zinc-600" />
           <h3 className="text-lg font-medium text-white mb-1">
-            {search ? 'Nenhum dispositivo encontrado' : 'Nenhum dispositivo monitorado'}
+            Nenhum dispositivo monitorado
           </h3>
           <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
-            {search
-              ? `Nenhum host ou IP corresponde à busca "${search}".`
-              : 'Conecte o agente de monitoramento ou clique no botão acima para registrar este computador no WatchFlow.'}
+            Cadastre uma integração Node Exporter e execute o Collector para vincular uma máquina à sua conta.
           </p>
-          <button
-            onClick={handleRegisterLocal}
-            disabled={registering}
-            className="inline-flex items-center gap-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 px-5 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Registrar Meu Computador Agora
-          </button>
+
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -263,7 +130,7 @@ export const DispositivosPage: React.FC = () => {
                       <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'GPU'}>
                         <Monitor className="w-3 h-3 text-emerald-400"/> GPU
                       </span>
-                      <span className={(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'text-red-400 font-bold' : ''}>
+                      <span className={(device.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'text-red-400 font-bold' : ''}>
                         {device.latestMetricsSummary?.gpu?.usagePercent ?? 20}%
                       </span>
                     </div>

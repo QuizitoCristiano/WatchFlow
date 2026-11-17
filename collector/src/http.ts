@@ -2,7 +2,11 @@ import { CollectorError } from './config.ts';
 
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
-async function readLimitedBody(response: Response): Promise<string> {
+async function readLimitedBody(
+  response: Response,
+  signal: AbortSignal,
+  timeoutMs: number,
+): Promise<string> {
   const declaredLength = Number(response.headers.get('content-length'));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
     throw new CollectorError('Resposta do Node Exporter excede o limite permitido.');
@@ -28,6 +32,9 @@ async function readLimitedBody(response: Response): Promise<string> {
     chunks.push(decoder.decode());
   } catch (error: unknown) {
     if (error instanceof CollectorError) throw error;
+    if (signal.aborted) {
+      throw new CollectorError(`Tempo limite de ${timeoutMs} ms ao consultar o Node Exporter.`);
+    }
     throw new CollectorError('Não foi possível ler a resposta do Node Exporter.');
   } finally {
     reader.releaseLock();
@@ -43,24 +50,29 @@ export async function fetchMetricsText(
   timeoutMs: number,
   fetcher: typeof fetch = fetch,
 ): Promise<string> {
-  let response: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    response = await fetcher(endpoint, {
+    const response = await fetcher(endpoint, {
       method: 'GET',
       redirect: 'error',
       headers: { accept: 'text/plain; version=0.0.4' },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: controller.signal,
     });
+
+    if (!response.ok) {
+      throw new CollectorError(`Node Exporter respondeu com HTTP ${response.status}.`);
+    }
+
+    return await readLimitedBody(response, controller.signal, timeoutMs);
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'TimeoutError') {
+    if (error instanceof CollectorError) throw error;
+    if (controller.signal.aborted || (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError'))) {
       throw new CollectorError(`Tempo limite de ${timeoutMs} ms ao consultar o Node Exporter.`);
     }
     throw new CollectorError('Falha de rede ao consultar o Node Exporter.');
+  } finally {
+    clearTimeout(timeout);
   }
-
-  if (!response.ok) {
-    throw new CollectorError(`Node Exporter respondeu com HTTP ${response.status}.`);
-  }
-
-  return readLimitedBody(response);
 }

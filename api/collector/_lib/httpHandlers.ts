@@ -26,6 +26,10 @@ interface IngestDependencies {
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
+const IP_RATE_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_IP_WINDOW = 300;
+const MAX_RATE_LIMIT_KEYS = 5_000;
+const recentRequestsByIp = new Map<string, { windowStartedAt: number; count: number }>();
 
 function header(request: ApiRequest, name: string): string | undefined {
   const headers = request.headers ?? {};
@@ -88,10 +92,47 @@ function readJsonBody(request: ApiRequest): unknown {
   return body;
 }
 
+function enforceIpRateLimit(request: ApiRequest): void {
+  const forwardedFor = header(request, 'x-forwarded-for');
+  const realIp = header(request, 'x-real-ip');
+  const candidateIp = (forwardedFor ?? realIp ?? 'unknown').split(',')[0].trim();
+  const ipKey = candidateIp.length > 0 && candidateIp.length <= 64 ? candidateIp : 'unknown';
+  const now = Date.now();
+  const current = recentRequestsByIp.get(ipKey);
+  const window = !current || now - current.windowStartedAt >= IP_RATE_WINDOW_MS
+    ? { windowStartedAt: now, count: 0 }
+    : current;
+
+  if (window.count >= MAX_REQUESTS_PER_IP_WINDOW) {
+    throw new HttpError(429, 'Limite de 300 requisições por minuto por origem atingido.');
+  }
+  window.count += 1;
+  recentRequestsByIp.set(ipKey, window);
+
+  if (recentRequestsByIp.size > MAX_RATE_LIMIT_KEYS) {
+    for (const [key, value] of recentRequestsByIp) {
+      if (now - value.windowStartedAt >= IP_RATE_WINDOW_MS) recentRequestsByIp.delete(key);
+      if (recentRequestsByIp.size <= MAX_RATE_LIMIT_KEYS) break;
+    }
+    while (recentRequestsByIp.size > MAX_RATE_LIMIT_KEYS) {
+      const oldestKey = recentRequestsByIp.keys().next().value;
+      if (oldestKey === undefined) break;
+      recentRequestsByIp.delete(oldestKey);
+    }
+  }
+}
+
 function requireBearerToken(request: ApiRequest): string {
   const authorization = header(request, 'authorization');
   const match = authorization?.match(/^Bearer ([A-Za-z0-9._~-]{20,8192})$/);
   if (!match) throw new HttpError(401, 'Credencial Bearer obrigatória.');
+  return match[1];
+}
+
+function requireCollectorToken(request: ApiRequest): string {
+  const authorization = header(request, 'authorization');
+  const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
+  if (!match) throw new HttpError(401, 'Credencial do coletor inválida.');
   return match[1];
 }
 
@@ -108,6 +149,7 @@ export function createProvisionHandler(dependencies: ProvisionDependencies): Api
   return async (request, response) => {
     if (!requireMethod(request, response)) return;
     try {
+      enforceIpRateLimit(request);
       requireJson(request);
       const idToken = requireBearerToken(request);
       let verified: { uid: string };
@@ -143,7 +185,8 @@ export function createIngestHandler(dependencies: IngestDependencies): ApiHandle
     if (!requireMethod(request, response)) return;
     try {
       requireJson(request);
-      const token = requireBearerToken(request);
+      enforceIpRateLimit(request);
+      const token = requireCollectorToken(request);
       const body = readJsonBody(request);
       const result = await dependencies.ingest(token, body);
       send(response, 200, result);

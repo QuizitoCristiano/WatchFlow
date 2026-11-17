@@ -1,93 +1,60 @@
-import { db, isFirebaseConfigured } from '@/services/config';
+import { auth, db, isFirebaseConfigured } from '@/services/config';
 import type { MetricPayload } from '@/types';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
-  onSnapshot
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
 } from 'firebase/firestore';
 
+function assertUserScope(userId: string): void {
+  if (!userId) throw new Error('Usuário não autenticado.');
+  if (isFirebaseConfigured && auth?.currentUser?.uid !== userId) {
+    throw new Error('A sessão não corresponde ao proprietário das métricas.');
+  }
+}
+
 export const getDeviceMetricsRef = (userId: string, deviceId: string) => {
-  if (!userId || !deviceId) throw new Error('Parâmetros userId ou deviceId ausentes.');
+  assertUserScope(userId);
+  if (!deviceId) throw new Error('Identificador de dispositivo ausente.');
   if (!isFirebaseConfigured || !db) return null;
   return collection(db, 'users', userId, 'devices', deviceId, 'metrics');
 };
 
-/**
- * Escuta em tempo real o histórico recente de métricas de um dispositivo
- */
+/** Escuta somente o histórico persistido do dispositivo pertencente ao usuário. */
 export const subscribeToDeviceMetrics = (
   userId: string,
   deviceId: string,
   maxPoints: number = 20,
-  callback: (metrics: MetricPayload[]) => void
+  callback: (metrics: MetricPayload[]) => void,
 ) => {
-  if (!userId || !deviceId) {
+  if (!userId || !deviceId || !Number.isInteger(maxPoints) || maxPoints < 1 || maxPoints > 100) {
     callback([]);
     return () => {};
   }
 
-  if (isFirebaseConfigured && db) {
-    const q = query(
-      getDeviceMetricsRef(userId, deviceId)!,
-      orderBy('collectedAt', 'desc'),
-      limit(maxPoints)
-    );
-
-    return onSnapshot(
-      q,
-      (snapshot) => {
-        const records = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as MetricPayload[];
-
-        callback(records.reverse());
-      },
-      (error) => {
-        console.error('Erro ao escutar métricas no Firestore:', error);
-        callback([]);
-      }
-    );
+  assertUserScope(userId);
+  if (!isFirebaseConfigured || !db) {
+    // Local mode has no trusted collector or persisted telemetry source.
+    callback([]);
+    return () => {};
   }
 
-  // Coleta Real Contínua via API Local (/api/system-metrics) a cada 2 segundos
-  const histKey = `wf_metrics_${deviceId}`;
-  
-  const pollRealMetrics = async () => {
-    try {
-      const res = await fetch('/api/system-metrics');
-      if (res.ok) {
-        const m = await res.json();
-        const rawHist = localStorage.getItem(histKey);
-        const history: MetricPayload[] = rawHist ? JSON.parse(rawHist) : [];
-        
-        history.push({
-          id: String(Date.now()),
-          collectedAt: m.collectedAt,
-          cpu: { usagePercent: m.cpu.usagePercent },
-          memory: { usedPercent: m.memory.usedPercent },
-          disk: { usedPercent: m.disk.usedPercent },
-          gpu: m.gpu,
-          network: { 
-            bytesInSec: m.network.bytesInSec, 
-            bytesOutSec: m.network.bytesOutSec 
-          }
-        });
+  const metricsQuery = query(
+    getDeviceMetricsRef(userId, deviceId)!,
+    orderBy('collectedAt', 'desc'),
+    limit(maxPoints),
+  );
 
-        const trimmed = history.slice(-maxPoints);
-        localStorage.setItem(histKey, JSON.stringify(trimmed));
-        callback(trimmed);
-      }
-    } catch {
-      const rawHist = localStorage.getItem(histKey);
-      callback(rawHist ? JSON.parse(rawHist) : []);
-    }
-  };
-
-  pollRealMetrics();
-  const timer = setInterval(pollRealMetrics, 2000); // 2 segundos
-
-  return () => clearInterval(timer);
+  return onSnapshot(metricsQuery, (snapshot) => {
+    const records = snapshot.docs.map((document) => ({
+      id: document.id,
+      ...document.data(),
+    })) as MetricPayload[];
+    callback(records.reverse());
+  }, (error) => {
+    console.error('Erro ao escutar métricas do dispositivo autenticado:', error);
+    callback([]);
+  });
 };

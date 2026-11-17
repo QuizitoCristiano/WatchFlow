@@ -14,89 +14,80 @@ import {
 import { AuthContext } from "./AuthContext";
 import { auth, isFirebaseConfigured } from "@/services/config";
 
-// Usuário local para desenvolvimento/teste sem travar tela se não houver Firebase
-const LOCAL_DEV_USER: any = {
-  uid: "usr_local_dev_001",
-  email: "admin@watchflow.local",
-  displayName: "Administrador WatchFlow",
-  photoURL: null,
-  emailVerified: true,
-};
+// Local identity is only a development convenience; it is never accepted in production.
+function createLocalUser(email: string): User {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new Error("Informe um e-mail válido.");
+  }
+  const encoded = btoa(normalizedEmail).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return {
+    uid: `local-${encoded}`,
+    email: normalizedEmail,
+    displayName: normalizedEmail.split("@")[0],
+    photoURL: null,
+    emailVerified: true,
+  } as User;
+}
 
-export const AuthProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
-  const [user, setUser] = useState<User | null>(() => {
-    if (!isFirebaseConfigured || !auth) {
-      const stored = localStorage.getItem("wf_local_user");
-      return stored ? JSON.parse(stored) : LOCAL_DEV_USER;
-    }
-    return null;
-  });
+function requireDevelopmentFallback(): void {
+  if (import.meta.env.PROD || isFirebaseConfigured) {
+    throw new Error("Firebase está configurado, mas a autenticação não foi inicializada. Verifique as variáveis e a conexão.");
+  }
+}
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(isFirebaseConfigured && Boolean(auth));
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
+    if (!isFirebaseConfigured || !auth) return;
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setIsLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        setUser(firebaseUser);
-        setIsLoading(false);
-      }
-    );
-
+    });
     return unsubscribe;
   }, []);
 
   const sendResetPasswordEmail = async (email: string) => {
     if (isFirebaseConfigured && auth) {
       await firebaseSendReset(auth, email);
-    } else {
-      console.log(`[Modo Local] E-mail de recuperação simulado para: ${email}`);
+      return;
     }
+    requireDevelopmentFallback();
+    throw new Error("Recuperação de senha exige Firebase configurado.");
   };
 
   const handleLoginWithEmail = async (email: string, pass: string): Promise<User> => {
-    if (isFirebaseConfigured && auth) {
-      return await loginWithEmail(email, pass);
-    }
-    const localUser = {
-      ...LOCAL_DEV_USER,
-      email,
-      displayName: email.split("@")[0],
-    };
-    localStorage.setItem("wf_local_user", JSON.stringify(localUser));
+    if (isFirebaseConfigured && auth) return loginWithEmail(email, pass);
+    requireDevelopmentFallback();
+    if (!pass) throw new Error("Informe sua senha.");
+    const localUser = createLocalUser(email);
     setUser(localUser);
-    return localUser as User;
+    return localUser;
   };
 
   const handleRegisterWithEmail = async (email: string, pass: string): Promise<User> => {
-    if (isFirebaseConfigured && auth) {
-      return await registerWithEmail(email, pass);
-    }
-    const localUser = {
-      ...LOCAL_DEV_USER,
-      email,
-      displayName: email.split("@")[0],
-    };
-    localStorage.setItem("wf_local_user", JSON.stringify(localUser));
+    if (isFirebaseConfigured && auth) return registerWithEmail(email, pass);
+    requireDevelopmentFallback();
+    if (pass.length < 8) throw new Error("A senha deve possuir pelo menos 8 caracteres.");
+    const localUser = createLocalUser(email);
     setUser(localUser);
-    return localUser as User;
+    return localUser;
   };
 
   const handleLogout = async () => {
     if (isFirebaseConfigured && auth) {
       await logoutUser();
     } else {
-      localStorage.removeItem("wf_local_user");
       setUser(null);
     }
+  };
+
+  const unsupportedLocalProvider = async (): Promise<User> => {
+    requireDevelopmentFallback();
+    throw new Error("Login social exige Firebase configurado.");
   };
 
   const value = {
@@ -105,21 +96,11 @@ export const AuthProvider = ({
     isLoading,
     loginWithEmail: handleLoginWithEmail,
     registerWithEmail: handleRegisterWithEmail,
-    loginWithGoogle: isFirebaseConfigured ? loginWithGoogle : async () => {
-      setUser(LOCAL_DEV_USER);
-      return LOCAL_DEV_USER as User;
-    },
-    loginWithGithub: isFirebaseConfigured ? loginWithGithub : async () => {
-      setUser(LOCAL_DEV_USER);
-      return LOCAL_DEV_USER as User;
-    },
+    loginWithGoogle: isFirebaseConfigured ? loginWithGoogle : unsupportedLocalProvider,
+    loginWithGithub: isFirebaseConfigured ? loginWithGithub : unsupportedLocalProvider,
     logout: handleLogout,
     sendResetPasswordEmail,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
