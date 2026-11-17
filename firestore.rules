@@ -41,6 +41,110 @@ service cloud.firestore {
         && request.resource.data.type == 'node_exporter'
         && request.resource.data.baseUrl is string
         && request.resource.data.baseUrl.size() <= 2048
+        && (request.resource.data.baseUrl.matches('^http://[A-Za-z0-9.-]+:9100/metrics
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      // Status and telemetry counters are written only by the trusted backend.
+      allow update: if false;
+    }
+
+    // Devices and telemetry are written by the trusted Collector/Admin SDK only.
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId)
+        && resource.data.userId == userId;
+      allow create, update: if false;
+
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    // Alerts are created by the ingestion service. Clients may only acknowledge/resolve.
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    // Collector secrets and rotation state are never exposed to client SDKs.
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Default deny for every collection not explicitly listed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+          || request.resource.data.baseUrl.matches('^https://[A-Za-z0-9.-]+(:443|:9100)?/metrics
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      // Status and telemetry counters are written only by the trusted backend.
+      allow update: if false;
+    }
+
+    // Devices and telemetry are written by the trusted Collector/Admin SDK only.
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId)
+        && resource.data.userId == userId;
+      allow create, update: if false;
+
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    // Alerts are created by the ingestion service. Clients may only acknowledge/resolve.
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    // Collector secrets and rotation state are never exposed to client SDKs.
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Default deny for every collection not explicitly listed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+))
         && request.resource.data.status == 'pending'
         && request.resource.data.lastSync == null
         && request.resource.data.lastAttemptAt == null
