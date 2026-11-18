@@ -2,15 +2,9 @@ name: WatchFlow CI
 
 on:
   pull_request:
-<<<<<<< HEAD
-    branches: [main]
-  push:
-    branches: [main, "feat/**"]
-=======
     branches: [main, develop]
   push:
-    branches: [main, develop, "feat/**"]
->>>>>>> 34d5cbc3af0b34990444b00235ee0e3071ae2724
+    branches: [main, develop, "feat/**", "fix/**"]
 
 permissions:
   contents: read
@@ -51,30 +45,3 @@ jobs:
       - run: npm ci
       - name: Typecheck and production build
         run: npm run build
-  audit-fix:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Apply non-breaking dependency security fixes
-<<<<<<< HEAD
-        run: npm audit fix
-=======
-        run: |
-          npm audit fix || echo "::warning::npm audit fix left advisories that require manual review; no breaking updates will be forced."
->>>>>>> 34d5cbc3af0b34990444b00235ee0e3071ae2724
-      - name: Report remaining dependency vulnerabilities
-        run: |
-          npm audit --json > npm-audit-after.json || true
-          node -e "const report = require('./npm-audit-after.json'); const entries = Object.entries(report.vulnerabilities || {}).map(([name, item]) => ({ name, severity: item.severity, direct: item.isDirect, range: item.range, fixAvailable: item.fixAvailable })); console.log(JSON.stringify({ totals: report.metadata?.vulnerabilities, packages: entries }, null, 2));"
-      - name: Upload reviewed lockfile and audit report
-        uses: actions/upload-artifact@v4
-        with:
-          name: watchflow-audit-fix
-          path: |
-            package-lock.json
-            npm-audit-after.json

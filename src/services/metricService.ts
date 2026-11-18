@@ -1,27 +1,29 @@
 import { auth, db, isFirebaseConfigured } from '@/services/config';
-import { SHARED_CLOUD_USER_ID } from '@/services/deviceService';
 import type { MetricPayload } from '@/types';
 import {
   collection,
-  doc,
+  limit,
   onSnapshot,
+  orderBy,
+  query,
 } from 'firebase/firestore';
 
 function assertUserScope(userId: string): void {
   if (!userId) throw new Error('Usuário não autenticado.');
-  if (isFirebaseConfigured && auth?.currentUser && auth.currentUser.uid !== userId) {
+  if (isFirebaseConfigured && auth?.currentUser?.uid !== userId) {
     throw new Error('A sessão não corresponde ao proprietário das métricas.');
   }
 }
 
+/** Retorna somente a subcoleção pertencente ao usuário autenticado. */
 export const getDeviceMetricsRef = (userId: string, deviceId: string) => {
   assertUserScope(userId);
   if (!deviceId) throw new Error('Identificador de dispositivo ausente.');
   if (!isFirebaseConfigured || !db) return null;
-  return collection(db, 'users', SHARED_CLOUD_USER_ID, 'devices', deviceId, 'metrics');
+  return collection(db, 'users', userId, 'devices', deviceId, 'metrics');
 };
 
-/** Escuta em tempo real as métricas enviadas pelo agente do notebook no Firestore. */
+/** Escuta amostras persistidas pelo endpoint autenticado de ingestão. */
 export const subscribeToDeviceMetrics = (
   userId: string,
   deviceId: string,
@@ -34,51 +36,18 @@ export const subscribeToDeviceMetrics = (
   }
 
   assertUserScope(userId);
-  if (!isFirebaseConfigured || !db) {
+  const metricsRef = getDeviceMetricsRef(userId, deviceId);
+  if (!metricsRef) {
     callback([]);
     return () => {};
   }
 
-  const histKey = `wf_metrics_${deviceId}`;
-  const devRef = doc(db, 'users', SHARED_CLOUD_USER_ID, 'devices', deviceId);
-
-  return onSnapshot(devRef, (docSnap) => {
-    if (!docSnap.exists()) return;
-    const data = docSnap.data();
-    const s = data?.latestMetricsSummary;
-    if (!s) return;
-
-    try {
-      const rawHist = localStorage.getItem(histKey);
-      const history: MetricPayload[] = rawHist ? JSON.parse(rawHist) : [];
-
-      history.push({
-        id: String(Date.now()),
-        collectedAt: new Date().toISOString(),
-        cpu: { usagePercent: s.cpu ?? 0 },
-        memory: {
-          usedPercent: s.memory ?? 0,
-          usedMb: (s.memoryUsedGb ?? 0) * 1024,
-          totalMb: (s.memoryTotalGb ?? 16) * 1024,
-        },
-        disk: {
-          usedPercent: s.disk ?? 0,
-          usedGb: s.diskUsedGb ?? 0,
-          totalGb: s.diskTotalGb ?? 500,
-        },
-        gpu: s.gpu,
-        network: {
-          bytesInSec: s.networkInBytesSec ?? 1150000,
-          bytesOutSec: s.networkOutBytesSec ?? 620000,
-        },
-      });
-
-      const trimmed = history.slice(-maxPoints);
-      localStorage.setItem(histKey, JSON.stringify(trimmed));
-      callback(trimmed);
-    } catch {
-      callback([]);
-    }
+  const metricsQuery = query(metricsRef, orderBy('collectedAt', 'desc'), limit(maxPoints));
+  return onSnapshot(metricsQuery, (snapshot) => {
+    const records = snapshot.docs
+      .map((document) => ({ id: document.id, ...document.data() }) as MetricPayload)
+      .reverse();
+    callback(records);
   }, (error) => {
     console.error('Erro ao escutar métricas do dispositivo:', error);
     callback([]);

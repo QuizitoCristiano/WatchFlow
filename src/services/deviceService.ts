@@ -8,12 +8,11 @@ import {
   onSnapshot,
   doc,
   deleteDoc,
+  getDocs,
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-
-export const SHARED_CLOUD_USER_ID = 'usr_local_dev_001';
 
 const stressOverrideUntilByDevice: Record<string, number> = {};
 
@@ -279,69 +278,50 @@ export const subscribeToDevices = (
   assertUserScope(userId);
 
   if (isFirebaseConfigured && db) {
-    let userDevices: Device[] = [];
-    let sharedDevices: Device[] = [];
-
-    const emitMerged = () => {
-      const mergedMap = new Map<string, Device>();
-      for (const d of sharedDevices) {
-        if (d.id) mergedMap.set(d.id, applyStressOverrideIfActive(d));
-      }
-      for (const d of userDevices) {
-        if (d.id) mergedMap.set(d.id, applyStressOverrideIfActive(d));
-      }
-      const all = Array.from(mergedMap.values());
-      for (const dev of all) {
-        evaluateDeviceAlerts(dev, userId);
-      }
-      callback(all);
-    };
-
     const userQuery = query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc'));
-    const unsubUser = onSnapshot(userQuery, (snapshot) => {
-      userDevices = snapshot.docs.map((document) => ({
+    const emit = (snapshot: Parameters<Parameters<typeof onSnapshot>[1]>[0]) => {
+      const devices = snapshot.docs.map((document) => ({
         id: document.id,
         ...document.data(),
       })) as Device[];
-      emitMerged();
+      const scopedDevices = devices
+        .filter((device) => device.userId === userId)
+        .map(applyStressOverrideIfActive);
+      for (const device of scopedDevices) evaluateDeviceAlerts(device, userId);
+      callback(scopedDevices);
+    };
+
+    const unsubscribe = onSnapshot(userQuery, emit, (error) => {
+      console.error('Erro ao escutar dispositivos do usuário:', error);
+      callback([]);
     });
-
-    let unsubShared = () => {};
-    if (userId !== SHARED_CLOUD_USER_ID) {
-      const sharedQuery = query(collection(db, 'users', SHARED_CLOUD_USER_ID, 'devices'), orderBy('hostname', 'asc'));
-      unsubShared = onSnapshot(sharedQuery, (snapshot) => {
-        sharedDevices = snapshot.docs.map((document) => ({
-          id: document.id,
-          ...document.data(),
-        })) as Device[];
-        emitMerged();
-      });
-    }
-
     const overrideTimer = setInterval(() => {
       let expiredAny = false;
       const now = Date.now();
-      for (const [devId, until] of Object.entries(stressOverrideUntilByDevice)) {
+      for (const [deviceId, until] of Object.entries(stressOverrideUntilByDevice)) {
         if (until > 0 && now >= until) {
-          delete stressOverrideUntilByDevice[devId];
+          delete stressOverrideUntilByDevice[deviceId];
           expiredAny = true;
         }
       }
       if (expiredAny) {
-        emitMerged();
+        // Reconsulta apenas a coleção do usuário; nenhum dado compartilhado é mesclado.
+        void getDocs(query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
+          .then(emit)
+          .catch((error: unknown) => console.error('Falha ao atualizar simulação:', error));
       }
     }, 1000);
-
     const handleLocalStressTrigger = () => {
-      emitMerged();
+      void getDocs(query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
+        .then(emit)
+        .catch((error: unknown) => console.error('Falha ao atualizar simulação:', error));
     };
     window.addEventListener('wf_stress_simulation_triggered', handleLocalStressTrigger);
 
     return () => {
       clearInterval(overrideTimer);
       window.removeEventListener('wf_stress_simulation_triggered', handleLocalStressTrigger);
-      unsubUser();
-      unsubShared();
+      unsubscribe();
     };
   }
 
@@ -373,10 +353,7 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
   toast.info(`🔌 Dispositivo ${deviceId} desconectado e registrado no Sentry.`);
 
   if (isFirebaseConfigured && db) {
-    await deleteDoc(doc(db, 'users', userId, 'devices', deviceId)).catch(() => {});
-    if (userId !== SHARED_CLOUD_USER_ID) {
-      await deleteDoc(doc(db, 'users', SHARED_CLOUD_USER_ID, 'devices', deviceId)).catch(() => {});
-    }
+    await deleteDoc(doc(db, 'users', userId, 'devices', deviceId));
     return;
   }
 
@@ -419,7 +396,7 @@ export const triggerStressSimulation = async (
   const simId = `sim-${Date.now().toString(36)}`;
   void captureOverloadSimulation(hostname, simId);
 
-  const uid = currentUserId || auth?.currentUser?.uid || SHARED_CLOUD_USER_ID;
+  const uid = currentUserId || auth?.currentUser?.uid;
   const now = Date.now();
   const isoNow = new Date().toISOString();
 
@@ -429,27 +406,29 @@ export const triggerStressSimulation = async (
     { metric: 'GPU', val: '96%', type: 'high_gpu', title: `Sobrecarga Crítica de GPU (96%) em ${hostname}` },
   ];
 
-  for (const a of simAlerts) {
-    const alertId = `alt_${deviceId}_${a.metric}_${now}`;
-    void persistAlertToCloudAndLocal(uid, alertId, {
-      userId: uid,
-      deviceId,
-      deviceName: hostname,
-      type: a.type,
-      severity: 'critical',
-      title: a.title,
-      description: `O recurso ${a.metric} atingiu nível crítico (${a.val}) no host ${hostname}.`,
-      status: 'active',
-      metricTriggered: {
-        metric: a.metric,
-        value: a.val,
-        threshold: '90%',
-        operator: '>',
-      },
-      firstDetectedAt: isoNow,
-      lastDetectedAt: isoNow,
-      createdAt: isoNow,
-    });
+  if (uid) {
+    for (const alert of simAlerts) {
+      const alertId = `alt_${deviceId}_${alert.metric}_${now}`;
+      void persistAlertToCloudAndLocal(uid, alertId, {
+        userId: uid,
+        deviceId,
+        deviceName: hostname,
+        type: alert.type,
+        severity: 'critical',
+        title: alert.title,
+        description: `O recurso ${alert.metric} atingiu nível crítico (${alert.val}) no host ${hostname}.`,
+        status: 'active',
+        metricTriggered: {
+          metric: alert.metric,
+          value: alert.val,
+          threshold: '90%',
+          operator: '>',
+        },
+        firstDetectedAt: isoNow,
+        lastDetectedAt: isoNow,
+        createdAt: isoNow,
+      });
+    }
   }
 
   return true;
