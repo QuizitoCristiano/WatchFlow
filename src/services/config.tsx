@@ -42,7 +42,12 @@ const firebaseConfig = useEmulator
 
 export const isFirebaseConfigured = true;
 
-const app: FirebaseApp | null = getApps()[0] ?? initializeApp(firebaseConfig);
+const existingApp = getApps()[0];
+if (existingApp && existingApp.options.projectId !== firebaseConfig.projectId) {
+  throw new Error('O Firebase já foi inicializado com um projeto diferente do ambiente selecionado.');
+}
+
+const app: FirebaseApp | null = existingApp ?? initializeApp(firebaseConfig);
 
 let authInstance: Auth | null = null;
 let dbInstance: Firestore | null = null;
