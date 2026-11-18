@@ -14,7 +14,6 @@ import ReportsPage from '@/pages/Reports';
 import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/Profile';
 import { NotFound } from '@/NotFound/NotFound';
-import { VerifyEmail } from '@/auth/VerifyEmail';
 import { CollectorDemo } from '@/pages/CollectorDemo';
 
 export function AppRoutes() {
@@ -28,7 +27,7 @@ export function AppRoutes() {
         <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
         <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} /> {/* 👈 ROTA DA VERIFICAÇÃO */}
+        <Route path="/verify-email" element={<Navigate to="/dashboard" replace />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} /> 
 
         {/* 🛡️ ROTAS PROTEGIDAS */}
