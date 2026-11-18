@@ -54,8 +54,54 @@ export const getDevicesRef = (userId: string) => {
 
 const lastAlertSentTimes: Record<string, number> = {};
 const wasAlertActive: Record<string, boolean> = {};
+const announcedConnectedDevices = new Set<string>();
 
-function evaluateDeviceAlerts(device: Device) {
+async function persistAlertToCloudAndLocal(
+  userId: string,
+  alertId: string,
+  alertData: Record<string, unknown>,
+) {
+  try {
+    const storageKey = `wf_local_alerts:${userId}`;
+    const raw = localStorage.getItem(storageKey);
+    const list = raw ? JSON.parse(raw) : [];
+    const filtered = Array.isArray(list) ? list.filter((a: any) => a.id !== alertId) : [];
+    filtered.unshift({ id: alertId, ...alertData });
+    localStorage.setItem(storageKey, JSON.stringify(filtered.slice(0, 50)));
+    window.dispatchEvent(new Event('wf_alerts_updated'));
+  } catch {
+    // ignore storage errors
+  }
+
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, 'alerts', alertId), {
+        ...alertData,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch {
+      // ignore firestore error
+    }
+  }
+}
+
+function evaluateDeviceAlerts(device: Device, currentUserId: string) {
+  if (!device.id) return;
+
+  // Registra conexão inicial do dispositivo remoto no Sentry uma vez por sessão
+  if (!device.isDemoData && !announcedConnectedDevices.has(device.id)) {
+    announcedConnectedDevices.add(device.id);
+    captureAppException(
+      new Error(`[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${device.hostname}`),
+      {
+        host: device.hostname,
+        device_id: device.id,
+        metric: `CONEXAO_${device.hostname}`,
+        operation: 'device_connected',
+      },
+    );
+  }
+
   const summary = device.latestMetricsSummary;
   if (!summary) return;
 
@@ -67,23 +113,30 @@ function evaluateDeviceAlerts(device: Device) {
     {
       isTriggered: cpuVal >= 90,
       key: `${device.id}_CPU_HIGH`,
+      type: 'CPU_HIGH',
       metric: 'CPU',
       val: `${cpuVal}%`,
-      title: `Uso Excessivo de CPU (${cpuVal}%)`,
+      // Título fixo por categoria + host garante que cada métrica tenha sua própria linha fixa no Sentry
+      sentryTitle: `[WatchFlow Alert] Uso Excessivo de CPU (>90%) em ${device.hostname}`,
+      uiTitle: `Uso Excessivo de CPU (${cpuVal}%)`,
     },
     {
       isTriggered: memVal >= 90,
       key: `${device.id}_RAM_HIGH`,
+      type: 'RAM_HIGH',
       metric: 'RAM',
       val: `${memVal}%`,
-      title: `Esgotamento Crítico de Memória RAM (${memVal}%)`,
+      sentryTitle: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (>90%) em ${device.hostname}`,
+      uiTitle: `Esgotamento Crítico de Memória RAM (${memVal}%)`,
     },
     {
       isTriggered: gpuVal >= 90,
       key: `${device.id}_GPU_HIGH`,
+      type: 'GPU_HIGH',
       metric: 'GPU',
       val: `${gpuVal}%`,
-      title: `Sobrecarga Crítica de GPU (${gpuVal}%)`,
+      sentryTitle: `[WatchFlow Alert] Sobrecarga Crítica de GPU (>90%) em ${device.hostname}`,
+      uiTitle: `Sobrecarga Crítica de GPU (${gpuVal}%)`,
     },
   ];
 
@@ -98,16 +151,39 @@ function evaluateDeviceAlerts(device: Device) {
         lastAlertSentTimes[cond.key] = now;
         wasAlertActive[cond.key] = true;
 
-        toast.error(`🔥 Alerta Crítico (${device.hostname}): ${cond.title}`, {
-          description: 'Incidente detectado e enviado ao Sentry APM em tempo real!',
-          duration: 6000,
+        const alertId = `alt_${device.id}_${cond.metric}_${now}`;
+        const isoNow = new Date().toISOString();
+
+        void persistAlertToCloudAndLocal(currentUserId, alertId, {
+          userId: currentUserId,
+          deviceId: device.id,
+          deviceName: device.hostname,
+          type: cond.type,
+          severity: 'critical',
+          title: `${cond.uiTitle} — ${device.hostname}`,
+          description: `O recurso ${cond.metric} atingiu nível crítico (${cond.val}) no host ${device.hostname}.`,
+          status: 'active',
+          metricTriggered: {
+            metric: cond.metric,
+            value: cond.val,
+            threshold: '90%',
+            operator: '>',
+          },
+          firstDetectedAt: isoNow,
+          lastDetectedAt: isoNow,
+          createdAt: isoNow,
         });
 
-        captureAppException(new Error(`[WatchFlow Alert] ${cond.title}`), {
+        toast.error(`🔥 Alerta Crítico (${device.hostname}): ${cond.uiTitle}`, {
+          description: 'Incidente registrado na Central de Alertas e enviado ao Sentry APM!',
+          duration: 8000,
+        });
+
+        captureAppException(new Error(cond.sentryTitle), {
           host: device.hostname,
-          device_id: device.id || 'unknown',
+          device_id: device.id,
           metric: cond.metric,
-          operation: 'hardware_threshold_breach',
+          operation: `alert_${cond.metric.toLowerCase()}`,
         });
       }
     } else if (wasAlertActive[cond.key]) {
@@ -160,7 +236,7 @@ export const registerBrowserDevice = async (userId: string) => {
 };
 
 /**
- * Lista os dispositivos vinculados à conta autenticada + dispositivos enviados pelo agente coletor do notebook (canal compartilhado).
+ * Lista os dispositivos vinculados à conta autenticada + dispositivos enviados pelo agente coletor do notebook.
  */
 export const subscribeToDevices = (
   userId: string,
@@ -182,7 +258,7 @@ export const subscribeToDevices = (
       }
       const all = Array.from(mergedMap.values());
       for (const dev of all) {
-        evaluateDeviceAlerts(dev);
+        evaluateDeviceAlerts(dev, userId);
       }
       callback(all);
     };
@@ -225,10 +301,21 @@ export const subscribeToDevices = (
   };
 };
 
-/** Remove um dispositivo do escopo do usuário ou do canal compartilhado. */
+/** Remove um dispositivo e dispara evento de desconexão no Sentry com fingerprint exclusivo. */
 export const deleteDevice = async (userId: string, deviceId: string) => {
   assertUserScope(userId);
   if (!deviceId) throw new Error('Identificador de dispositivo inválido.');
+
+  captureAppException(
+    new Error(`[WatchFlow Lifecycle] Dispositivo Desconectado/Removido: ${deviceId}`),
+    {
+      host: deviceId,
+      device_id: deviceId,
+      metric: `DESCONEXAO_${deviceId}`,
+      operation: 'device_disconnected',
+    },
+  );
+  toast.info(`🔌 Dispositivo ${deviceId} desconectado e registrado no Sentry.`);
 
   if (isFirebaseConfigured && db) {
     await deleteDoc(doc(db, 'users', userId, 'devices', deviceId)).catch(() => {});

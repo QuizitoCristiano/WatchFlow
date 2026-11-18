@@ -28,7 +28,7 @@ function AppShell() {
       >
         <AppRoutes />
       </Sentry.ErrorBoundary>
-      <Toaster position="top-right" richColors theme={preferences.theme} closeButton />
+      <Toaster position="top-right" expand={true} visibleToasts={8} duration={10000} richColors theme={preferences.theme} closeButton />
     </>
   );
 }

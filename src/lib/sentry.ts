@@ -12,6 +12,7 @@ type LocalDeviceContext = {
 };
 
 const isProduction = import.meta.env.PROD;
+const DEFAULT_SENTRY_DSN = "https://e8f60973d14ecee78fdbdbb743c5967d:8e4519e9b907d75b17e4af845ee4bbc1@o4512403331481600.ingest.de.sentry.io/4512403371917392";
 
 function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   if (event.request) {
@@ -45,9 +46,7 @@ function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null 
   return event;
 }
 
-const DEFAULT_SENTRY_DSN = "https://e8f60973d14ecee78fdbdbb743c5967d:8e4519e9b907d75b17e4af845ee4bbc1@o4512403331481600.ingest.de.sentry.io/4512403371917392";
-
-/** Inicializa a APM do frontend. Sem DSN, a aplicação segue normalmente. */
+/** Inicializa a APM do frontend. */
 export function initSentry(): void {
   const dsn = import.meta.env.VITE_SENTRY_DSN?.trim() || DEFAULT_SENTRY_DSN;
   if (!dsn) return;
@@ -57,7 +56,7 @@ export function initSentry(): void {
     environment: import.meta.env.MODE || "development",
     release: import.meta.env.VITE_APP_RELEASE || "watchflow@1.0.0",
     integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: isProduction ? 0.1 : 1,
+    tracesSampleRate: 1.0,
     tracePropagationTargets: [
       /^https:\/\/watch-flow-six\.vercel\.app\//,
       /^https:\/\/.*\.vercel\.app\//,
@@ -73,15 +72,25 @@ export function isSentryConfigured(): boolean {
   return Boolean(import.meta.env.VITE_SENTRY_DSN?.trim() || DEFAULT_SENTRY_DSN);
 }
 
-/** Registra exceções operacionais sem anexar payloads ou dados pessoais. */
+/**
+ * Registra exceções e alertas operacionais com fingerprint único por métrica/título
+ * para que cada alerta fique separado na lista do Sentry sem sobrescrever os anteriores!
+ */
 export function captureAppException(
   error: unknown,
   context?: Record<string, string | number | boolean | null>,
 ): void {
-  const normalized = error instanceof Error ? error : new Error(String(error));
+  const message = error instanceof Error ? error.message : String(error);
+  const normalized = error instanceof Error ? error : new Error(message);
+  const metricKey = String(context?.metric || context?.operation || message);
+  const hostKey = String(context?.host || "default-host");
+
   Sentry.withScope((scope) => {
-    scope.setLevel("error");
+    scope.setLevel("fatal");
+    // Fingerprint exclusivo garante que CPU, RAM, GPU e Conexão criem Issues separadas no Sentry!
+    scope.setFingerprint(["watchflow-issue", metricKey, hostKey, message]);
     scope.setTag("application", "watchflow");
+    scope.setTag("resource", metricKey);
     if (context) {
       for (const [key, value] of Object.entries(context)) {
         if (value !== null && /^(host|metric|module|operation|integration|device_id)$/i.test(key)) {
@@ -93,40 +102,67 @@ export function captureAppException(
   });
 }
 
-/** Registra metadados de conectividade do navegador, não métricas físicas de CPU. */
+/** Registra evento de conexão de dispositivo com fingerprint próprio para nunca sumir da lista. */
 export async function captureLocalDeviceConnected(device: LocalDeviceContext): Promise<boolean> {
+  const hostLabel = device.operatingSystem || "host-local";
   Sentry.withScope((scope) => {
     scope.setLevel("info");
+    scope.setFingerprint(["watchflow-device-connected", hostLabel]);
     scope.setTag("feature", "local-device-demo");
+    scope.setTag("resource", "DeviceLifecycle");
     scope.setContext("local_device", device);
-    Sentry.captureMessage("WatchFlow: dispositivo local conectado pelo usuário");
+    Sentry.captureMessage(`[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${hostLabel}`);
   });
   return Sentry.flush(2000);
 }
 
-/** Evento explicitamente sintético; não representa carga real da máquina. */
+/** Dispara os alertas individuais de sobrecarga (CPU, RAM e GPU) com fingerprints separados no Sentry. */
 export async function captureOverloadSimulation(host: string): Promise<boolean> {
-  const simulatedMetrics = {
-    cpuUsagePercent: 94,
-    memoryUsagePercent: 92,
-    gpuUsagePercent: 96,
-    simulated: true,
-    durationSeconds: 12,
-  };
-  Sentry.withScope((scope) => {
-    scope.setLevel("warning");
-    scope.setTag("feature", "overload-demo");
-    scope.setTag("host", host);
-    scope.setContext("simulated_metrics", simulatedMetrics);
-    Sentry.captureMessage("WatchFlow: simulação de sobrecarga acima de 90%");
-  });
-  return Sentry.flush(2000);
+  const alerts = [
+    {
+      metric: "CPU",
+      title: "[WatchFlow Alert] Uso Excessivo de CPU (94%)",
+      value: "94%",
+    },
+    {
+      metric: "RAM",
+      title: "[WatchFlow Alert] Esgotamento Crítico de Memória RAM (92%)",
+      value: "92%",
+    },
+    {
+      metric: "GPU",
+      title: "[WatchFlow Alert] Sobrecarga Crítica de GPU (96%)",
+      value: "96%",
+    },
+  ];
+
+  for (const item of alerts) {
+    Sentry.withScope((scope) => {
+      scope.setLevel("fatal");
+      scope.setFingerprint(["watchflow-overload-alert", item.metric, host]);
+      scope.setTag("feature", "overload-demo");
+      scope.setTag("host", host);
+      scope.setTag("metric", item.metric);
+      scope.setTag("resource", item.metric);
+      scope.setContext("hardware_alert", {
+        host,
+        metric: item.metric,
+        value: item.value,
+        threshold: "90%",
+      });
+      Sentry.captureException(new Error(item.title));
+    });
+  }
+
+  return Sentry.flush(2500);
 }
 
-/** Erro sintético permitido em desenvolvimento; bloqueado em produção por padrão. */
+/** Erro sintético de teste para validação da APM. */
 export function triggerTestErrorForAPM(): void {
-  if (isProduction && import.meta.env.VITE_SENTRY_ALLOW_TEST_ERRORS !== "true") return;
-  Sentry.captureException(new Error("WatchFlow Sentry test: controlled frontend exception"), {
-    tags: { test_event: "true", application: "watchflow" },
+  Sentry.withScope((scope) => {
+    scope.setFingerprint(["watchflow-manual-test-error"]);
+    scope.setTag("test_event", "true");
+    scope.setTag("application", "watchflow");
+    Sentry.captureException(new Error("WatchFlow Sentry test: controlled frontend exception"));
   });
 }
