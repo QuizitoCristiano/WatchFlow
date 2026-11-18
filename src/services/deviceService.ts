@@ -66,8 +66,11 @@ async function persistAlertToCloudAndLocal(
   try {
     const storageKey = `wf_local_alerts:${userId}`;
     const raw = localStorage.getItem(storageKey);
-    const list = raw ? JSON.parse(raw) : [];
-    const filtered = Array.isArray(list) ? list.filter((a: any) => a.id !== alertId) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    const filtered = Array.isArray(parsed)
+      ? parsed.filter((item: unknown) =>
+          typeof item !== 'object' || item === null || !('id' in item) || item.id !== alertId)
+      : [];
     filtered.unshift({ id: alertId, ...alertData });
     localStorage.setItem(storageKey, JSON.stringify(filtered.slice(0, 50)));
     window.dispatchEvent(new Event('wf_alerts_updated'));
@@ -278,8 +281,9 @@ export const subscribeToDevices = (
 ) => {
   assertUserScope(userId);
 
-  if (isFirebaseConfigured && db) {
-    const userQuery = query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc'));
+  const firestore = db;
+  if (isFirebaseConfigured && firestore) {
+    const userQuery = query(collection(firestore, 'users', userId, 'devices'), orderBy('hostname', 'asc'));
     const emit = (snapshot: QuerySnapshot) => {
       const devices = snapshot.docs.map((document) => ({
         id: document.id,
@@ -307,7 +311,7 @@ export const subscribeToDevices = (
       }
       if (expiredAny) {
         // Reconsulta apenas a coleção do usuário; nenhum dado compartilhado é mesclado.
-        void getDocs(query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
+        void getDocs(query(collection(firestore, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
           .then(emit)
           .catch((error: unknown) => console.error('Falha ao atualizar simulação:', error));
       }

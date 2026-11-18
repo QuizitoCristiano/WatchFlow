@@ -92,7 +92,7 @@ function parseMetricLine(line: string, lineNumber: number): MetricSample | null 
   if (!SUPPORTED_METRICS.has(sourceName)) return null;
   const name = METRIC_ALIASES[sourceName] ?? sourceName;
 
-  let remainder = line.slice(name.length).trimStart();
+  let remainder = line.slice(sourceName.length).trimStart();
   let labels: Record<string, string> = {};
 
   if (remainder.startsWith('{')) {

@@ -43,10 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(isFirebaseConfigured && Boolean(auth));
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
-      setIsLoading(false);
-      return;
-    }
+    if (!isFirebaseConfigured || !auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -76,11 +73,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const logged = await loginWithEmail(email, pass);
         setUser(logged);
         return logged;
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Se a conta ainda não existir no Firebase, cria automaticamente no primeiro login para facilitar
+        const errorCode = typeof err === 'object' && err !== null && 'code' in err
+          ? err.code
+          : undefined;
         if (
-          err?.code === "auth/user-not-found" ||
-          err?.code === "auth/invalid-credential"
+          errorCode === "auth/user-not-found" ||
+          errorCode === "auth/invalid-credential"
         ) {
           try {
             const registered = await registerWithEmail(email, pass);
