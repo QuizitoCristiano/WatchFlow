@@ -66,7 +66,7 @@ export function initServerSentry(): boolean {
 /** Captures unexpected API failures, then flushes before the serverless response ends. */
 export async function captureServerException(
   error: unknown,
-  endpoint: 'collector.provision' | 'collector.ingest',
+  endpoint: 'collector.provision' | 'collector.ingest' | 'observability.self-test',
 ): Promise<void> {
   if (!initServerSentry()) return;
 
