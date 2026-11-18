@@ -36,11 +36,197 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100
-        && request.resource.data.type == 'node_exporter'
+        && request.resource.data.type in ['node_exporter', 'windows_exporter']
         && request.resource.data.baseUrl is string
         && request.resource.data.baseUrl.size() <= 2048
-        && (request.resource.data.baseUrl.matches('^http://[A-Za-z0-9.-]+:9100/metrics$')
-          || request.resource.data.baseUrl.matches('^https://[A-Za-z0-9.-]+(:443|:9100)?/metrics$'))
+        && (
+          (request.resource.data.type == 'node_exporter'
+            && (request.resource.data.baseUrl.matches('^http://[A-Za-z0-9.-]+:9100/metrics
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      allow update: if false;
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create, update: if false;
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+              || request.resource.data.baseUrl.matches('^https://[A-Za-z0-9.-]+(:443|:9100)?/metrics
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      allow update: if false;
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create, update: if false;
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)))
+          || (request.resource.data.type == 'windows_exporter'
+            && (request.resource.data.baseUrl.matches('^http://[A-Za-z0-9.-]+:9182/metrics
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      allow update: if false;
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create, update: if false;
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+              || request.resource.data.baseUrl.matches('^https://[A-Za-z0-9.-]+(:443|:9182)?/metrics
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lastSync == null
+        && request.resource.data.lastAttemptAt == null
+        && request.resource.data.lastSuccessAt == null
+        && request.resource.data.lastError == null
+        && request.resource.data.attemptsLast24h == 0
+        && request.resource.data.successesLast24h == 0;
+      allow update: if false;
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId) && resource.data.userId == userId;
+      allow create, update: if false;
+      match /metrics/{metricId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'updatedAt'])
+        && request.resource.data.status in ['acknowledged', 'resolved'];
+    }
+
+    match /collectorCredentials/{credentialId} {
+      allow read, write: if false;
+    }
+    match /collectorCredentialState/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)))
+        )
         && request.resource.data.status == 'pending'
         && request.resource.data.lastSync == null
         && request.resource.data.lastAttemptAt == null
