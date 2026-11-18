@@ -57,10 +57,15 @@ export default async function handler(request: TestRequest, response: TestRespon
     return;
   }
 
-  await captureServerException(
+  const flushed = await captureServerException(
     new Error('WatchFlow Sentry backend self-test: controlled non-production event'),
     'observability.self-test',
   );
 
-  send(response, 202, { status: 'accepted', message: 'Backend Sentry test event submitted.' });
+  if (!flushed) {
+    send(response, 503, { error: 'Sentry did not confirm flushing the backend event.' });
+    return;
+  }
+
+  send(response, 202, { status: 'accepted', message: 'Backend Sentry event flushed to the transport.' });
 }
