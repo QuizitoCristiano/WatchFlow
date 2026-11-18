@@ -134,21 +134,25 @@ test('configuration validates protocols and positive timing values', () => {
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'ftp://localhost/metrics' }), /HTTP ou HTTPS/);
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'not a URL' }), /URL válida/);
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'http://localhost/metrics?token=secret' }), /parâmetros/);
-  assert.throws(() => loadConfig({ NODE_EXPORTER_TIMEOUT_MS: '0' }), /inteiro positivo/);
+  assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics', NODE_EXPORTER_TIMEOUT_MS: '0' }), /inteiro positivo/);
   assert.throws(() => loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
     WATCHFLOW_INGEST_URL: 'http://example.test/api/collector/ingest',
     WATCHFLOW_INGEST_TOKEN: 'A'.repeat(43),
   }), /HTTPS/);
   assert.throws(() => loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
     WATCHFLOW_INGEST_URL: 'https://watchflow.example/api/collector/ingest',
   }), /juntos/);
   assert.throws(() => loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
     WATCHFLOW_INGEST_URL: 'https://watchflow.example/other',
     WATCHFLOW_INGEST_TOKEN: 'A'.repeat(43),
     WATCHFLOW_INTEGRATION_ID: 'integration',
     WATCHFLOW_DEVICE_ID: 'node-integration',
   }), /api\/collector\/ingest/);
   assert.throws(() => loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
     WATCHFLOW_INGEST_URL: 'https://watchflow.example/api/collector/ingest',
     WATCHFLOW_INGEST_TOKEN: 'A'.repeat(43),
     WATCHFLOW_INTEGRATION_ID: 'integration',

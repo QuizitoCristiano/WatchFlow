@@ -317,7 +317,7 @@ export const subscribeToDevices = (
       }
     }, 1000);
     const handleLocalStressTrigger = () => {
-      void getDocs(query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
+      void getDocs(query(collection(firestore, 'users', userId, 'devices'), orderBy('hostname', 'asc')))
         .then(emit)
         .catch((error: unknown) => console.error('Falha ao atualizar simulação:', error));
     };
