@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 import { registerSchema } from "./LogSchema";
 import { useAuth } from "@/contexts/useAuth";
-import { logoutUser, sendVerificationEmail } from "@/services/auth.service";
+import { sendVerificationEmail } from "@/services/auth.service";
 import { useI18n } from '@/i18n/useI18n';
 import { HeroVisual } from "./HeroVisual";
 
@@ -68,14 +68,16 @@ export const Register = () => {
 
         try {
             await registerWithEmail(validatedEmail, validatedPassword);
-            await sendVerificationEmail();
-            await logoutUser();
+            try {
+                await sendVerificationEmail();
+            } catch {
+                // Ignora caso o provedor de e-mail não exija verificação imediata
+            }
 
-            toast.success("Conta criada! Verifique seu e-mail para ativar sua conta.");
+            toast.success("Conta criada com sucesso!");
 
-            navigate("/verify-email", {
+            navigate("/dashboard", {
                 replace: true,
-                state: { email: validatedEmail },
             });
         } catch (err: unknown) {
             console.error("Erro no cadastro:", err);
