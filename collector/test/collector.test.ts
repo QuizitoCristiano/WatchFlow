@@ -128,8 +128,13 @@ test('CPU calculation rejects missing, changing, and reset counters', () => {
 });
 
 test('configuration validates protocols and positive timing values', () => {
-  assert.throws(() => loadConfig({}), /Configure NODE_EXPORTER_URL/);
+  assert.throws(() => loadConfig({}), /NODE_EXPORTER_URL ou WINDOWS_EXPORTER_URL/);
   assert.equal(loadConfig({ NODE_EXPORTER_URL: 'http://127.0.0.1:9182/metrics' }).endpoint.port, '9182');
+  assert.equal(loadConfig({ WINDOWS_EXPORTER_URL: 'http://127.0.0.1:9182/metrics' }).endpoint.port, '9182');
+  assert.throws(() => loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
+    WINDOWS_EXPORTER_URL: 'http://127.0.0.1:9182/metrics',
+  }), /somente NODE_EXPORTER_URL ou WINDOWS_EXPORTER_URL/);
   assert.equal(loadConfig({ NODE_EXPORTER_URL: 'https://localhost:9100/metrics' }).endpoint.protocol, 'https:');
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'ftp://localhost/metrics' }), /HTTP ou HTTPS/);
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'not a URL' }), /URL válida/);
