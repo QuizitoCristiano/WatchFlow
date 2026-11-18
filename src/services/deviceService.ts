@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 
 export const SHARED_CLOUD_USER_ID = 'usr_local_dev_001';
 
+let stressOverrideUntil = 0;
+
 function localDevicesKey(userId: string): string {
   return `wf_local_devices:${userId}`;
 }
@@ -85,6 +87,28 @@ async function persistAlertToCloudAndLocal(
   }
 }
 
+function applyStressOverrideIfActive(device: Device): Device {
+  if (Date.now() < stressOverrideUntil && !device.isDemoData) {
+    const currentGpuName = device.latestMetricsSummary?.gpu?.name || 'GPU';
+    return {
+      ...device,
+      status: 'critical',
+      latestMetricsSummary: {
+        ...(device.latestMetricsSummary || {}),
+        cpu: 94,
+        memory: 92,
+        disk: device.latestMetricsSummary?.disk ?? 78,
+        gpu: {
+          name: currentGpuName,
+          usagePercent: 96,
+          temperatureC: 82,
+        },
+      },
+    };
+  }
+  return device;
+}
+
 function evaluateDeviceAlerts(device: Device, currentUserId: string) {
   if (!device.id) return;
 
@@ -100,6 +124,10 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
         operation: 'device_connected',
       },
     );
+    toast.success(`💻 Dispositivo conectado: ${device.hostname}`, {
+      description: 'Conexão registrada no Sentry APM!',
+      duration: 6000,
+    });
   }
 
   const summary = device.latestMetricsSummary;
@@ -116,8 +144,7 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
       type: 'CPU_HIGH',
       metric: 'CPU',
       val: `${cpuVal}%`,
-      // Título fixo por categoria + host garante que cada métrica tenha sua própria linha fixa no Sentry
-      sentryTitle: `[WatchFlow Alert] Uso Excessivo de CPU (>90%) em ${device.hostname}`,
+      sentryTitle: `[WatchFlow Alert] Uso Excessivo de CPU (${cpuVal}%) em ${device.hostname}`,
       uiTitle: `Uso Excessivo de CPU (${cpuVal}%)`,
     },
     {
@@ -126,7 +153,7 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
       type: 'RAM_HIGH',
       metric: 'RAM',
       val: `${memVal}%`,
-      sentryTitle: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (>90%) em ${device.hostname}`,
+      sentryTitle: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (${memVal}%) em ${device.hostname}`,
       uiTitle: `Esgotamento Crítico de Memória RAM (${memVal}%)`,
     },
     {
@@ -135,7 +162,7 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
       type: 'GPU_HIGH',
       metric: 'GPU',
       val: `${gpuVal}%`,
-      sentryTitle: `[WatchFlow Alert] Sobrecarga Crítica de GPU (>90%) em ${device.hostname}`,
+      sentryTitle: `[WatchFlow Alert] Sobrecarga Crítica de GPU (${gpuVal}%) em ${device.hostname}`,
       uiTitle: `Sobrecarga Crítica de GPU (${gpuVal}%)`,
     },
   ];
@@ -188,13 +215,13 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
       }
     } else if (wasAlertActive[cond.key]) {
       wasAlertActive[cond.key] = false;
-      toast.success(`✅ Uso de ${cond.metric} em ${device.hostname} normalizou (${cond.val}).`);
+      toast.success(`✅ Auto-Recovery (${device.hostname}): Uso de ${cond.metric} normalizou (${cond.val}).`);
     }
   }
 }
 
 /**
- * Registra o navegador atual como dispositivo de demonstração da integração Sentry.
+ * Registra o navegador/máquina atual e envia evento de conexão ao Sentry.
  */
 export const registerBrowserDevice = async (userId: string) => {
   assertUserScope(userId);
@@ -251,10 +278,10 @@ export const subscribeToDevices = (
     const emitMerged = () => {
       const mergedMap = new Map<string, Device>();
       for (const d of sharedDevices) {
-        if (d.id) mergedMap.set(d.id, d);
+        if (d.id) mergedMap.set(d.id, applyStressOverrideIfActive(d));
       }
       for (const d of userDevices) {
-        if (d.id) mergedMap.set(d.id, d);
+        if (d.id) mergedMap.set(d.id, applyStressOverrideIfActive(d));
       }
       const all = Array.from(mergedMap.values());
       for (const dev of all) {
@@ -284,7 +311,15 @@ export const subscribeToDevices = (
       });
     }
 
+    const overrideTimer = setInterval(() => {
+      if (stressOverrideUntil > 0 && Date.now() >= stressOverrideUntil) {
+        stressOverrideUntil = 0;
+        emitMerged();
+      }
+    }, 1000);
+
     return () => {
+      clearInterval(overrideTimer);
       unsubUser();
       unsubShared();
     };
@@ -301,7 +336,7 @@ export const subscribeToDevices = (
   };
 };
 
-/** Remove um dispositivo e dispara evento de desconexão no Sentry com fingerprint exclusivo. */
+/** Remove um dispositivo e dispara evento de desconexão no Sentry. */
 export const deleteDevice = async (userId: string, deviceId: string) => {
   assertUserScope(userId);
   if (!deviceId) throw new Error('Identificador de dispositivo inválido.');
@@ -330,12 +365,23 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
 };
 
 export const triggerStressSimulation = async (devices?: Device[]) => {
+  // Mantém a sobrecarga ativa por 12 segundos na tela mesmo enquanto o agente envia leituras a cada 2s
+  stressOverrideUntil = Date.now() + 12000;
+
   if (!isFirebaseConfigured || !db) return;
 
   const targetDevice = devices?.find((d) => !d.isDemoData) || devices?.[0];
   const deviceId = targetDevice?.id || 'dev-notebook-utp';
   const hostname = targetDevice?.hostname || 'NOTEBOOK-MONITORADO';
   const currentGpuName = targetDevice?.latestMetricsSummary?.gpu?.name || 'GPU';
+
+  // Reseta o cooldown dessa máquina para permitir que o clique manual dispare imediatamente os alertas
+  delete lastAlertSentTimes[`${deviceId}_CPU_HIGH`];
+  delete lastAlertSentTimes[`${deviceId}_RAM_HIGH`];
+  delete lastAlertSentTimes[`${deviceId}_GPU_HIGH`];
+  wasAlertActive[`${deviceId}_CPU_HIGH`] = false;
+  wasAlertActive[`${deviceId}_RAM_HIGH`] = false;
+  wasAlertActive[`${deviceId}_GPU_HIGH`] = false;
 
   const deviceDocRef = doc(db, 'users', SHARED_CLOUD_USER_ID, 'devices', deviceId);
 
@@ -356,26 +402,4 @@ export const triggerStressSimulation = async (devices?: Device[]) => {
       },
     },
   }, { merge: true });
-
-  setTimeout(async () => {
-    try {
-      await setDoc(deviceDocRef, {
-        status: 'online',
-        lastSeen: serverTimestamp(),
-        latestMetricsSummary: {
-          ...(targetDevice?.latestMetricsSummary || {}),
-          cpu: 18,
-          memory: 64,
-          disk: targetDevice?.latestMetricsSummary?.disk ?? 78,
-          gpu: {
-            name: currentGpuName,
-            usagePercent: 22,
-            temperatureC: 46,
-          },
-        },
-      }, { merge: true });
-    } catch {
-      // ignora
-    }
-  }, 10000);
 };

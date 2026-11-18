@@ -42,7 +42,10 @@ export const DispositivosPage: React.FC = () => {
 
     setConnecting(true);
     try {
-      await registerBrowserDevice(userId);
+      const realDevice = devices.find((d) => !d.isDemoData);
+      if (!realDevice) {
+        await registerBrowserDevice(userId);
+      }
 
       const deviceContext = {
         browser: navigator.userAgent,
@@ -55,9 +58,10 @@ export const DispositivosPage: React.FC = () => {
         online: navigator.onLine,
       };
 
-      const delivered = await captureLocalDeviceConnected(deviceContext);
+      const hostName = realDevice?.hostname || navigator.platform || 'Host-Local';
+      const delivered = await captureLocalDeviceConnected(deviceContext, hostName);
       if (delivered) {
-        toast.success('Dispositivo vinculado e evento enviado ao Sentry.');
+        toast.success(`💻 Dispositivo ${hostName} conectado com sucesso! Evento enviado ao Sentry.`);
       } else {
         toast.warning('Dispositivo vinculado, mas o Sentry não confirmou o envio. Confira o DSN e a rede.');
       }

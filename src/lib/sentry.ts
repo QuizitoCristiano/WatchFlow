@@ -73,24 +73,23 @@ export function isSentryConfigured(): boolean {
 }
 
 /**
- * Registra exceções e alertas operacionais com fingerprint único por métrica/título
- * para que cada alerta fique separado na lista do Sentry sem sobrescrever os anteriores!
+ * Envia alertas e eventos como captureMessage com fingerprint 100% exclusivo
+ * (sem stacktrace compartilhado), garantindo que cada alerta crie uma linha própria no Sentry!
  */
 export function captureAppException(
   error: unknown,
   context?: Record<string, string | number | boolean | null>,
 ): void {
   const message = error instanceof Error ? error.message : String(error);
-  const normalized = error instanceof Error ? error : new Error(message);
-  const metricKey = String(context?.metric || context?.operation || message);
+  const metricKey = String(context?.metric || context?.operation || "general");
   const hostKey = String(context?.host || "default-host");
 
   Sentry.withScope((scope) => {
     scope.setLevel("fatal");
-    // Fingerprint exclusivo garante que CPU, RAM, GPU e Conexão criem Issues separadas no Sentry!
-    scope.setFingerprint(["watchflow-issue", metricKey, hostKey, message]);
+    scope.setFingerprint(["wf-unique-v2", metricKey, hostKey, message]);
     scope.setTag("application", "watchflow");
     scope.setTag("resource", metricKey);
+    scope.setTag("host", hostKey);
     if (context) {
       for (const [key, value] of Object.entries(context)) {
         if (value !== null && /^(host|metric|module|operation|integration|device_id)$/i.test(key)) {
@@ -98,40 +97,42 @@ export function captureAppException(
         }
       }
     }
-    Sentry.captureException(normalized);
+    Sentry.captureMessage(message, "fatal");
   });
 }
 
-/** Registra evento de conexão de dispositivo com fingerprint próprio para nunca sumir da lista. */
-export async function captureLocalDeviceConnected(device: LocalDeviceContext): Promise<boolean> {
-  const hostLabel = device.operatingSystem || "host-local";
+/** Registra evento de conexão de dispositivo com linha própria no Sentry. */
+export async function captureLocalDeviceConnected(device: LocalDeviceContext, customHost?: string): Promise<boolean> {
+  const hostLabel = customHost || device.operatingSystem || "host-local";
+  const title = `[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${hostLabel}`;
   Sentry.withScope((scope) => {
     scope.setLevel("info");
-    scope.setFingerprint(["watchflow-device-connected", hostLabel]);
+    scope.setFingerprint(["wf-connected-v2", hostLabel]);
     scope.setTag("feature", "local-device-demo");
+    scope.setTag("host", hostLabel);
     scope.setTag("resource", "DeviceLifecycle");
     scope.setContext("local_device", device);
-    Sentry.captureMessage(`[WatchFlow Lifecycle] Dispositivo Conectado com Sucesso: ${hostLabel}`);
+    Sentry.captureMessage(title, "info");
   });
   return Sentry.flush(2000);
 }
 
-/** Dispara os alertas individuais de sobrecarga (CPU, RAM e GPU) com fingerprints separados por host no Sentry. */
+/** Dispara 3 Issues separadas no Sentry (CPU, RAM e GPU) sem agrupar na mesma linha! */
 export async function captureOverloadSimulation(host: string): Promise<boolean> {
   const alerts = [
     {
       metric: "CPU",
-      title: `[WatchFlow Alert] Uso Excessivo de CPU (>90%) em ${host}`,
+      title: `[WatchFlow Alert] Uso Excessivo de CPU (94%) em ${host}`,
       value: "94%",
     },
     {
       metric: "RAM",
-      title: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (>90%) em ${host}`,
+      title: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (92%) em ${host}`,
       value: "92%",
     },
     {
       metric: "GPU",
-      title: `[WatchFlow Alert] Sobrecarga Crítica de GPU (>90%) em ${host}`,
+      title: `[WatchFlow Alert] Sobrecarga Crítica de GPU (96%) em ${host}`,
       value: "96%",
     },
   ];
@@ -139,7 +140,7 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
   for (const item of alerts) {
     Sentry.withScope((scope) => {
       scope.setLevel("fatal");
-      scope.setFingerprint(["watchflow-overload-alert", item.metric, host]);
+      scope.setFingerprint(["wf-overload-v2", item.metric, host, item.title]);
       scope.setTag("feature", "overload-demo");
       scope.setTag("host", host);
       scope.setTag("metric", item.metric);
@@ -150,7 +151,7 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
         value: item.value,
         threshold: "90%",
       });
-      Sentry.captureException(new Error(item.title));
+      Sentry.captureMessage(item.title, "fatal");
     });
   }
 
@@ -160,9 +161,9 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
 /** Erro sintético de teste para validação da APM. */
 export function triggerTestErrorForAPM(): void {
   Sentry.withScope((scope) => {
-    scope.setFingerprint(["watchflow-manual-test-error"]);
+    scope.setFingerprint(["wf-manual-test-v2"]);
     scope.setTag("test_event", "true");
     scope.setTag("application", "watchflow");
-    Sentry.captureException(new Error("WatchFlow Sentry test: controlled frontend exception"));
+    Sentry.captureMessage("[WatchFlow Test] Exceção controlada para validação da APM", "error");
   });
 }
