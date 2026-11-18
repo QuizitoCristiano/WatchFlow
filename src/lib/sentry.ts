@@ -86,7 +86,8 @@ export function captureAppException(
 
   Sentry.withScope((scope) => {
     scope.setLevel("fatal");
-    scope.setFingerprint(["wf-unique-v2", metricKey, hostKey, message]);
+    // Agrupa por métrica + host para não duplicar linhas quando a porcentagem oscila (ex: 90% -> 92%)
+    scope.setFingerprint(["wf-alert-v3", metricKey, hostKey]);
     scope.setTag("application", "watchflow");
     scope.setTag("resource", metricKey);
     scope.setTag("host", hostKey);

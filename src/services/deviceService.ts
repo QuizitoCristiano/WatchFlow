@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 export const SHARED_CLOUD_USER_ID = 'usr_local_dev_001';
 
-let stressOverrideUntil = 0;
+const stressOverrideUntilByDevice: Record<string, number> = {};
 
 function localDevicesKey(userId: string): string {
   return `wf_local_devices:${userId}`;
@@ -88,7 +88,8 @@ async function persistAlertToCloudAndLocal(
 }
 
 function applyStressOverrideIfActive(device: Device): Device {
-  if (Date.now() < stressOverrideUntil && !device.isDemoData) {
+  const overrideUntil = device.id ? (stressOverrideUntilByDevice[device.id] || 0) : 0;
+  if (Date.now() < overrideUntil && !device.isDemoData) {
     const currentGpuName = device.latestMetricsSummary?.gpu?.name || 'GPU';
     return {
       ...device,
@@ -312,8 +313,15 @@ export const subscribeToDevices = (
     }
 
     const overrideTimer = setInterval(() => {
-      if (stressOverrideUntil > 0 && Date.now() >= stressOverrideUntil) {
-        stressOverrideUntil = 0;
+      let expiredAny = false;
+      const now = Date.now();
+      for (const [devId, until] of Object.entries(stressOverrideUntilByDevice)) {
+        if (until > 0 && now >= until) {
+          delete stressOverrideUntilByDevice[devId];
+          expiredAny = true;
+        }
+      }
+      if (expiredAny) {
         emitMerged();
       }
     }, 1000);
@@ -364,18 +372,21 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
   writeLocalDevices(userId, devices);
 };
 
-export const triggerStressSimulation = async (devices?: Device[]) => {
-  // Mantém a sobrecarga ativa por 12 segundos na tela mesmo enquanto o agente envia leituras a cada 2s
-  stressOverrideUntil = Date.now() + 12000;
-
+export const triggerStressSimulation = async (devices?: Device[], specificDeviceId?: string) => {
   if (!isFirebaseConfigured || !db) return;
 
-  const targetDevice = devices?.find((d) => !d.isDemoData) || devices?.[0];
-  const deviceId = targetDevice?.id || 'dev-notebook-utp';
+  const targetDevice = specificDeviceId
+    ? devices?.find((d) => d.id === specificDeviceId)
+    : (devices?.find((d) => !d.isDemoData) || devices?.[0]);
+
+  const deviceId = targetDevice?.id || specificDeviceId || 'dev-notebook-utp';
   const hostname = targetDevice?.hostname || 'NOTEBOOK-MONITORADO';
   const currentGpuName = targetDevice?.latestMetricsSummary?.gpu?.name || 'GPU';
 
-  // Reseta o cooldown dessa máquina para permitir que o clique manual dispare imediatamente os alertas
+  // Ativa sobrecarga por 12 segundos APENAS no dispositivo alvo!
+  stressOverrideUntilByDevice[deviceId] = Date.now() + 12000;
+
+  // Reseta o cooldown apenas dessa máquina para disparar imediatamente os alertas dela
   delete lastAlertSentTimes[`${deviceId}_CPU_HIGH`];
   delete lastAlertSentTimes[`${deviceId}_RAM_HIGH`];
   delete lastAlertSentTimes[`${deviceId}_GPU_HIGH`];

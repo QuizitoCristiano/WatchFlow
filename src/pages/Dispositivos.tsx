@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { subscribeToDevices, deleteDevice, registerBrowserDevice, triggerStressSimulation } from '@/services/deviceService';
 import {
   captureLocalDeviceConnected,
-  captureOverloadSimulation,
   isSentryConfigured,
 } from '@/lib/sentry';
 import type { Device } from '@/types';
@@ -73,7 +72,7 @@ export const DispositivosPage: React.FC = () => {
     }
   };
 
-  const handleOverloadSimulation = async () => {
+  const handleOverloadSimulation = async (specificDeviceId?: string) => {
     if (!isSentryConfigured()) {
       toast.error('Sentry não configurado. Defina VITE_SENTRY_DSN no ambiente e reinicie o Vite.');
       return;
@@ -81,15 +80,7 @@ export const DispositivosPage: React.FC = () => {
 
     setSimulating(true);
     try {
-      await triggerStressSimulation(devices);
-      const targetDevice = devices.find((d) => !d.isDemoData) || devices[0];
-      const host = targetDevice?.hostname || user?.displayName || user?.email || 'WatchFlow-Host';
-      const delivered = await captureOverloadSimulation(host);
-      if (delivered) {
-        toast.success('Evento de sobrecarga simulado e enviado ao Sentry.');
-      } else {
-        toast.warning('Evento gerado, mas o Sentry não confirmou o envio. Confira o DSN e a rede.');
-      }
+      await triggerStressSimulation(devices, specificDeviceId);
     } catch (error) {
       console.error('Falha ao enviar simulação ao Sentry:', error);
       toast.error('Não foi possível enviar a simulação ao Sentry.');
@@ -123,9 +114,9 @@ export const DispositivosPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={handleOverloadSimulation}
+            onClick={() => handleOverloadSimulation()}
             disabled={simulating || connecting}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 cursor-pointer"
             title="Envia um evento de demonstração ao Sentry; não gera carga real no computador."
           >
             {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4" />}
@@ -250,14 +241,25 @@ export const DispositivosPage: React.FC = () => {
 
                 <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs text-gray-500">
                   <span>Último visto: {formatLastSeen(device.lastSeen)}</span>
-                  <button
-                    type="button"
-                    onClick={() => userId && device.id && deleteDevice(userId, device.id)}
-                    className="text-gray-400 hover:text-red-400 p-1 transition cursor-pointer"
-                    title="Remover Dispositivo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => device.id && handleOverloadSimulation(device.id)}
+                      className="flex items-center gap-1 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2 py-1 rounded text-xs transition cursor-pointer"
+                      title={`Simular sobrecarga apenas em ${device.hostname}`}
+                    >
+                      <Flame className="w-3 h-3" />
+                      <span>Simular Pico</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => userId && device.id && deleteDevice(userId, device.id)}
+                      className="text-gray-400 hover:text-red-400 p-1 transition cursor-pointer"
+                      title="Remover Dispositivo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
