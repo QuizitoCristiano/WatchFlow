@@ -1,5 +1,5 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import type { ServiceAccount } from 'firebase-admin/app';
+import type { App, ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpError } from './errors.ts';
@@ -18,7 +18,7 @@ function createContext() {
   }
 
   const useEmulator = process.env.FIREBASE_USE_EMULATOR === 'true';
-  let app;
+  let app: App;
 
   if (useEmulator) {
     if (
