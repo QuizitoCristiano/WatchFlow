@@ -232,7 +232,7 @@ export const MetricasPage: React.FC = () => {
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
                 <span className="flex items-center gap-1.5"><Cpu className="w-4 h-4 text-orange-500"/> {t('CPU')}</span>
                 <span className={`px-2 py-0.5 rounded-full border text-xs ${
-                  currentCpu > 80 
+                  (currentCpu ?? 0) > 80 
                     ? 'text-red-400 bg-red-500/10 border-red-500/20' 
                     : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                 }`}>

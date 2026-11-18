@@ -36,7 +36,7 @@ function readLocalDevices(userId: string): Device[] {
     return Array.isArray(parsed)
       ? parsed.filter((item): item is Device =>
           typeof item === 'object' && item !== null &&
-          'userId' in item && item.userId === userId)
+          'userId' in item && item.userId === userId && 'isDemoData' in item && item.isDemoData !== true)
       : [];
   } catch {
     return [];
@@ -290,7 +290,7 @@ export const subscribeToDevices = (
         ...document.data(),
       })) as Device[];
       const scopedDevices = devices
-        .filter((device) => device.userId === userId)
+        .filter((device) => device.userId === userId && device.isDemoData !== true)
         .map(applyStressOverrideIfActive);
       for (const device of scopedDevices) evaluateDeviceAlerts(device, userId);
       callback(scopedDevices);
@@ -344,7 +344,7 @@ export const subscribeToDevices = (
 /** Remove um dispositivo e dispara evento de desconexão no Sentry. */
 export const deleteDevice = async (userId: string, deviceId: string) => {
   assertUserScope(userId);
-  if (!deviceId) throw new Error('Identificador de dispositivo inválido.');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(deviceId)) throw new Error('Identificador de dispositivo inválido.');
 
   captureAppException(
     new Error(`[WatchFlow Lifecycle] Dispositivo Desconectado/Removido: ${deviceId}`),

@@ -18,7 +18,7 @@ function assertUserScope(userId: string): void {
 /** Retorna somente a subcoleção pertencente ao usuário autenticado. */
 export const getDeviceMetricsRef = (userId: string, deviceId: string) => {
   assertUserScope(userId);
-  if (!deviceId) throw new Error('Identificador de dispositivo ausente.');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(deviceId)) throw new Error('Identificador de dispositivo inválido.');
   if (!isFirebaseConfigured || !db) return null;
   return collection(db, 'users', userId, 'devices', deviceId, 'metrics');
 };
@@ -30,7 +30,7 @@ export const subscribeToDeviceMetrics = (
   maxPoints: number = 20,
   callback: (metrics: MetricPayload[]) => void,
 ) => {
-  if (!userId || !deviceId || !Number.isInteger(maxPoints) || maxPoints < 1 || maxPoints > 100) {
+  if (!userId || !/^[A-Za-z0-9_-]{1,128}$/.test(deviceId) || !Number.isInteger(maxPoints) || maxPoints < 1 || maxPoints > 100) {
     callback([]);
     return () => {};
   }
