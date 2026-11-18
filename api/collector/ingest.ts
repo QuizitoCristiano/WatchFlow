@@ -15,7 +15,10 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   }
   try {
     const context = getCollectorServerContext();
-    await createIngestHandler({ ingest: context.service.ingest })(request, response);
+    await createIngestHandler({
+      ingest: context.service.ingest,
+      captureUnexpectedError: (error) => captureServerException(error, 'collector.ingest'),
+    })(request, response);
   } catch (error: unknown) {
     if (error instanceof HttpError) {
       response.statusCode = error.statusCode;
