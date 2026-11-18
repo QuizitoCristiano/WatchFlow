@@ -1,24 +1,11 @@
-﻿<#
-.SYNOPSIS
-    WatchFlow - Agente Coletor Remoto/Local de Infraestrutura (Windows)
-.DESCRIPTION
-    Coleta métricas reais de hardware (CPU, RAM, Disco e GPU) desta máquina
-    e sincroniza em tempo real com o WatchFlow (na Vercel) via Firebase Firestore REST API.
-#>
+﻿# WatchFlow - Agente Coletor de Telemetria em Tempo Real (Windows -> Cloud Firestore)
 
-param (
-    [Parameter(Mandatory=$false)]
-    [string]$ProjectId = "watchflow-utp",
+if (-not $ProjectId) { $ProjectId = "watchflow-utp" }
+if (-not $UserId)    { $UserId = "usr_local_dev_001" }
+if (-not $DeviceId)  { $DeviceId = ("dev-" + $env:COMPUTERNAME.ToLower()) }
+if (-not $IntervalSeconds) { $IntervalSeconds = 2 }
 
-    [Parameter(Mandatory=$false)]
-    [string]$UserId = "usr_local_dev_001",
-
-    [Parameter(Mandatory=$false)]
-    [string]$DeviceId = ("dev-" + $env:COMPUTERNAME.ToLower()),
-
-    [Parameter(Mandatory=$false)]
-    [int]$IntervalSeconds = 2
-)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   WATCHFLOW - AGENTE DE TELEMETRIA EM TEMPO REAL (CLOUD) " -ForegroundColor Yellow
@@ -63,8 +50,7 @@ function Get-HardwareMetrics {
         } else {
             $wmiGpu = Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Caption -First 1
             if ($wmiGpu) {
-                $gpuName = $wmiGpu
-                # Estima uso da GPU integrada proporcional ao processador
+                $gpuName = [string]$wmiGpu
                 $gpuUsage = [math]::Min(99, [math]::Max(5, [int]($cpu * 0.85)))
             }
         }
@@ -87,7 +73,7 @@ function Get-HardwareMetrics {
     }
 }
 
-Write-Host "Monitorando hardware e enviando para a nuvem (Ctrl+C para parar)...`n" -ForegroundColor Green
+Write-Host "Monitorando hardware e enviando para a nuvem (Ctrl+C para parar)..." -ForegroundColor Green
 
 while ($true) {
     $m = Get-HardwareMetrics
@@ -95,62 +81,61 @@ while ($true) {
 
     Write-Host "[$now] CPU: $($m.CpuPercent)% | RAM: $($m.RamPercent)% ($($m.RamUsedGb)GB / $($m.RamTotalGb)GB) | DISCO: $($m.DiskPercent)% | GPU: $($m.GpuUsage)% ($($m.GpuName))" -ForegroundColor White
 
-    if (-not [string]::IsNullOrWhiteSpace($ProjectId) -and -not [string]::IsNullOrWhiteSpace($UserId)) {
-        try {
-            $url = "https://firestore.googleapis.com/v1/projects/$ProjectId/databases/(default)/documents/users/$UserId/devices/$DeviceId"
-            
-            $isCrit = ($m.CpuPercent -ge 90) -or ($m.RamPercent -ge 90) -or ($m.GpuUsage -ge 90)
-            $isWarn = ($m.CpuPercent -ge 75) -or ($m.RamPercent -ge 80) -or ($m.GpuUsage -ge 80)
-            $statusVal = if ($isCrit) { "critical" } elseif ($isWarn) { "warning" } else { "online" }
+    try {
+        $url = "https://firestore.googleapis.com/v1/projects/$ProjectId/databases/(default)/documents/users/$UserId/devices/$DeviceId"
+        
+        $isCrit = ($m.CpuPercent -ge 90) -or ($m.RamPercent -ge 90) -or ($m.GpuUsage -ge 90)
+        $isWarn = ($m.CpuPercent -ge 75) -or ($m.RamPercent -ge 80) -or ($m.GpuUsage -ge 80)
+        $statusVal = if ($isCrit) { "critical" } elseif ($isWarn) { "warning" } else { "online" }
 
-            $body = @{
-                fields = @{
-                    hostname = @{ stringValue = $env:COMPUTERNAME }
-                    ip = @{ stringValue = "127.0.0.1" }
-                    status = @{ stringValue = $statusVal }
-                    lastSeen = @{ timestampValue = $m.Timestamp }
-                    os = @{
-                        mapValue = @{
-                            fields = @{
-                                distro = @{ stringValue = "Windows 11 (x86_64)" }
-                                hostname = @{ stringValue = $env:COMPUTERNAME }
-                            }
+        $body = @{
+            fields = @{
+                userId = @{ stringValue = $UserId }
+                hostname = @{ stringValue = $env:COMPUTERNAME }
+                ip = @{ stringValue = "127.0.0.1" }
+                status = @{ stringValue = $statusVal }
+                lastSeen = @{ timestampValue = $m.Timestamp }
+                os = @{
+                    mapValue = @{
+                        fields = @{
+                            distro = @{ stringValue = "Windows 11 (x86_64)" }
+                            hostname = @{ stringValue = $env:COMPUTERNAME }
                         }
                     }
-                    latestMetricsSummary = @{
-                        mapValue = @{
-                            fields = @{
-                                cpu = @{ integerValue = $m.CpuPercent }
-                                memory = @{ integerValue = $m.RamPercent }
-                                memoryUsedGb = @{ doubleValue = $m.RamUsedGb }
-                                memoryTotalGb = @{ doubleValue = $m.RamTotalGb }
-                                disk = @{ integerValue = $m.DiskPercent }
-                                diskUsedGb = @{ doubleValue = $m.DiskUsedGb }
-                                diskTotalGb = @{ doubleValue = $m.DiskTotalGb }
-                                networkInBytesSec = @{ integerValue = 1150000 }
-                                networkOutBytesSec = @{ integerValue = 620000 }
-                                gpu = @{
-                                    mapValue = @{
-                                        fields = @{
-                                            name = @{ stringValue = $m.GpuName }
-                                            usagePercent = @{ integerValue = $m.GpuUsage }
-                                            temperatureC = @{ integerValue = $m.GpuTemp }
-                                        }
+                }
+                latestMetricsSummary = @{
+                    mapValue = @{
+                        fields = @{
+                            cpu = @{ integerValue = $m.CpuPercent }
+                            memory = @{ integerValue = $m.RamPercent }
+                            memoryUsedGb = @{ doubleValue = $m.RamUsedGb }
+                            memoryTotalGb = @{ doubleValue = $m.RamTotalGb }
+                            disk = @{ integerValue = $m.DiskPercent }
+                            diskUsedGb = @{ doubleValue = $m.DiskUsedGb }
+                            diskTotalGb = @{ doubleValue = $m.DiskTotalGb }
+                            networkInBytesSec = @{ integerValue = 1150000 }
+                            networkOutBytesSec = @{ integerValue = 620000 }
+                            gpu = @{
+                                mapValue = @{
+                                    fields = @{
+                                        name = @{ stringValue = $m.GpuName }
+                                        usagePercent = @{ integerValue = $m.GpuUsage }
+                                        temperatureC = @{ integerValue = $m.GpuTemp }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            } | ConvertTo-Json -Depth 8
+            }
+        } | ConvertTo-Json -Depth 8
 
-            $mask = "updateMask.fieldPaths=hostname&updateMask.fieldPaths=ip&updateMask.fieldPaths=status&updateMask.fieldPaths=lastSeen&updateMask.fieldPaths=os&updateMask.fieldPaths=latestMetricsSummary"
-            $null = Invoke-RestMethod -Uri "$url`?$mask" -Method Patch -Body $body -ContentType "application/json"
-            Write-Host "   -> Sincronizado com WatchFlow Cloud ($ProjectId) com sucesso!" -ForegroundColor DarkGreen
-        }
-        catch {
-            Write-Host "   -> Erro ao enviar para o Firestore: $_" -ForegroundColor Red
-        }
+        $mask = "updateMask.fieldPaths=userId&updateMask.fieldPaths=hostname&updateMask.fieldPaths=ip&updateMask.fieldPaths=status&updateMask.fieldPaths=lastSeen&updateMask.fieldPaths=os&updateMask.fieldPaths=latestMetricsSummary"
+        $null = Invoke-RestMethod -Uri "$url`?$mask" -Method Patch -Body $body -ContentType "application/json"
+        Write-Host "   -> Sincronizado com WatchFlow Cloud ($ProjectId) com sucesso!" -ForegroundColor DarkGreen
+    }
+    catch {
+        Write-Host "   -> Erro ao enviar para o Firestore: $_" -ForegroundColor Red
     }
 
     Start-Sleep -Seconds $IntervalSeconds
