@@ -1,5 +1,6 @@
 import { getCollectorServerContext } from './_lib/firebaseAdmin.ts';
 import { HttpError } from './_lib/errors.ts';
+import { captureServerException } from './_lib/sentry.ts';
 import { createProvisionHandler } from './_lib/httpHandlers.ts';
 import type { ApiRequest, ApiResponse } from './_lib/httpHandlers.ts';
 
@@ -26,6 +27,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       response.end(JSON.stringify({ error: error.message }));
       return;
     }
+    await captureServerException(error, 'collector.provision');
     console.error('Falha ao inicializar endpoint de provisionamento:', error instanceof Error ? error.name : 'unknown');
     response.statusCode = 503;
     response.setHeader('content-type', 'application/json; charset=utf-8');
