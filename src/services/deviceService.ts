@@ -36,7 +36,7 @@ function readLocalDevices(userId: string): Device[] {
     return Array.isArray(parsed)
       ? parsed.filter((item): item is Device =>
           typeof item === 'object' && item !== null &&
-          'userId' in item && item.userId === userId && 'isDemoData' in item && item.isDemoData !== true)
+          'userId' in item && item.userId === userId && (!('isDemoData' in item) || item.isDemoData !== true))
       : [];
   } catch {
     return [];
