@@ -161,12 +161,22 @@ export const DispositivosPage: React.FC = () => {
             const cpu = device.latestMetricsSummary?.cpu ?? 0;
             const memory = device.latestMetricsSummary?.memory ?? 0;
             const disk = device.latestMetricsSummary?.disk ?? 0;
+            const gpu = device.latestMetricsSummary?.gpu?.usagePercent ?? 0;
             const distro = device.os?.distro ?? device.os?.hostname ?? 'N/A';
+            const isCritical = device.status === 'critical' || cpu >= 90 || memory >= 90 || gpu >= 90;
+            const isWarning = !isCritical && (device.status === 'warning' || cpu >= 75 || memory >= 80 || gpu >= 80);
+            const statusLabel = isCritical ? 'CRITICAL' : isWarning ? 'WARNING' : (device.status ? device.status.toUpperCase() : 'ONLINE');
 
             return (
               <div
                 key={device.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4 hover:border-zinc-700 transition"
+                className={`bg-zinc-900 border rounded-xl p-5 space-y-4 transition ${
+                  isCritical
+                    ? 'border-red-500/50 shadow-lg shadow-red-950/30'
+                    : isWarning
+                    ? 'border-amber-500/40'
+                    : 'border-zinc-800 hover:border-zinc-700'
+                }`}
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -177,13 +187,13 @@ export const DispositivosPage: React.FC = () => {
                     )}
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                    device.status === 'online'
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      : device.status === 'warning'
+                    isCritical
+                      ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                      : isWarning
                       ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                   }`}>
-                    {device.status ? device.status.toUpperCase() : 'DESCONHECIDO'}
+                    {statusLabel}
                   </span>
                 </div>
 

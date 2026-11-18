@@ -217,6 +217,7 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
           host: device.hostname,
           device_id: device.id,
           metric: cond.metric,
+          value: cond.val,
           operation: `alert_${cond.metric.toLowerCase()}`,
         });
       }

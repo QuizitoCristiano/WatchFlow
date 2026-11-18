@@ -83,17 +83,24 @@ export function captureAppException(
   const message = error instanceof Error ? error.message : String(error);
   const metricKey = String(context?.metric || context?.operation || "general");
   const hostKey = String(context?.host || "default-host");
+  const incidentKey = String(context?.incident_id || `real-${Math.floor(Date.now() / 60000)}`);
+
+  // Envio garantido via envelope direto CORS-safe
+  if (context?.metric) {
+    void sendEnvelopeDirect(message, metricKey, hostKey, incidentKey, String(context?.value || "crítico"));
+  }
 
   Sentry.withScope((scope) => {
     scope.setLevel("fatal");
-    // Agrupa por métrica + host para não duplicar linhas quando a porcentagem oscila (ex: 90% -> 92%)
-    scope.setFingerprint(["wf-alert-v3", metricKey, hostKey]);
+    // O fingerprint com incidentKey garante que novos alertas reais nunca fiquem silenciados em arquivos antigos
+    scope.setFingerprint(["wf-sim-v3", hostKey, metricKey, incidentKey]);
     scope.setTag("application", "watchflow");
     scope.setTag("resource", metricKey);
     scope.setTag("host", hostKey);
+    scope.setTag("incident_id", incidentKey);
     if (context) {
       for (const [key, value] of Object.entries(context)) {
-        if (value !== null && /^(host|metric|module|operation|integration|device_id)$/i.test(key)) {
+        if (value !== null && /^(host|metric|module|operation|integration|device_id|incident_id)$/i.test(key)) {
           scope.setTag(key, String(value));
         }
       }
@@ -121,7 +128,7 @@ export async function captureLocalDeviceConnected(device: LocalDeviceContext, cu
 const SENTRY_ENVELOPE_ENDPOINT =
   "https://o4512403331481600.ingest.de.sentry.io/api/4512403371917392/envelope/?sentry_key=e8f60973d14ecee78fdbdbb743c5967d&sentry_version=7";
 
-async function sendEnvelopeDirect(
+export async function sendEnvelopeDirect(
   title: string,
   metric: string,
   host: string,
