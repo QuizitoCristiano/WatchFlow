@@ -236,7 +236,7 @@ export const MetricasPage: React.FC = () => {
                     ? 'text-red-400 bg-red-500/10 border-red-500/20' 
                     : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                 }`}>
-                  {currentCpu === null ? 'Sem dados' : currentCpu > 80 ? 'Elevado' : 'Normal'}
+                  {currentCpu === null ? 'Sem dados' : (currentCpu ?? 0) > 80 ? 'Elevado' : 'Normal'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
@@ -244,7 +244,7 @@ export const MetricasPage: React.FC = () => {
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full transition-all duration-500 ${currentCpu > 80 ? 'bg-red-500' : 'bg-orange-500'}`} 
+                  className={`h-full transition-all duration-500 ${(currentCpu ?? 0) > 80 ? 'bg-red-500' : 'bg-orange-500'}`} 
                   style={{ width: `${currentCpu === null ? 0 : Math.min(currentCpu, 100)}%` }} 
                 />
               </div>
