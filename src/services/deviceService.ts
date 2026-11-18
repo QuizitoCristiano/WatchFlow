@@ -11,6 +11,7 @@ import {
   getDocs,
   setDoc,
   serverTimestamp,
+  type QuerySnapshot,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
 
@@ -279,7 +280,7 @@ export const subscribeToDevices = (
 
   if (isFirebaseConfigured && db) {
     const userQuery = query(collection(db, 'users', userId, 'devices'), orderBy('hostname', 'asc'));
-    const emit = (snapshot: Parameters<Parameters<typeof onSnapshot>[1]>[0]) => {
+    const emit = (snapshot: QuerySnapshot) => {
       const devices = snapshot.docs.map((document) => ({
         id: document.id,
         ...document.data(),
