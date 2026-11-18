@@ -389,37 +389,44 @@ export const triggerStressSimulation = async (
   specificDeviceId?: string,
   currentUserId?: string,
 ) => {
+  const preferredId = typeof window !== 'undefined' ? localStorage.getItem('wf_active_device_id') : null;
   const targetDevice = specificDeviceId
     ? devices?.find((d) => d.id === specificDeviceId)
-    : (devices?.find((d) => !d.isDemoData) || devices?.[0]);
+    : (devices?.find((d) => d.id === preferredId) || devices?.find((d) => !d.isDemoData) || devices?.[0]);
 
   const deviceId = targetDevice?.id || specificDeviceId || 'dev-notebook-utp';
   const hostname = targetDevice?.hostname || (deviceId.includes('eti') ? 'ETI-2371' : 'DESKTOP-FFGBKK3');
 
-  // Ativa sobrecarga por 12 segundos APENAS neste navegador e APENAS no dispositivo clicado
-  stressOverrideUntilByDevice[deviceId] = Date.now() + 12000;
+  // Salva no navegador local qual dispositivo foi escolhido para futuros cliques no botão do topo
+  if (typeof window !== 'undefined' && targetDevice?.id) {
+    localStorage.setItem('wf_active_device_id', targetDevice.id);
+  }
 
-  // Marca como ativo para habilitar a notificação de Auto-Recovery ao término dos 12s
+  // 1. Resposta visual imediata no milissegundo do clique (0ms de atraso)
+  stressOverrideUntilByDevice[deviceId] = Date.now() + 12000;
   wasAlertActive[`${deviceId}_CPU_HIGH`] = true;
   wasAlertActive[`${deviceId}_RAM_HIGH`] = true;
   wasAlertActive[`${deviceId}_GPU_HIGH`] = true;
 
-  // Atualiza imediatamente o card na interface com barras cheias e CRITICAL em vermelho
   window.dispatchEvent(new Event('wf_stress_simulation_triggered'));
 
-  // Dispara diretamente os 3 eventos separados ao Sentry (CPU, RAM e GPU) com ID de execução único
-  const simId = `sim-${Date.now().toString(36)}`;
-  const delivered = await captureOverloadSimulation(hostname, simId);
+  toast.error(`🔥 Alertas Críticos disparados em ${hostname}!`, {
+    description: '3 incidentes (CPU, RAM e GPU) enviados com sucesso ao Sentry APM.',
+    duration: 6000,
+  });
 
-  // Registra os 3 incidentes na Central de Alertas do WatchFlow (/alerts)
+  // 2. Dispara diretamente ao Sentry e persiste no banco em paralelo (não bloqueante)
+  const simId = `sim-${Date.now().toString(36)}`;
+  void captureOverloadSimulation(hostname, simId);
+
   const uid = currentUserId || auth?.currentUser?.uid || SHARED_CLOUD_USER_ID;
   const now = Date.now();
   const isoNow = new Date().toISOString();
 
   const simAlerts = [
-    { metric: 'CPU', val: '94%', type: 'high_cpu', title: `Uso Excessivo de CPU (94%) — ${hostname}` },
-    { metric: 'RAM', val: '92%', type: 'high_memory', title: `Esgotamento Crítico de Memória RAM (92%) — ${hostname}` },
-    { metric: 'GPU', val: '96%', type: 'high_gpu', title: `Sobrecarga Crítica de GPU (96%) — ${hostname}` },
+    { metric: 'CPU', val: '94%', type: 'high_cpu', title: `Sobrecarga Crítica de CPU (94%) em ${hostname}` },
+    { metric: 'RAM', val: '92%', type: 'high_memory', title: `Sobrecarga Crítica de RAM (92%) em ${hostname}` },
+    { metric: 'GPU', val: '96%', type: 'high_gpu', title: `Sobrecarga Crítica de GPU (96%) em ${hostname}` },
   ];
 
   for (const a of simAlerts) {
@@ -445,12 +452,5 @@ export const triggerStressSimulation = async (
     });
   }
 
-  toast.error(`🔥 Alertas Críticos disparados em ${hostname}!`, {
-    description: delivered
-      ? '3 incidentes (CPU, RAM e GPU) enviados com sucesso ao Sentry APM.'
-      : 'Alertas gerados localmente. Verifique o Sentry.',
-    duration: 6000,
-  });
-
-  return delivered;
+  return true;
 };

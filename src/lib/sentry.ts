@@ -162,7 +162,7 @@ async function sendEnvelopeDirect(
     const body = `${header}\n${itemHeader}\n${event}\n`;
     const res = await fetch(SENTRY_ENVELOPE_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/x-sentry-envelope" },
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body,
       keepalive: true,
     });
