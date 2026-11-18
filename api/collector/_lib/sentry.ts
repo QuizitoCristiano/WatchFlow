@@ -67,8 +67,8 @@ export function initServerSentry(): boolean {
 export async function captureServerException(
   error: unknown,
   endpoint: 'collector.provision' | 'collector.ingest' | 'observability.self-test',
-): Promise<void> {
-  if (!initServerSentry()) return;
+ ): Promise<boolean> {
+  if (!initServerSentry()) return false;
 
   Sentry.withScope((scope) => {
     scope.setLevel('error');
@@ -78,5 +78,5 @@ export async function captureServerException(
     Sentry.captureException(error);
   });
 
-  await Sentry.flush(1500);
+  return Sentry.flush(1500);
 }
