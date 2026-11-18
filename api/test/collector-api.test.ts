@@ -281,3 +281,47 @@ test('credential storage keys are HMACs rather than plaintext tokens', () => {
   assert.notEqual(hash, token);
   assert.match(hash, /^[a-f0-9]{64}$/);
 });
+
+
+test('unexpected collector failures are forwarded to the Sentry capture hook', async () => {
+  const captured: unknown[] = [];
+  const handler = createIngestHandler({
+    ingest: async () => {
+      throw new Error('simulated unexpected collector failure');
+    },
+    captureUnexpectedError: async (error) => {
+      captured.push(error);
+    },
+  });
+  const response = new MemoryResponse();
+
+  await handler(
+    request(validPayload(), `Bearer ${'A'.repeat(43)}`),
+    response,
+  );
+
+  assert.equal(response.statusCode, 500);
+  assert.equal(captured.length, 1);
+  assert.ok(captured[0] instanceof Error);
+});
+
+test('expected HTTP errors are not forwarded to the Sentry capture hook', async () => {
+  let captureCalls = 0;
+  const handler = createIngestHandler({
+    ingest: async () => {
+      throw new HttpError(400, 'Invalid sample.');
+    },
+    captureUnexpectedError: async () => {
+      captureCalls += 1;
+    },
+  });
+  const response = new MemoryResponse();
+
+  await handler(
+    request(validPayload(), `Bearer ${'A'.repeat(43)}`),
+    response,
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(captureCalls, 0);
+});
