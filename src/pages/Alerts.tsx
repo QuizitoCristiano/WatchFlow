@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { 
   collection, 
@@ -54,8 +54,8 @@ export const AlertsPage: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.uid ?? '';
   const [alertsState, setAlertsState] = useState<{ userId: string; items: Alert[] } | null>(null);
-  const [localRevision, setLocalRevision] = useState(0);
-  const localAlerts = useMemo(() => getStoredLocalAlerts(userId), [userId, localRevision]);
+  const [, setLocalRevision] = useState(0);
+  const localAlerts = getStoredLocalAlerts(userId);
   const alerts = isFirebaseConfigured && db
     ? (userId && alertsState?.userId === userId ? alertsState.items : [])
     : localAlerts;
