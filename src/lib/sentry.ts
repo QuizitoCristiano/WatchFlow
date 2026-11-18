@@ -118,18 +118,73 @@ export async function captureLocalDeviceConnected(device: LocalDeviceContext, cu
   return Sentry.flush(2000);
 }
 
-/** Dispara 3 Issues separadas no Sentry (CPU, RAM e GPU) com fingerprint único por rodada! */
+const SENTRY_ENVELOPE_ENDPOINT =
+  "https://o4512403331481600.ingest.de.sentry.io/api/4512403371917392/envelope/?sentry_key=e8f60973d14ecee78fdbdbb743c5967d&sentry_version=7";
+
+async function sendEnvelopeDirect(
+  title: string,
+  metric: string,
+  host: string,
+  simId: string,
+  value: string,
+): Promise<boolean> {
+  try {
+    const eventId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    const header = JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString() });
+    const itemHeader = JSON.stringify({ type: "event", content_type: "application/json" });
+    const event = JSON.stringify({
+      event_id: eventId,
+      level: "fatal",
+      platform: "javascript",
+      logger: "watchflow",
+      environment: import.meta.env.MODE || "production",
+      message: { formatted: title },
+      fingerprint: ["wf-sim-v3", host, metric, simId],
+      tags: {
+        feature: "overload-demo",
+        host,
+        metric,
+        resource: metric,
+        simulation_id: simId,
+      },
+      contexts: {
+        hardware_alert: {
+          host,
+          metric,
+          value,
+          threshold: "90%",
+          simulation_id: simId,
+        },
+      },
+      timestamp: Date.now() / 1000,
+    });
+
+    const body = `${header}\n${itemHeader}\n${event}\n`;
+    const res = await fetch(SENTRY_ENVELOPE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-sentry-envelope" },
+      body,
+      keepalive: true,
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("Direct Sentry envelope fallback error:", err);
+    return false;
+  }
+}
+
+/** Dispara 3 Issues separadas no Sentry (CPU, RAM e GPU) com garantia de envio direto por Envelope! */
 export async function captureOverloadSimulation(host: string, simId?: string): Promise<boolean> {
   const simulationTag = simId || `sim-${Date.now().toString(36)}`;
   const alerts = [
     {
       metric: "CPU",
-      title: `[WatchFlow Alert] Uso Excessivo de CPU (94%) em ${host}`,
+      title: `[WatchFlow Alert] Sobrecarga Crítica de CPU (94%) em ${host}`,
       value: "94%",
     },
     {
       metric: "RAM",
-      title: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (92%) em ${host}`,
+      title: `[WatchFlow Alert] Sobrecarga Crítica de RAM (92%) em ${host}`,
       value: "92%",
     },
     {
@@ -139,11 +194,15 @@ export async function captureOverloadSimulation(host: string, simId?: string): P
     },
   ];
 
+  // 1. Envio direto via Sentry Envelope HTTP (garantia de entrega imediata com status 200)
+  const directPromises = alerts.map((item) =>
+    sendEnvelopeDirect(item.title, item.metric, host, simulationTag, item.value),
+  );
+
+  // 2. Registro no SDK oficial do Sentry em paralelo
   for (const item of alerts) {
     Sentry.withScope((scope) => {
       scope.setLevel("fatal");
-      // O simulationTag garante que cada execução apareça na lista de Unresolved do Sentry,
-      // mesmo que o operador tenha arquivado as execuções anteriores!
       scope.setFingerprint(["wf-sim-v3", host, item.metric, simulationTag]);
       scope.setTag("feature", "overload-demo");
       scope.setTag("host", host);
@@ -161,7 +220,12 @@ export async function captureOverloadSimulation(host: string, simId?: string): P
     });
   }
 
-  return Sentry.flush(2500);
+  const results = await Promise.allSettled(directPromises);
+  const anyDirectSuccess = results.some((r) => r.status === "fulfilled" && r.value === true);
+
+  await Sentry.flush(1500).catch(() => {});
+
+  return anyDirectSuccess;
 }
 
 /** Erro sintético de teste para validação da APM. */
