@@ -67,7 +67,7 @@ export function initServerSentry(): boolean {
 export async function captureServerException(
   error: unknown,
   endpoint: 'collector.provision' | 'collector.ingest' | 'observability.self-test',
- ): Promise<boolean> {
+): Promise<boolean> {
   if (!initServerSentry()) return false;
 
   Sentry.withScope((scope) => {
