@@ -304,23 +304,43 @@ test('ingestion does not retry permanent authorization errors', async () => {
   assert.equal(calls, 1);
 });
 
-test('Windows Exporter metrics are normalized into the shared telemetry contract', () => {
-  const windowsSample = parsePrometheusText(`
+test('Windows Exporter metrics are normalized and calculated using the shared telemetry contract', () => {
+  const firstWindowsSample = parsePrometheusText(`
     windows_cpu_time_seconds_total{core="0,0",mode="idle"} 10
-    windows_cpu_time_total{core="0,0",mode="user"} 5
-    windows_cpu_time_total{core="0,1",mode="idle"} 8
-    windows_cpu_time_total{core="0,1",mode="user"} 2
+    windows_cpu_time_seconds_total{core="0,0",mode="user"} 5
+    windows_cpu_time_seconds_total{core="0,1",mode="idle"} 8
+    windows_cpu_time_seconds_total{core="0,1",mode="user"} 2
     windows_memory_physical_total_bytes 1000
     windows_memory_available_bytes 250
     windows_logical_disk_size_bytes{volume="C:"} 2000
     windows_logical_disk_free_bytes{volume="C:"} 500
     windows_net_bytes_received_total{nic="Ethernet"} 1000
     windows_net_bytes_sent_total{nic="Ethernet"} 2000
+    windows_net_bytes_received_total{nic="Software Loopback Interface 1"} 500
+    windows_net_bytes_sent_total{nic="Software Loopback Interface 1"} 600
   `);
-  assert.equal(calculateMemoryUsagePercent(windowsSample), 75);
-  const filesystems = calculateFilesystemUsage(windowsSample);
+  const secondWindowsSample = parsePrometheusText(`
+    windows_cpu_time_seconds_total{core="0,0",mode="idle"} 12
+    windows_cpu_time_seconds_total{core="0,0",mode="user"} 6
+    windows_cpu_time_seconds_total{core="0,1",mode="idle"} 10
+    windows_cpu_time_seconds_total{core="0,1",mode="user"} 3
+    windows_memory_physical_total_bytes 1000
+    windows_memory_available_bytes 200
+    windows_logical_disk_size_bytes{volume="C:"} 2000
+    windows_logical_disk_free_bytes{volume="C:"} 400
+    windows_net_bytes_received_total{nic="Ethernet"} 1300
+    windows_net_bytes_sent_total{nic="Ethernet"} 2600
+    windows_net_bytes_received_total{nic="Software Loopback Interface 1"} 900
+    windows_net_bytes_sent_total{nic="Software Loopback Interface 1"} 1000
+  `);
+  assert.equal(calculateCpuUsagePercent(firstWindowsSample, secondWindowsSample), 33.33333333333333);
+  assert.equal(calculateMemoryUsagePercent(secondWindowsSample), 80);
+  const filesystems = calculateFilesystemUsage(secondWindowsSample);
   assert.equal(filesystems.length, 1);
   assert.equal(filesystems[0].mountpoint, 'C:');
-  assert.equal(filesystems[0].usedPercent, 75);
-  assert.equal(windowsSample.find((sample) => sample.name === 'node_network_receive_bytes_total')?.labels.device, 'Ethernet');
+  assert.equal(filesystems[0].usedPercent, 80);
+  assert.equal(secondWindowsSample.find((sample) => sample.name === 'node_network_receive_bytes_total')?.labels.device, 'Ethernet');
+  const network = calculateNetworkUsage(firstWindowsSample, secondWindowsSample, 2);
+  assert.equal(network?.receiveBytesPerSecond, 150);
+  assert.equal(network?.transmitBytesPerSecond, 300);
 });

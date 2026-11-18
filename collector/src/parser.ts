@@ -178,7 +178,7 @@ function parseMetricLine(line: string, lineNumber: number): MetricSample | null 
 }
 
 export function parsePrometheusText(text: string): MetricSample[] {
-  if (!text.trim()) throw new CollectorError('A resposta do Node Exporter está vazia.');
+  if (!text.trim()) throw new CollectorError('A resposta do Exporter está vazia.');
 
   const samples: MetricSample[] = [];
   const seen = new Set<string>();

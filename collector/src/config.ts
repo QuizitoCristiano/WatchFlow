@@ -33,29 +33,32 @@ function parsePositiveInteger(
 }
 
 export function loadConfig(env: Readonly<Record<string, string | undefined>> = process.env): CollectorConfig {
-  const endpointValue = env.NODE_EXPORTER_URL?.trim();
-  if (!endpointValue) {
-    throw new CollectorError('Configure NODE_EXPORTER_URL com o endpoint /metrics da máquina que deseja monitorar.');
+  const nodeEndpointValue = env.NODE_EXPORTER_URL?.trim() || '';
+  const windowsEndpointValue = env.WINDOWS_EXPORTER_URL?.trim() || '';
+  if (Boolean(nodeEndpointValue) === Boolean(windowsEndpointValue)) {
+    throw new CollectorError('Configure somente NODE_EXPORTER_URL ou WINDOWS_EXPORTER_URL, conforme o exporter utilizado.');
   }
+  const endpointValue = windowsEndpointValue || nodeEndpointValue;
+  const endpointVariable = windowsEndpointValue ? 'WINDOWS_EXPORTER_URL' : 'NODE_EXPORTER_URL';
   let endpoint: URL;
 
   try {
     endpoint = new URL(endpointValue);
   } catch {
-    throw new CollectorError('NODE_EXPORTER_URL não contém uma URL válida.');
+    throw new CollectorError(`${endpointVariable} não contém uma URL válida.`);
   }
 
   if (endpoint.protocol !== 'http:' && endpoint.protocol !== 'https:') {
-    throw new CollectorError('NODE_EXPORTER_URL deve usar HTTP ou HTTPS.');
+    throw new CollectorError(`${endpointVariable} deve usar HTTP ou HTTPS.`);
   }
   if (endpoint.username || endpoint.password) {
-    throw new CollectorError('NODE_EXPORTER_URL não deve conter credenciais.');
+    throw new CollectorError(`${endpointVariable} não deve conter credenciais.`);
   }
   if (endpoint.href.length > 2048) {
-    throw new CollectorError('NODE_EXPORTER_URL excede o limite de 2048 caracteres.');
+    throw new CollectorError(`${endpointVariable} excede o limite de 2048 caracteres.`);
   }
   if (endpoint.hash || endpoint.search) {
-    throw new CollectorError('NODE_EXPORTER_URL não deve conter parâmetros ou fragmento.');
+    throw new CollectorError(`${endpointVariable} não deve conter parâmetros ou fragmento.`);
   }
 
   const ingestUrlValue = env.WATCHFLOW_INGEST_URL?.trim() || '';
@@ -117,7 +120,12 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     endpoint,
     ingestUrl,
     ingestToken: ingestUrl ? ingestToken : null,
-    timeoutMs: parsePositiveInteger(env.NODE_EXPORTER_TIMEOUT_MS, 5000, 'NODE_EXPORTER_TIMEOUT_MS', 120_000),
+    timeoutMs: parsePositiveInteger(
+      env.COLLECTOR_TIMEOUT_MS ?? env.NODE_EXPORTER_TIMEOUT_MS,
+      5000,
+      'COLLECTOR_TIMEOUT_MS',
+      120_000,
+    ),
     sampleIntervalMs,
     collectionIntervalMs,
     deviceId,

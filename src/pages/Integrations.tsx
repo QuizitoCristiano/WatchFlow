@@ -188,7 +188,7 @@ export const Integrations: React.FC = () => {
     try {
       const credential = await provisionCollectorCredential(userId, integration.id);
       const command = [
-        `$env:NODE_EXPORTER_URL = "${integration.baseUrl}"`,
+        `$env:${integration.type === 'windows_exporter' ? 'WINDOWS_EXPORTER_URL' : 'NODE_EXPORTER_URL'} = "${integration.baseUrl}"`,
         `$env:WATCHFLOW_INTEGRATION_ID = "${integration.id}"`,
         `$env:WATCHFLOW_DEVICE_ID = "${credential.deviceId}"`,
         `$env:WATCHFLOW_INGEST_URL = "${credential.ingestUrl}"`,
@@ -309,9 +309,9 @@ export const Integrations: React.FC = () => {
         </div>
       )}
 
-      {actualIntegrations.some((integration) => integration.type === 'node_exporter') && (
+      {actualIntegrations.some((integration) => integration.type === 'node_exporter' || integration.type === 'windows_exporter') && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h2 className="font-semibold text-zinc-100">{t('Coleta local do Node Exporter')}</h2>
+          <h2 className="font-semibold text-zinc-100">{t('Coleta local do Exporter')}</h2>
           <p className="mt-1 text-sm text-zinc-400">
             O Vercel não alcança IPs privados. Gere uma credencial de dispositivo e execute o coletor em um host da rede do agente. A credencial é exibida uma única vez; gerar outra revoga a anterior.
           </p>
@@ -321,10 +321,10 @@ export const Integrations: React.FC = () => {
           <p className="mt-1 text-xs text-zinc-500">
             Credenciais expiram em 90 dias. Cada amostra válida atualiza o dispositivo e o status/tentativas da integração.
           </p>
-          {actualIntegrations.filter((integration) => integration.type === 'node_exporter').map((integration) => (
+          {actualIntegrations.filter((integration) => integration.type === 'node_exporter' || integration.type === 'windows_exporter').map((integration) => (
             <div key={integration.id} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <code className="overflow-auto rounded bg-zinc-950 p-2 text-xs text-zinc-300">
-                $env:NODE_EXPORTER_URL = &quot;{integration.baseUrl}&quot;<br />
+                $env:{integration.type === 'windows_exporter' ? 'WINDOWS_EXPORTER_URL' : 'NODE_EXPORTER_URL'} = &quot;{integration.baseUrl}&quot;<br />
                 $env:WATCHFLOW_INTEGRATION_ID = &quot;{integration.id ?? ''}&quot;<br />
                 npm run collector:start <span className="text-zinc-500">(one-shot local)</span>
               </code>
@@ -453,7 +453,7 @@ export const Integrations: React.FC = () => {
                     <span className="text-zinc-300 font-mono">{formatDate(item.lastSuccessAt)}</span>
                   </div>
                   {item.lastError && <p className="text-rose-300">{item.lastError}</p>}
-                  {item.type !== 'node_exporter' && (
+                  {!['node_exporter', 'windows_exporter'].includes(item.type) && (
                     <p className="text-amber-300">{t('Coletor para este agente ainda não implementado.')}</p>
                   )}
                 </div>

@@ -1,14 +1,14 @@
-# Coletor Node Exporter
+# Coletor Node Exporter e Windows Exporter
 
 ## Escopo implementado
 
-O coletor Node.js opera em modo one-shot sem credenciais de ingestão ou modo contínuo autenticado. Consulta o Node Exporter da rede local, calcula CPU, memória, filesystems e rede e, no modo contínuo, envia amostras à API serverless da Vercel. A API grava em `users/{uid}/devices/{deviceId}/metrics/{sampleId}`, caminho lido pelo Dashboard. A execução real da API contra Firebase ainda depende da configuração server-side e não foi validada ponta a ponta neste workspace.
+O coletor Node.js opera em modo one-shot sem credenciais de ingestão ou modo contínuo autenticado. Consulta Node Exporter (Linux) ou Windows Exporter (Windows) a partir do host em que está executando, normaliza as métricas suportadas para um contrato interno comum, calcula CPU, memória, filesystems e rede e, no modo contínuo, envia amostras à API serverless da Vercel. A API grava em `users/{uid}/devices/{deviceId}/metrics/{sampleId}`, caminho lido pelo Dashboard. A execução real da API contra Firebase ainda depende da configuração server-side e não foi validada ponta a ponta neste workspace.
 
 No ambiente de desenvolvimento registrado, a VM executa Debian GNU/Linux 13, com Node Exporter 1.9.0 observado em `http://192.168.1.2:9100/metrics`. A conectividade do Windows a esse endpoint foi validada. O IP é específico do ambiente local e pode mudar; não deve ser copiado como endereço fixo para outros ambientes. A porta 9100 não deve ser exposta publicamente.
 
 ## Fluxo de execução
 
-1. `src/config.ts` valida `NODE_EXPORTER_URL`, o protocolo e os tempos configuráveis.
+1. `src/config.ts` valida exatamente uma URL de origem: `NODE_EXPORTER_URL` ou `WINDOWS_EXPORTER_URL`, além do protocolo e dos tempos configuráveis.
 2. `src/collect.ts` solicita uma primeira amostra, espera o intervalo e solicita a segunda.
 3. `src/http.ts` faz HTTP GET com timeout, rejeita redirecionamentos e limita a resposta.
 4. `src/parser.ts` interpreta as linhas das métricas suportadas.
@@ -21,7 +21,7 @@ No ambiente de desenvolvimento registrado, a VM executa Debian GNU/Linux 13, com
 
 - `collector/src/config.ts`: valida URL, credenciais, timeout e intervalos.
 - `collector/src/http.ts`: `fetchMetricsText`; usa `AbortSignal.timeout`, `redirect: 'error'`, valida status HTTP, decodifica UTF-8 estrito e limita o corpo a 5 MiB.
-- `collector/src/parser.ts`: `MetricSample` e `parsePrometheusText`; interpreta CPU, memória, filesystem e contadores de rede Node Exporter.
+- `collector/src/parser.ts`: `MetricSample` e `parsePrometheusText`; normaliza as famílias compatíveis de CPU, memória, filesystem e rede dos dois exporters para o contrato interno comum.
 - `collector/src/metrics.ts`: calcula CPU por delta, memória, filesystem válido sem duplicar dispositivos e taxas de rede por delta.
 - `collector/src/collect.ts`: `collectMetrics`; coordena as duas amostras e permite injetar `fetcher` e espera entre amostras.
 - `collector/src/ingest.ts`: timeout, bearer token, retry limitado e backoff.
@@ -74,9 +74,9 @@ Não é um parser completo da especificação Prometheus. Não processa exemplar
 
 ## Configuração e comandos
 
-`NODE_EXPORTER_URL` aceita uma URL HTTP ou HTTPS válida. Sem a variável, `collector/src/config.ts` usa `http://192.168.1.2:9100/metrics`, fallback local que pode não funcionar em outra rede. URLs com credenciais, parâmetros ou fragmento são rejeitadas. Timeout e intervalo também são configuráveis:
+`NODE_EXPORTER_URL` ou `WINDOWS_EXPORTER_URL` aceita uma URL HTTP ou HTTPS válida; configure exatamente uma delas. Para o Windows Exporter instalado localmente, use `http://127.0.0.1:9182/metrics`. Para Node Exporter, use a URL do host Linux acessível pela máquina que executa o Collector. URLs com credenciais, parâmetros ou fragmento são rejeitadas. Timeout e intervalo também são configuráveis:
 
-- `NODE_EXPORTER_TIMEOUT_MS`: padrão 5000 ms.
+- `COLLECTOR_TIMEOUT_MS`: timeout genérico, padrão 5000 ms. `NODE_EXPORTER_TIMEOUT_MS` continua aceito por compatibilidade com comandos antigos.
 - `COLLECTOR_SAMPLE_INTERVAL_MS`: intervalo entre os dois scrapes; padrão 1000 ms.
 - `COLLECTOR_INTERVAL_MS`: intervalo contínuo; padrão 60000 ms, mínimo 15000 ms.
 - `WATCHFLOW_DEVICE_ID` e `WATCHFLOW_INTEGRATION_ID`: IDs gerados no provisionamento.
@@ -99,7 +99,10 @@ Cada amostra de métrica, credencial e vínculo de rotação recebe `expiresAt` 
 PowerShell:
 
 ```powershell
+# Escolha somente uma origem:
 $env:NODE_EXPORTER_URL = "http://IP_DA_VM:9100/metrics"
+# Para Windows Exporter local, use em vez da linha acima:
+# $env:WINDOWS_EXPORTER_URL = "http://127.0.0.1:9182/metrics"
 $env:NODE_EXPORTER_TIMEOUT_MS = "5000"
 $env:COLLECTOR_SAMPLE_INTERVAL_MS = "1000"
 $env:WATCHFLOW_INTEGRATION_ID = "ID_EXIBIDO_NA_TELA"
@@ -114,7 +117,7 @@ npm run api:test
 npm run collector:start
 ```
 
-Execute o coletor em um host que acesse o Node Exporter pela rede privada e possa fazer saída HTTPS para a Vercel. Não exponha a porta 9100. Sem URL e token de ingestão, o comando permanece one-shot e não persiste. Para desenvolvimento da API, use Vercel CLI (`vercel dev`) com as variáveis server-side disponíveis localmente; `vite dev` sozinho não serve as rotas `/api`.
+Execute o coletor no próprio host monitorado ou em um host que alcance o exporter pela rede privada e possa fazer saída HTTPS para a Vercel. Para monitorar o Windows local, o Collector deve executar no Windows e consultar `127.0.0.1:9182`; loopback é relativo ao processo que executa o Collector. Restrinja as portas 9100 e 9182 à superfície de rede estritamente necessária e não as exponha à Internet. Sem URL e token de ingestão, o comando permanece one-shot e não persiste. Para desenvolvimento da API, use Vercel CLI (`vercel dev`) com as variáveis server-side disponíveis localmente; `vite dev` sozinho não serve as rotas `/api`.
 
 O coletor usa Node.js 22.6+ e `--experimental-strip-types`; no Node 22.17.1 isso emite `ExperimentalWarning`.
 
@@ -128,7 +131,7 @@ O coletor usa Node.js 22.6+ e `--experimental-strip-types`; no Node 22.17.1 isso
 - Idempotência por `sampleId`, limite de frequência no servidor e retries finitos.
 - Payload e timestamp validados; amostras são marcadas como telemetria real e expiram após habilitar TTL.
 
-O formulário da tela Integrações salva a configuração em `users/{uid}/integrations` como pendente; a ação de provisionamento exige Firebase ID token e verifica a propriedade antes de emitir uma credencial de dispositivo. O cadastro não verifica conectividade. Somente uma tentativa real do coletor, iniciada em host que alcança o Node Exporter local e a API HTTPS, pode atualizar o estado ou persistir métricas. O Vercel não precisa alcançar endereços privados como `192.168.1.2`. O código da API existe no workspace, mas deployment e execução contra Firebase ainda não foram validados; não exponha a porta 9100 nem copie credenciais administrativas para o frontend ou coletor.
+O formulário da tela Integrações salva a configuração em `users/{uid}/integrations` como pendente; a ação de provisionamento exige Firebase ID token e verifica a propriedade antes de emitir uma credencial de dispositivo. O comando gerado seleciona a variável de ambiente correspondente ao tipo da integração. O cadastro não verifica conectividade. Somente uma tentativa real do coletor, iniciada em host que alcança o exporter configurado e a API HTTPS, pode atualizar o estado ou persistir métricas. A Vercel não precisa alcançar endereços privados nem o loopback do computador do usuário. O código da API existe no workspace, mas deployment e execução contra Firebase ainda não foram validados; não exponha a porta 9100 nem copie credenciais administrativas para o frontend ou coletor.
 
 ## Riscos e decisões pendentes
 
