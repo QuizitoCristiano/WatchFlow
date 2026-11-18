@@ -116,22 +116,22 @@ export async function captureLocalDeviceConnected(device: LocalDeviceContext): P
   return Sentry.flush(2000);
 }
 
-/** Dispara os alertas individuais de sobrecarga (CPU, RAM e GPU) com fingerprints separados no Sentry. */
+/** Dispara os alertas individuais de sobrecarga (CPU, RAM e GPU) com fingerprints separados por host no Sentry. */
 export async function captureOverloadSimulation(host: string): Promise<boolean> {
   const alerts = [
     {
       metric: "CPU",
-      title: "[WatchFlow Alert] Uso Excessivo de CPU (94%)",
+      title: `[WatchFlow Alert] Uso Excessivo de CPU (>90%) em ${host}`,
       value: "94%",
     },
     {
       metric: "RAM",
-      title: "[WatchFlow Alert] Esgotamento Crítico de Memória RAM (92%)",
+      title: `[WatchFlow Alert] Esgotamento Crítico de Memória RAM (>90%) em ${host}`,
       value: "92%",
     },
     {
       metric: "GPU",
-      title: "[WatchFlow Alert] Sobrecarga Crítica de GPU (96%)",
+      title: `[WatchFlow Alert] Sobrecarga Crítica de GPU (>90%) em ${host}`,
       value: "96%",
     },
   ];

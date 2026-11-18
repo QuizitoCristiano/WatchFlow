@@ -78,7 +78,8 @@ export const DispositivosPage: React.FC = () => {
     setSimulating(true);
     try {
       await triggerStressSimulation(devices);
-      const host = user?.displayName || user?.email || 'WatchFlow local browser';
+      const targetDevice = devices.find((d) => !d.isDemoData) || devices[0];
+      const host = targetDevice?.hostname || user?.displayName || user?.email || 'WatchFlow-Host';
       const delivered = await captureOverloadSimulation(host);
       if (delivered) {
         toast.success('Evento de sobrecarga simulado e enviado ao Sentry.');
