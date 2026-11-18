@@ -43,6 +43,25 @@ O arquivo `.env.local` deve ficar na raiz e permanecer fora do Git. O `.gitignor
 - Erros operacionais esperados (`HttpError`, como 400/401/405) não são enviados como exceções.
 - A função aguarda `Sentry.flush` antes de concluir a resposta serverless, reduzindo perda de eventos em ambientes efêmeros.
 
+
+## Teste real do backend (somente desenvolvimento local)
+
+A rota `POST /api/observability/sentry-test` confirma o envio do runtime Node sem depender das credenciais Firebase do Collector. Ela só responde fora de produção e exige `SENTRY_TEST_TOKEN` com pelo menos 32 caracteres. Sem token ou em `NODE_ENV=production`, responde 404. Nunca configure esse token na Vercel Production.
+
+1. Gere um token local com `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+2. Adicione `SENTRY_TEST_TOKEN=<token>` ao `.env.local`, junto de `SENTRY_DSN`.
+3. Inicie o runtime das funções com `npx vercel dev`. Apenas `vite dev` não executa as funções API.
+4. Em outro PowerShell, defina `$env:SENTRY_TEST_TOKEN` com o mesmo valor local e execute:
+
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/observability/sentry-test -Headers @{ Authorization = "Bearer $env:SENTRY_TEST_TOKEN" }
+   ```
+
+5. A resposta esperada é HTTP 202. No Sentry, procure a exceção `WatchFlow Sentry backend self-test: controlled non-production event`, com `runtime=vercel-serverless` e `endpoint=observability.self-test`.
+6. Depois do teste, remova `SENTRY_TEST_TOKEN` do `.env.local`.
+
+A rota não executa operações no Firebase nem aceita payload do cliente. Ela existe exclusivamente para o smoke test local do Sentry Node.
+
 ## Privacidade
 
 - O SDK não habilita envio automático de PII; a configuração não ativa `sendDefaultPii`.
