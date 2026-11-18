@@ -149,7 +149,7 @@ export const VerifyEmail = () => {
 
               <button
                 type="button"
-                onClick={handleBackToLogin}
+                onClick={() => navigate("/dashboard", { replace: true })}
                 className="w-full py-3 px-4 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-brand-primary/20 cursor-pointer"
               >
                 Já verifiquei meu e-mail e quero entrar
