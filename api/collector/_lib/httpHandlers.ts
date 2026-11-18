@@ -19,12 +19,12 @@ export interface ApiHandler {
 interface ProvisionDependencies {
   verifyIdToken(token: string): Promise<{ uid: string }>;
   provision(uid: string, body: unknown): Promise<{ token: string; deviceId: string }>;
-  captureUnexpectedError?(error: unknown): Promise<void>;
+  captureUnexpectedError?(error: unknown): Promise<void | boolean>;
 }
 
 interface IngestDependencies {
   ingest(token: string, body: unknown): Promise<{ result: string }>;
-  captureUnexpectedError?(error: unknown): Promise<void>;
+  captureUnexpectedError?(error: unknown): Promise<void | boolean>;
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
