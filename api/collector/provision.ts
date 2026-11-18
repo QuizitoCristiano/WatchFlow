@@ -18,6 +18,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     await createProvisionHandler({
       verifyIdToken: context.verifyIdToken,
       provision: context.service.provision,
+      captureUnexpectedError: (error) => captureServerException(error, 'collector.provision'),
     })(request, response);
   } catch (error: unknown) {
     if (error instanceof HttpError) {
