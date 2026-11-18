@@ -47,5 +47,5 @@ test('accepts Windows Exporter on TCP 9182 and HTTPS reverse proxy', () => {
 });
 
 test('rejects Node Exporter port for Windows Exporter', () => {
-  assert.throws(() => validateNodeExporterEndpoint('http://192.168.1.25:9100/metrics', 'windows_exporter'), /Endpoint do exporter/);
+  assert.throws(() => validateNodeExporterEndpoint('http://192.168.1.25:9100/metrics', 'windows_exporter'), /Endpoint do Windows Exporter/);
 });

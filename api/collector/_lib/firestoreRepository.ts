@@ -219,7 +219,8 @@ export function validateNodeExporterEndpoint(value: unknown, exporterType: 'node
     hostname === 'metadata.google.internal' ||
     hostname === 'metadata.azure.internal'
   ) {
-    throw new HttpError(400, 'Endpoint do exporter viola a política de protocolo, porta ou destino.');
+    const exporterLabel = exporterType === 'windows_exporter' ? 'Windows Exporter' : 'Node Exporter';
+    throw new HttpError(400, `Endpoint do ${exporterLabel} viola a política de protocolo, porta ou destino.`);
   }
 }
 

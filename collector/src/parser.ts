@@ -16,7 +16,10 @@ const SUPPORTED_METRICS = new Set([
   'node_network_receive_bytes_total',
   'node_network_transmit_bytes_total',
   'windows_cpu_time_total',
+  'windows_cpu_time_seconds_total',
   'windows_cs_physical_memory_bytes',
+  'windows_memory_physical_total_bytes',
+  'windows_os_visible_memory_bytes',
   'windows_memory_available_bytes',
   'windows_logical_disk_size_bytes',
   'windows_logical_disk_free_bytes',
@@ -26,7 +29,10 @@ const SUPPORTED_METRICS = new Set([
 
 const METRIC_ALIASES: Readonly<Record<string, string>> = {
   windows_cpu_time_total: 'node_cpu_seconds_total',
+  windows_cpu_time_seconds_total: 'node_cpu_seconds_total',
   windows_cs_physical_memory_bytes: 'node_memory_MemTotal_bytes',
+  windows_memory_physical_total_bytes: 'node_memory_MemTotal_bytes',
+  windows_os_visible_memory_bytes: 'node_memory_MemTotal_bytes',
   windows_memory_available_bytes: 'node_memory_MemAvailable_bytes',
   windows_logical_disk_size_bytes: 'node_filesystem_size_bytes',
   windows_logical_disk_free_bytes: 'node_filesystem_free_bytes',
@@ -133,7 +139,7 @@ function parseMetricLine(line: string, lineNumber: number): MetricSample | null 
     throw new CollectorError(`Valor inválido na métrica suportada da linha ${lineNumber}.`);
   }
 
-  if (sourceName === 'windows_cpu_time_total') {
+  if (sourceName === 'windows_cpu_time_total' || sourceName === 'windows_cpu_time_seconds_total') {
     if (!labels.core) throw new CollectorError(`Rótulo core ausente na linha ${lineNumber}.`);
     labels.cpu = labels.core;
     delete labels.core;

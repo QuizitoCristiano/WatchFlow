@@ -306,11 +306,11 @@ test('ingestion does not retry permanent authorization errors', async () => {
 
 test('Windows Exporter metrics are normalized into the shared telemetry contract', () => {
   const windowsSample = parsePrometheusText(`
-    windows_cpu_time_total{core="0,0",mode="idle"} 10
+    windows_cpu_time_seconds_total{core="0,0",mode="idle"} 10
     windows_cpu_time_total{core="0,0",mode="user"} 5
     windows_cpu_time_total{core="0,1",mode="idle"} 8
     windows_cpu_time_total{core="0,1",mode="user"} 2
-    windows_cs_physical_memory_bytes 1000
+    windows_memory_physical_total_bytes 1000
     windows_memory_available_bytes 250
     windows_logical_disk_size_bytes{volume="C:"} 2000
     windows_logical_disk_free_bytes{volume="C:"} 500
