@@ -56,7 +56,6 @@ export function initServerSentry(): boolean {
       'development',
     release: process.env.SENTRY_RELEASE || 'watchflow@1.0.0',
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
-    sendDefaultPii: false,
     beforeSend: scrubServerEvent,
   });
 
