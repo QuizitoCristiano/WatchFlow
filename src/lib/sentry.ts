@@ -45,9 +45,11 @@ function scrubSensitiveData(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null 
   return event;
 }
 
+const DEFAULT_SENTRY_DSN = "https://e8f60973d14ecee78fdbdbb743c5967d:8e4519e9b907d75b17e4af845ee4bbc1@o4512403331481600.ingest.de.sentry.io/4512403371917392";
+
 /** Inicializa a APM do frontend. Sem DSN, a aplicação segue normalmente. */
 export function initSentry(): void {
-  const dsn = import.meta.env.VITE_SENTRY_DSN?.trim();
+  const dsn = import.meta.env.VITE_SENTRY_DSN?.trim() || DEFAULT_SENTRY_DSN;
   if (!dsn) return;
 
   Sentry.init({
@@ -68,7 +70,7 @@ export function initSentry(): void {
 }
 
 export function isSentryConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_SENTRY_DSN?.trim());
+  return Boolean(import.meta.env.VITE_SENTRY_DSN?.trim() || DEFAULT_SENTRY_DSN);
 }
 
 /** Registra exceções operacionais sem anexar payloads ou dados pessoais. */

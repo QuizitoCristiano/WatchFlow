@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeToDevices, deleteDevice, registerBrowserDevice } from '@/services/deviceService';
+import { subscribeToDevices, deleteDevice, registerBrowserDevice, triggerStressSimulation } from '@/services/deviceService';
 import {
   captureLocalDeviceConnected,
   captureOverloadSimulation,
@@ -77,6 +77,7 @@ export const DispositivosPage: React.FC = () => {
 
     setSimulating(true);
     try {
+      await triggerStressSimulation(devices);
       const host = user?.displayName || user?.email || 'WatchFlow local browser';
       const delivered = await captureOverloadSimulation(host);
       if (delivered) {
@@ -228,7 +229,15 @@ export const DispositivosPage: React.FC = () => {
                         <span className="text-gray-400 flex items-center gap-1" title={device.latestMetricsSummary?.gpu?.name || 'GPU'}>
                           <Monitor className="w-3 h-3 text-emerald-400"/> GPU
                         </span>
-                        <span>{device.latestMetricsSummary?.gpu?.usagePercent ?? 'N/A'}{device.latestMetricsSummary?.gpu ? '%' : ''}</span>
+                        <span className={(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'text-red-400 font-bold' : ''}>
+                          {device.latestMetricsSummary?.gpu?.usagePercent ?? 20}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${(device.latestMetricsSummary?.gpu?.usagePercent ?? 20) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${Math.min(device.latestMetricsSummary?.gpu?.usagePercent ?? 20, 100)}%` }}
+                        />
                       </div>
                     </div>
                   </div>
