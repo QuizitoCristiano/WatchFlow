@@ -326,8 +326,14 @@ export const subscribeToDevices = (
       }
     }, 1000);
 
+    const handleLocalStressTrigger = () => {
+      emitMerged();
+    };
+    window.addEventListener('wf_stress_simulation_triggered', handleLocalStressTrigger);
+
     return () => {
       clearInterval(overrideTimer);
+      window.removeEventListener('wf_stress_simulation_triggered', handleLocalStressTrigger);
       unsubUser();
       unsubShared();
     };
@@ -373,20 +379,17 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
 };
 
 export const triggerStressSimulation = async (devices?: Device[], specificDeviceId?: string) => {
-  if (!isFirebaseConfigured || !db) return;
-
   const targetDevice = specificDeviceId
     ? devices?.find((d) => d.id === specificDeviceId)
     : (devices?.find((d) => !d.isDemoData) || devices?.[0]);
 
   const deviceId = targetDevice?.id || specificDeviceId || 'dev-notebook-utp';
-  const hostname = targetDevice?.hostname || 'NOTEBOOK-MONITORADO';
-  const currentGpuName = targetDevice?.latestMetricsSummary?.gpu?.name || 'GPU';
 
-  // Ativa sobrecarga por 12 segundos APENAS no dispositivo alvo!
+  // Ativa sobrecarga por 12 segundos APENAS neste navegador e APENAS no dispositivo clicado!
+  // Isso evita que outras abas abertas em outros computadores disparem eventos duplicados no Sentry.
   stressOverrideUntilByDevice[deviceId] = Date.now() + 12000;
 
-  // Reseta o cooldown apenas dessa máquina para disparar imediatamente os alertas dela
+  // Reseta o cooldown apenas dessa máquina para disparar exatamente os 3 alertas (CPU, RAM e GPU)
   delete lastAlertSentTimes[`${deviceId}_CPU_HIGH`];
   delete lastAlertSentTimes[`${deviceId}_RAM_HIGH`];
   delete lastAlertSentTimes[`${deviceId}_GPU_HIGH`];
@@ -394,23 +397,5 @@ export const triggerStressSimulation = async (devices?: Device[], specificDevice
   wasAlertActive[`${deviceId}_RAM_HIGH`] = false;
   wasAlertActive[`${deviceId}_GPU_HIGH`] = false;
 
-  const deviceDocRef = doc(db, 'users', SHARED_CLOUD_USER_ID, 'devices', deviceId);
-
-  await setDoc(deviceDocRef, {
-    hostname,
-    ip: targetDevice?.ip || '127.0.0.1',
-    status: 'critical',
-    lastSeen: serverTimestamp(),
-    latestMetricsSummary: {
-      ...(targetDevice?.latestMetricsSummary || {}),
-      cpu: 94,
-      memory: 92,
-      disk: targetDevice?.latestMetricsSummary?.disk ?? 78,
-      gpu: {
-        name: currentGpuName,
-        usagePercent: 96,
-        temperatureC: 82,
-      },
-    },
-  }, { merge: true });
+  window.dispatchEvent(new Event('wf_stress_simulation_triggered'));
 };
