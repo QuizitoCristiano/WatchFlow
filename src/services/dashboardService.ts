@@ -117,7 +117,8 @@ export const dashboardService = {
           getDocs(query(alertsRef, where('userId', '==', userId), where('status', '==', 'active'))),
         ]);
 
-        const totalDevices = devicesSnap.size;
+        const actualDeviceDocs = devicesSnap.docs.filter((document) => document.data().isDemoData !== true);
+        const totalDevices = actualDeviceDocs.length;
         let devicesOnline = 0;
         let devicesWarning = 0;
         let devicesCritical = 0;
@@ -131,7 +132,7 @@ export const dashboardService = {
         let totalDiskTotalGb = 0;
         let devicesWithMetrics = 0;
 
-        devicesSnap.forEach(docSnap => {
+        actualDeviceDocs.forEach(docSnap => {
           const d = docSnap.data() as Device;
           if (d.status === 'online') devicesOnline++;
           else if (d.status === 'warning') devicesWarning++;
@@ -178,7 +179,7 @@ export const dashboardService = {
 
     // Fallback Local
     const rawDevs = userId ? localStorage.getItem(`wf_local_devices:${userId}`) : null;
-    const devs: Device[] = rawDevs ? (JSON.parse(rawDevs) as Device[]).filter((device) => device.userId === userId) : [];
+    const devs: Device[] = rawDevs ? (JSON.parse(rawDevs) as Device[]).filter((device) => device.userId === userId && device.isDemoData !== true) : [];
     const rawAlerts = userId ? localStorage.getItem(`wf_local_alerts:${userId}`) : null;
     const alerts: Alert[] = rawAlerts ? (JSON.parse(rawAlerts) as Alert[]).filter((alert) => alert.userId === userId) : [];
 
@@ -224,14 +225,14 @@ export const dashboardService = {
     storedDevices?: Device[],
     timeRange: '1h' | '24h' | '7d' | '30d' = '24h'
   ): Promise<DashboardMetricsResult> {
-    if (isFirebaseConfigured && db && userId && storedDevices && storedDevices.length > 0) {
+    if (isFirebaseConfigured && db && userId && storedDevices) {
       const history: DashboardMetricPoint[] = [];
       const latestMetricsByDevice: Record<string, LatestMetricsSummary> = {};
       const errors: string[] = [];
       const rangeMs: Record<typeof timeRange, number> = { '1h': 60 * 60_000, '24h': 24 * 60 * 60_000, '7d': 7 * 24 * 60 * 60_000, '30d': 30 * 24 * 60 * 60_000 };
       const cutoff = Timestamp.fromDate(new Date(Date.now() - rangeMs[timeRange]));
 
-      for (const dev of storedDevices.slice(0, 5)) {
+      for (const dev of storedDevices.filter((device) => device.isDemoData !== true).slice(0, 5)) {
         if (!dev.id) continue;
         try {
           const mRef = collection(db, 'users', userId, 'devices', dev.id, 'metrics');
@@ -295,7 +296,9 @@ export const dashboardService = {
       try {
         const q = query(collection(db, 'users', userId, 'devices'), orderBy('lastSeen', 'desc'), limit(5));
         const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Device));
+        return snap.docs
+          .filter((document) => document.data().isDemoData !== true)
+          .map(doc => ({ id: doc.id, ...doc.data() } as Device));
       } catch (e) {
         console.warn('Erro ao carregar dispositivos do Firestore:', e);
       }

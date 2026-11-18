@@ -160,6 +160,7 @@ test('configuration validates protocols and positive timing values', () => {
     COLLECTOR_INTERVAL_MS: '1000',
   }), /pelo menos 15000/);
   assert.equal(loadConfig({
+    NODE_EXPORTER_URL: 'http://127.0.0.1:9100/metrics',
     WATCHFLOW_INGEST_URL: 'https://watchflow.example/api/collector/ingest',
     WATCHFLOW_INGEST_TOKEN: 'A'.repeat(43),
     WATCHFLOW_INTEGRATION_ID: 'integration',

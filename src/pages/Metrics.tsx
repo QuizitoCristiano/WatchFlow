@@ -37,7 +37,9 @@ export const MetricasPage: React.FC = () => {
 
   // State is tagged with the authenticated UID so account switches never flash another user's data.
   const [devicesState, setDevicesState] = useState<{ userId: string; items: Device[] } | null>(null);
-  const devices = userId && devicesState?.userId === userId ? devicesState.items : [];
+  const devices = userId && devicesState?.userId === userId
+    ? devicesState.items.filter((device) => device.isDemoData !== true)
+    : [];
   const [selectedDeviceState, setSelectedDeviceState] = useState<{ userId: string; id: string } | null>(null);
   const selectedDeviceId = userId && selectedDeviceState?.userId === userId ? selectedDeviceState.id : '';
   const setSelectedDeviceId = (id: string) => setSelectedDeviceState({ userId: userId ?? '', id });
@@ -284,7 +286,7 @@ export const MetricasPage: React.FC = () => {
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full transition-all duration-500 ${(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                  className={`h-full transition-all duration-500 ${(currentGpu ?? 0) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`} 
                   style={{ width: `${currentGpu === null ? 0 : Math.min(currentGpu, 100)}%` }} 
                 />
               </div>
@@ -325,7 +327,7 @@ export const MetricasPage: React.FC = () => {
                   <span className="font-semibold text-white">
                     {selectedDevice.latestMetricsSummary?.networkOutBytesSec 
                       ? `${(selectedDevice.latestMetricsSummary.networkOutBytesSec / (1024 * 1024)).toFixed(1)} MB/s` 
-                      : '0.0 MB/s'}
+                      : '—'}
                   </span>
                 </div>
               </div>
