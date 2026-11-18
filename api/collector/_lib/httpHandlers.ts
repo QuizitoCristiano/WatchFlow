@@ -19,10 +19,12 @@ export interface ApiHandler {
 interface ProvisionDependencies {
   verifyIdToken(token: string): Promise<{ uid: string }>;
   provision(uid: string, body: unknown): Promise<{ token: string; deviceId: string }>;
+  captureUnexpectedError?(error: unknown): Promise<void | boolean>;
 }
 
 interface IngestDependencies {
   ingest(token: string, body: unknown): Promise<{ result: string }>;
+  captureUnexpectedError?(error: unknown): Promise<void | boolean>;
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -136,11 +138,17 @@ function requireCollectorToken(request: ApiRequest): string {
   return match[1];
 }
 
-function handleError(response: ApiResponse, error: unknown): void {
+async function handleError(
+  response: ApiResponse,
+  error: unknown,
+  captureUnexpectedError?: (error: unknown) => Promise<void | boolean>,
+): Promise<void> {
   if (error instanceof HttpError) {
     send(response, error.statusCode, { error: error.message });
     return;
   }
+
+  await captureUnexpectedError?.(error);
   console.error('Falha inesperada na API de ingestão:', error instanceof Error ? error.name : 'unknown');
   send(response, 500, { error: 'Falha interna ao processar a requisição.' });
 }
@@ -175,7 +183,7 @@ export function createProvisionHandler(dependencies: ProvisionDependencies): Api
         ingestUrl: '/api/collector/ingest',
       });
     } catch (error: unknown) {
-      handleError(response, error);
+      await handleError(response, error, dependencies.captureUnexpectedError);
     }
   };
 }
@@ -191,7 +199,7 @@ export function createIngestHandler(dependencies: IngestDependencies): ApiHandle
       const result = await dependencies.ingest(token, body);
       send(response, 200, result);
     } catch (error: unknown) {
-      handleError(response, error);
+      await handleError(response, error, dependencies.captureUnexpectedError);
     }
   };
 }
