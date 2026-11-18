@@ -118,8 +118,9 @@ export async function captureLocalDeviceConnected(device: LocalDeviceContext, cu
   return Sentry.flush(2000);
 }
 
-/** Dispara 3 Issues separadas no Sentry (CPU, RAM e GPU) sem agrupar na mesma linha! */
-export async function captureOverloadSimulation(host: string): Promise<boolean> {
+/** Dispara 3 Issues separadas no Sentry (CPU, RAM e GPU) com fingerprint único por rodada! */
+export async function captureOverloadSimulation(host: string, simId?: string): Promise<boolean> {
+  const simulationTag = simId || `sim-${Date.now().toString(36)}`;
   const alerts = [
     {
       metric: "CPU",
@@ -141,16 +142,20 @@ export async function captureOverloadSimulation(host: string): Promise<boolean> 
   for (const item of alerts) {
     Sentry.withScope((scope) => {
       scope.setLevel("fatal");
-      scope.setFingerprint(["wf-overload-v2", item.metric, host, item.title]);
+      // O simulationTag garante que cada execução apareça na lista de Unresolved do Sentry,
+      // mesmo que o operador tenha arquivado as execuções anteriores!
+      scope.setFingerprint(["wf-sim-v3", host, item.metric, simulationTag]);
       scope.setTag("feature", "overload-demo");
       scope.setTag("host", host);
       scope.setTag("metric", item.metric);
       scope.setTag("resource", item.metric);
+      scope.setTag("simulation_id", simulationTag);
       scope.setContext("hardware_alert", {
         host,
         metric: item.metric,
         value: item.value,
         threshold: "90%",
+        simulationId: simulationTag,
       });
       Sentry.captureMessage(item.title, "fatal");
     });

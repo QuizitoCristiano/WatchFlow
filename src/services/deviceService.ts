@@ -1,4 +1,4 @@
-import { captureAppException } from '@/lib/sentry';
+import { captureAppException, captureOverloadSimulation } from '@/lib/sentry';
 import { auth, db, isFirebaseConfigured } from '@/services/config';
 import type { Device } from '@/types';
 import {
@@ -129,6 +129,12 @@ function evaluateDeviceAlerts(device: Device, currentUserId: string) {
       description: 'Conexão registrada no Sentry APM!',
       duration: 6000,
     });
+  }
+
+  // Se o dispositivo estiver em período de sobrecarga simulada, o envio já foi feito
+  // diretamente ao Sentry por triggerStressSimulation, evitando disparo duplicado.
+  if (device.id && stressOverrideUntilByDevice[device.id] && Date.now() < stressOverrideUntilByDevice[device.id]) {
+    return;
   }
 
   const summary = device.latestMetricsSummary;
@@ -378,24 +384,73 @@ export const deleteDevice = async (userId: string, deviceId: string) => {
   writeLocalDevices(userId, devices);
 };
 
-export const triggerStressSimulation = async (devices?: Device[], specificDeviceId?: string) => {
+export const triggerStressSimulation = async (
+  devices?: Device[],
+  specificDeviceId?: string,
+  currentUserId?: string,
+) => {
   const targetDevice = specificDeviceId
     ? devices?.find((d) => d.id === specificDeviceId)
     : (devices?.find((d) => !d.isDemoData) || devices?.[0]);
 
   const deviceId = targetDevice?.id || specificDeviceId || 'dev-notebook-utp';
+  const hostname = targetDevice?.hostname || (deviceId.includes('eti') ? 'ETI-2371' : 'DESKTOP-FFGBKK3');
 
-  // Ativa sobrecarga por 12 segundos APENAS neste navegador e APENAS no dispositivo clicado!
-  // Isso evita que outras abas abertas em outros computadores disparem eventos duplicados no Sentry.
+  // Ativa sobrecarga por 12 segundos APENAS neste navegador e APENAS no dispositivo clicado
   stressOverrideUntilByDevice[deviceId] = Date.now() + 12000;
 
-  // Reseta o cooldown apenas dessa máquina para disparar exatamente os 3 alertas (CPU, RAM e GPU)
-  delete lastAlertSentTimes[`${deviceId}_CPU_HIGH`];
-  delete lastAlertSentTimes[`${deviceId}_RAM_HIGH`];
-  delete lastAlertSentTimes[`${deviceId}_GPU_HIGH`];
-  wasAlertActive[`${deviceId}_CPU_HIGH`] = false;
-  wasAlertActive[`${deviceId}_RAM_HIGH`] = false;
-  wasAlertActive[`${deviceId}_GPU_HIGH`] = false;
+  // Marca como ativo para habilitar a notificação de Auto-Recovery ao término dos 12s
+  wasAlertActive[`${deviceId}_CPU_HIGH`] = true;
+  wasAlertActive[`${deviceId}_RAM_HIGH`] = true;
+  wasAlertActive[`${deviceId}_GPU_HIGH`] = true;
 
+  // Atualiza imediatamente o card na interface com barras cheias e CRITICAL em vermelho
   window.dispatchEvent(new Event('wf_stress_simulation_triggered'));
+
+  // Dispara diretamente os 3 eventos separados ao Sentry (CPU, RAM e GPU) com ID de execução único
+  const simId = `sim-${Date.now().toString(36)}`;
+  const delivered = await captureOverloadSimulation(hostname, simId);
+
+  // Registra os 3 incidentes na Central de Alertas do WatchFlow (/alerts)
+  const uid = currentUserId || auth?.currentUser?.uid || SHARED_CLOUD_USER_ID;
+  const now = Date.now();
+  const isoNow = new Date().toISOString();
+
+  const simAlerts = [
+    { metric: 'CPU', val: '94%', type: 'high_cpu', title: `Uso Excessivo de CPU (94%) — ${hostname}` },
+    { metric: 'RAM', val: '92%', type: 'high_memory', title: `Esgotamento Crítico de Memória RAM (92%) — ${hostname}` },
+    { metric: 'GPU', val: '96%', type: 'high_gpu', title: `Sobrecarga Crítica de GPU (96%) — ${hostname}` },
+  ];
+
+  for (const a of simAlerts) {
+    const alertId = `alt_${deviceId}_${a.metric}_${now}`;
+    void persistAlertToCloudAndLocal(uid, alertId, {
+      userId: uid,
+      deviceId,
+      deviceName: hostname,
+      type: a.type,
+      severity: 'critical',
+      title: a.title,
+      description: `O recurso ${a.metric} atingiu nível crítico (${a.val}) no host ${hostname}.`,
+      status: 'active',
+      metricTriggered: {
+        metric: a.metric,
+        value: a.val,
+        threshold: '90%',
+        operator: '>',
+      },
+      firstDetectedAt: isoNow,
+      lastDetectedAt: isoNow,
+      createdAt: isoNow,
+    });
+  }
+
+  toast.error(`🔥 Alertas Críticos disparados em ${hostname}!`, {
+    description: delivered
+      ? '3 incidentes (CPU, RAM e GPU) enviados com sucesso ao Sentry APM.'
+      : 'Alertas gerados localmente. Verifique o Sentry.',
+    duration: 6000,
+  });
+
+  return delivered;
 };

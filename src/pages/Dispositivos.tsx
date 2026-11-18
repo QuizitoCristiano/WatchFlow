@@ -80,7 +80,7 @@ export const DispositivosPage: React.FC = () => {
 
     setSimulating(true);
     try {
-      await triggerStressSimulation(devices, specificDeviceId);
+      await triggerStressSimulation(devices, specificDeviceId, userId || undefined);
     } catch (error) {
       console.error('Falha ao enviar simulação ao Sentry:', error);
       toast.error('Não foi possível enviar a simulação ao Sentry.');
