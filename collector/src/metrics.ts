@@ -188,7 +188,7 @@ export interface NetworkUsage {
 function getNetworkCounters(samples: readonly MetricSample[], name: string): Map<string, number> {
   const counters = new Map<string, number>();
   for (const sample of samples) {
-    if (sample.name !== name || sample.labels.device === 'lo') continue;
+    if (sample.name !== name || sample.labels.device === 'lo' || /loopback/i.test(sample.labels.device ?? '')) continue;
     counters.set(sample.labels.device, sample.value);
   }
   return counters;

@@ -83,9 +83,10 @@ export const MetricasPage: React.FC = () => {
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId);
 
   // Cards de resumo com latestMetricsSummary
-  const currentCpu = selectedDevice?.latestMetricsSummary?.cpu ?? 0;
-  const currentRam = selectedDevice?.latestMetricsSummary?.memory ?? 0;
-  const currentDisk = selectedDevice?.latestMetricsSummary?.disk ?? 0;
+  const currentCpu = selectedDevice?.latestMetricsSummary?.cpu ?? null;
+  const currentRam = selectedDevice?.latestMetricsSummary?.memory ?? null;
+  const currentDisk = selectedDevice?.latestMetricsSummary?.disk ?? null;
+  const currentGpu = selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? null;
 
   // Formatação de data/hora
   const formatMetricTime = (value: unknown) => {
@@ -117,12 +118,12 @@ export const MetricasPage: React.FC = () => {
       const timeStr = formatMetricTime(m.collectedAt);
       return {
         timestamp: timeStr,
-        cpu: m.cpu?.usagePercent || 0,
-        ram: m.memory?.usedPercent || 0,
-        disk: m.disk?.usedPercent || 0,
-        gpu: m.gpu?.usagePercent || 0,
-        networkInKb: m.network?.bytesInSec ? Number((m.network.bytesInSec / 1024).toFixed(1)) : 0,
-        networkOutKb: m.network?.bytesOutSec ? Number((m.network.bytesOutSec / 1024).toFixed(1)) : 0,
+        cpu: m.cpu?.usagePercent ?? null,
+        ram: m.memory?.usedPercent ?? null,
+        disk: m.disk?.usedPercent ?? null,
+        gpu: m.gpu?.usagePercent ?? null,
+        networkInKb: typeof m.network?.bytesInSec === 'number' ? Number((m.network.bytesInSec / 1024).toFixed(1)) : null,
+        networkOutKb: typeof m.network?.bytesOutSec === 'number' ? Number((m.network.bytesOutSec / 1024).toFixed(1)) : null,
       };
     });
   }, [metricsHistory]);
@@ -233,16 +234,16 @@ export const MetricasPage: React.FC = () => {
                     ? 'text-red-400 bg-red-500/10 border-red-500/20' 
                     : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                 }`}>
-                  {currentCpu > 80 ? 'Elevado' : 'Normal'}
+                  {currentCpu === null ? 'Sem dados' : currentCpu > 80 ? 'Elevado' : 'Normal'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">{currentCpu}%</span>
+                <span className="text-3xl font-bold">{currentCpu === null ? '—' : `${currentCpu}%`}</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-500 ${currentCpu > 80 ? 'bg-red-500' : 'bg-orange-500'}`} 
-                  style={{ width: `${Math.min(currentCpu, 100)}%` }} 
+                  style={{ width: `${currentCpu === null ? 0 : Math.min(currentCpu, 100)}%` }} 
                 />
               </div>
             </div>
@@ -256,10 +257,10 @@ export const MetricasPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">{currentRam}%</span>
+                <span className="text-3xl font-bold">{currentRam === null ? '—' : `${currentRam}%`}</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${Math.min(currentRam, 100)}%` }} />
+                <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${currentRam === null ? 0 : Math.min(currentRam, 100)}%` }} />
               </div>
             </div>
 
@@ -268,15 +269,15 @@ export const MetricasPage: React.FC = () => {
               <div className="flex justify-between items-center text-xs text-gray-400 font-medium">
                 <span className="flex items-center gap-1.5"><Monitor className="w-4 h-4 text-emerald-400"/> GPU</span>
                 <span className={`px-2 py-0.5 rounded-full border text-xs ${
-                  (selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90
+                  (currentGpu ?? 0) >= 90
                     ? 'text-red-400 bg-red-500/10 border-red-500/20 font-bold'
                     : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                 }`}>
-                  {(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'Crítico' : 'Normal'}
+                  {currentGpu === null ? 'Indisponível' : currentGpu >= 90 ? 'Crítico' : 'Normal'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">{selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0}%</span>
+                <span className="text-3xl font-bold">{currentGpu === null ? '—' : `${currentGpu}%`}</span>
                 <span className="text-xs text-zinc-500 font-mono truncate max-w-[110px]" title={selectedDevice?.latestMetricsSummary?.gpu?.name}>
                   {selectedDevice?.latestMetricsSummary?.gpu?.name || 'N/A'}
                 </span>
@@ -284,7 +285,7 @@ export const MetricasPage: React.FC = () => {
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-500 ${(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0) >= 90 ? 'bg-red-500' : 'bg-emerald-500'}`} 
-                  style={{ width: `${Math.min(selectedDevice?.latestMetricsSummary?.gpu?.usagePercent ?? 0, 100)}%` }} 
+                  style={{ width: `${currentGpu === null ? 0 : Math.min(currentGpu, 100)}%` }} 
                 />
               </div>
             </div>
@@ -298,10 +299,10 @@ export const MetricasPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-bold">{currentDisk}%</span>
+                <span className="text-3xl font-bold">{currentDisk === null ? '—' : `${currentDisk}%`}</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${Math.min(currentDisk, 100)}%` }} />
+                <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${currentDisk === null ? 0 : Math.min(currentDisk, 100)}%` }} />
               </div>
             </div>
 
@@ -315,7 +316,7 @@ export const MetricasPage: React.FC = () => {
                   <span className="font-semibold text-white">
                     {selectedDevice.latestMetricsSummary?.networkInBytesSec 
                       ? `${(selectedDevice.latestMetricsSummary.networkInBytesSec / (1024 * 1024)).toFixed(1)} MB/s` 
-                      : '0.0 MB/s'}
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs">
@@ -485,14 +486,14 @@ export const MetricasPage: React.FC = () => {
                       </tr>
                     ) : (
                       metricsHistory.map((m) => {
-                        const inKb = m.network?.bytesInSec ? (m.network.bytesInSec / 1024).toFixed(1) : '0';
-                        const outKb = m.network?.bytesOutSec ? (m.network.bytesOutSec / 1024).toFixed(1) : '0';
+                        const inKb = typeof m.network?.bytesInSec === 'number' ? (m.network.bytesInSec / 1024).toFixed(1) : '—';
+                        const outKb = typeof m.network?.bytesOutSec === 'number' ? (m.network.bytesOutSec / 1024).toFixed(1) : '—';
                         return (
                           <tr key={m.id} className="hover:bg-zinc-800/30 transition">
                             <td className="p-3 font-mono text-gray-400">{formatMetricTime(m.collectedAt)}</td>
-                            <td className="p-3 font-medium text-orange-400">{m.cpu?.usagePercent}%</td>
-                            <td className="p-3 font-medium text-blue-400">{m.memory?.usedPercent}%</td>
-                            <td className="p-3 font-medium text-purple-400">{m.disk?.usedPercent}%</td>
+                            <td className="p-3 font-medium text-orange-400">{typeof m.cpu?.usagePercent === 'number' ? `${m.cpu.usagePercent}%` : '—'}</td>
+                            <td className="p-3 font-medium text-blue-400">{typeof m.memory?.usedPercent === 'number' ? `${m.memory.usedPercent}%` : '—'}</td>
+                            <td className="p-3 font-medium text-purple-400">{typeof m.disk?.usedPercent === 'number' ? `${m.disk.usedPercent}%` : '—'}</td>
                             <td className="p-3 text-gray-400">{inKb} KB/s / {outKb} KB/s</td>
                           </tr>
                         );

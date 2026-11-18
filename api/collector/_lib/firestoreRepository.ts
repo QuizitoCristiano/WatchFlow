@@ -81,7 +81,7 @@ function getBucketMap(data: DocumentData, now: Date, successful: boolean): {
   return { buckets, ...totals };
 }
 
-function metricDocument(sample: SuccessfulSample): DocumentData {
+function metricDocument(sample: SuccessfulSample, source: 'node_exporter' | 'windows_exporter'): DocumentData {
   const collectedAt = new Date(sample.collectedAt);
   const memoryTotalMb = sample.memoryTotalBytes / (1024 * 1024);
   const memoryUsedMb = sample.memoryUsedBytes / (1024 * 1024);
@@ -92,7 +92,7 @@ function metricDocument(sample: SuccessfulSample): DocumentData {
   const result: DocumentData = {
     integrationId: sample.integrationId,
     deviceId: sample.deviceId,
-    source: 'node_exporter',
+    source,
     isDemoData: false,
     collectedAt: Timestamp.fromDate(collectedAt),
     expiresAt: Timestamp.fromDate(new Date(collectedAt.getTime() + 90 * 24 * 60 * 60_000)),
@@ -468,7 +468,8 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
         };
         if (!deviceSnapshot.exists) deviceData.createdAt = FieldValue.serverTimestamp();
 
-        transaction.set(metricRef, metricDocument(sample));
+        const source = integration.type === 'windows_exporter' ? 'windows_exporter' : 'node_exporter';
+        transaction.set(metricRef, metricDocument(sample, source));
         transaction.set(deviceRef, deviceData, { merge: true });
         transaction.update(credentialRef, {
           lastIngestAt: Timestamp.fromDate(now),
