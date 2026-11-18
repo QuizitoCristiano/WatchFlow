@@ -15,7 +15,24 @@ const SUPPORTED_METRICS = new Set([
   'node_filesystem_device_error',
   'node_network_receive_bytes_total',
   'node_network_transmit_bytes_total',
+  'windows_cpu_time_total',
+  'windows_cs_physical_memory_bytes',
+  'windows_memory_available_bytes',
+  'windows_logical_disk_size_bytes',
+  'windows_logical_disk_free_bytes',
+  'windows_net_bytes_received_total',
+  'windows_net_bytes_sent_total',
 ]);
+
+const METRIC_ALIASES: Readonly<Record<string, string>> = {
+  windows_cpu_time_total: 'node_cpu_seconds_total',
+  windows_cs_physical_memory_bytes: 'node_memory_MemTotal_bytes',
+  windows_memory_available_bytes: 'node_memory_MemAvailable_bytes',
+  windows_logical_disk_size_bytes: 'node_filesystem_size_bytes',
+  windows_logical_disk_free_bytes: 'node_filesystem_free_bytes',
+  windows_net_bytes_received_total: 'node_network_receive_bytes_total',
+  windows_net_bytes_sent_total: 'node_network_transmit_bytes_total',
+};
 
 function parseLabels(source: string): Record<string, string> {
   const labels: Record<string, string> = {};
@@ -71,8 +88,9 @@ function parseMetricLine(line: string, lineNumber: number): MetricSample | null 
   const nameMatch = /^([a-zA-Z_:][a-zA-Z0-9_:]*)/.exec(line);
   if (!nameMatch) return null;
 
-  const name = nameMatch[1];
-  if (!SUPPORTED_METRICS.has(name)) return null;
+  const sourceName = nameMatch[1];
+  if (!SUPPORTED_METRICS.has(sourceName)) return null;
+  const name = METRIC_ALIASES[sourceName] ?? sourceName;
 
   let remainder = line.slice(name.length).trimStart();
   let labels: Record<string, string> = {};
@@ -115,8 +133,24 @@ function parseMetricLine(line: string, lineNumber: number): MetricSample | null 
     throw new CollectorError(`Valor inválido na métrica suportada da linha ${lineNumber}.`);
   }
 
+  if (sourceName === 'windows_cpu_time_total') {
+    if (!labels.core) throw new CollectorError(`Rótulo core ausente na linha ${lineNumber}.`);
+    labels.cpu = labels.core;
+    delete labels.core;
+  } else if (sourceName === 'windows_logical_disk_size_bytes' || sourceName === 'windows_logical_disk_free_bytes') {
+    if (!labels.volume) throw new CollectorError(`Rótulo volume ausente na linha ${lineNumber}.`);
+    labels.device = labels.volume;
+    labels.fstype = 'windows';
+    labels.mountpoint = labels.volume;
+    delete labels.volume;
+  } else if (sourceName === 'windows_net_bytes_received_total' || sourceName === 'windows_net_bytes_sent_total') {
+    if (!labels.nic) throw new CollectorError(`Rótulo nic ausente na linha ${lineNumber}.`);
+    labels.device = labels.nic;
+    delete labels.nic;
+  }
+
   if (name === 'node_cpu_seconds_total') {
-    if (!/^\d+$/.test(labels.cpu ?? '') || !labels.mode) {
+    if (!/^[0-9,]+$/.test(labels.cpu ?? '') || !labels.mode) {
       throw new CollectorError(`Rótulos cpu/mode ausentes ou inválidos na linha ${lineNumber}.`);
     }
   } else if (name.startsWith('node_filesystem_')) {

@@ -128,8 +128,8 @@ test('CPU calculation rejects missing, changing, and reset counters', () => {
 });
 
 test('configuration validates protocols and positive timing values', () => {
-  assert.equal(loadConfig({}).endpoint.href, 'http://192.168.1.2:9100/metrics');
-  assert.equal(loadConfig({}).deviceId, '192.168.1.2');
+  assert.throws(() => loadConfig({}), /Configure NODE_EXPORTER_URL/);
+  assert.equal(loadConfig({ NODE_EXPORTER_URL: 'http://127.0.0.1:9182/metrics' }).endpoint.port, '9182');
   assert.equal(loadConfig({ NODE_EXPORTER_URL: 'https://localhost:9100/metrics' }).endpoint.protocol, 'https:');
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'ftp://localhost/metrics' }), /HTTP ou HTTPS/);
   assert.throws(() => loadConfig({ NODE_EXPORTER_URL: 'not a URL' }), /URL válida/);
@@ -297,4 +297,25 @@ test('ingestion does not retry permanent authorization errors', async () => {
     /HTTP 401/,
   );
   assert.equal(calls, 1);
+});
+
+test('Windows Exporter metrics are normalized into the shared telemetry contract', () => {
+  const windowsSample = parsePrometheusText(`
+    windows_cpu_time_total{core="0,0",mode="idle"} 10
+    windows_cpu_time_total{core="0,0",mode="user"} 5
+    windows_cpu_time_total{core="0,1",mode="idle"} 8
+    windows_cpu_time_total{core="0,1",mode="user"} 2
+    windows_cs_physical_memory_bytes 1000
+    windows_memory_available_bytes 250
+    windows_logical_disk_size_bytes{volume="C:"} 2000
+    windows_logical_disk_free_bytes{volume="C:"} 500
+    windows_net_bytes_received_total{nic="Ethernet"} 1000
+    windows_net_bytes_sent_total{nic="Ethernet"} 2000
+  `);
+  assert.equal(calculateMemoryUsagePercent(windowsSample), 75);
+  const filesystems = calculateFilesystemUsage(windowsSample);
+  assert.equal(filesystems.length, 1);
+  assert.equal(filesystems[0].mountpoint, 'C:');
+  assert.equal(filesystems[0].usedPercent, 75);
+  assert.equal(windowsSample.find((sample) => sample.name === 'node_network_receive_bytes_total')?.labels.device, 'Ethernet');
 });

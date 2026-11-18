@@ -225,6 +225,8 @@ export const Integrations: React.FC = () => {
     switch (agentType) {
       case 'node_exporter':
         return { label: 'Node Exporter', bg: 'bg-orange-500/10 text-orange-400 border-orange-500/30' };
+      case 'windows_exporter':
+        return { label: 'Windows Exporter', bg: 'bg-blue-500/10 text-blue-400 border-blue-500/30' };
       case 'telegraf':
         return { label: 'Telegraf Agent', bg: 'bg-purple-500/10 text-purple-400 border-purple-500/30' };
       case 'zabbix_agent':
@@ -242,7 +244,7 @@ export const Integrations: React.FC = () => {
             Integrações & Agentes
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Conecte máquinas com Node Exporter. As métricas são persistidas após a primeira coleta autenticada.
+            Conecte máquinas Linux com Node Exporter ou Windows com Windows Exporter. As métricas são persistidas após a primeira coleta autenticada.
           </p>
         </div>
         <button
@@ -379,7 +381,7 @@ export const Integrations: React.FC = () => {
           </div>
           <h3 className="text-lg font-bold text-white mb-2">{t('Nenhuma integração configurada')}</h3>
           <p className="text-zinc-400 text-sm mb-6">
-            Cadastre uma conexão Node Exporter e provisione o Collector para começar a receber métricas reais.
+            Cadastre uma conexão Node Exporter ou Windows Exporter e provisione o Collector para começar a receber métricas reais.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -511,7 +513,8 @@ export const Integrations: React.FC = () => {
                   onChange={(e) => setType(e.target.value as IntegrationType)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500 transition"
                 >
-                  <option value="node_exporter">{t('Prometheus Node Exporter')}</option>
+                  <option value="node_exporter">{t('Prometheus Node Exporter (Linux)')}</option>
+                  <option value="windows_exporter">{t('Prometheus Windows Exporter (Windows)')}</option>
                 </select>
               </div>
 
@@ -520,7 +523,7 @@ export const Integrations: React.FC = () => {
                 <input
                   type="url"
                   required
-                  placeholder="http://192.168.1.2:9100/metrics"
+                  placeholder={type === "windows_exporter" ? "http://127.0.0.1:9182/metrics" : "http://127.0.0.1:9100/metrics"}
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-orange-500 transition"

@@ -24,7 +24,7 @@ export interface UserProfile {
 // ==========================================
 // 2. INTEGRAÇÕES DE TELEMETRIA -> users/{userId}/integrations/{integrationId}
 // ==========================================
-export type IntegrationType = 'node_exporter' | 'telegraf' | 'zabbix_agent';
+export type IntegrationType = 'node_exporter' | 'windows_exporter' | 'telegraf' | 'zabbix_agent';
 export type IntegrationStatus = 'online' | 'offline' | 'error' | 'syncing';
 export type IntegrationLifecycleStatus = IntegrationStatus | 'pending';
 

@@ -108,8 +108,8 @@ export function validateIntegrationInput(input: {
   if (!name || name.length > 100) {
     throw new Error('Informe um nome com até 100 caracteres.');
   }
-  if (input.type !== 'node_exporter') {
-    throw new Error('O MVP do WatchFlow aceita somente Node Exporter.');
+  if (input.type !== 'node_exporter' && input.type !== 'windows_exporter') {
+    throw new Error('O coletor autenticado suporta Node Exporter e Windows Exporter.');
   }
 
   let endpoint: URL;
@@ -125,14 +125,13 @@ export function validateIntegrationInput(input: {
     throw new Error('A URL deve apontar para /metrics e não pode conter credenciais, parâmetros ou fragmentos.');
   }
   if (endpoint.href.length > 2048) throw new Error('A URL excede o limite permitido.');
-  if (input.type === 'node_exporter') {
-    const effectivePort = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
-    if (!['9100', '443'].includes(effectivePort)) {
-      throw new Error('Node Exporter deve usar a porta TCP 9100 ou um proxy HTTPS na porta 443.');
-    }
-    if (effectivePort === '443' && endpoint.protocol !== 'https:') {
-      throw new Error('A porta 443 exige HTTPS.');
-    }
+  const effectivePort = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
+  const expectedPort = input.type === 'windows_exporter' ? '9182' : '9100';
+  if (![expectedPort, '443'].includes(effectivePort)) {
+    throw new Error(`${input.type === 'windows_exporter' ? 'Windows Exporter' : 'Node Exporter'} deve usar a porta TCP ${expectedPort} ou um proxy HTTPS na porta 443.`);
+  }
+  if (effectivePort === '443' && endpoint.protocol !== 'https:') {
+    throw new Error('A porta 443 exige HTTPS.');
   }
 
   return { name, type: input.type, baseUrl: endpoint.toString() };

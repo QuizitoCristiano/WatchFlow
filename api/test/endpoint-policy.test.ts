@@ -39,3 +39,13 @@ test('blocks common cloud metadata destinations', () => {
     assert.throws(() => validateNodeExporterEndpoint(endpoint), /Endpoint do Node Exporter/);
   }
 });
+
+
+test('accepts Windows Exporter on TCP 9182 and HTTPS reverse proxy', () => {
+  assert.doesNotThrow(() => validateNodeExporterEndpoint('http://192.168.1.25:9182/metrics', 'windows_exporter'));
+  assert.doesNotThrow(() => validateNodeExporterEndpoint('https://metrics.internal.example/metrics', 'windows_exporter'));
+});
+
+test('rejects Node Exporter port for Windows Exporter', () => {
+  assert.throws(() => validateNodeExporterEndpoint('http://192.168.1.25:9100/metrics', 'windows_exporter'), /Endpoint do exporter/);
+});

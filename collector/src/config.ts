@@ -1,5 +1,3 @@
-export const DEFAULT_NODE_EXPORTER_URL = 'http://192.168.1.2:9100/metrics';
-
 export interface CollectorConfig {
   endpoint: URL;
   ingestUrl: URL | null;
@@ -35,7 +33,10 @@ function parsePositiveInteger(
 }
 
 export function loadConfig(env: Readonly<Record<string, string | undefined>> = process.env): CollectorConfig {
-  const endpointValue = env.NODE_EXPORTER_URL?.trim() || DEFAULT_NODE_EXPORTER_URL;
+  const endpointValue = env.NODE_EXPORTER_URL?.trim();
+  if (!endpointValue) {
+    throw new CollectorError('Configure NODE_EXPORTER_URL com o endpoint /metrics da máquina que deseja monitorar.');
+  }
   let endpoint: URL;
 
   try {

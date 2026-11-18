@@ -191,7 +191,7 @@ function credentialReference(db: Firestore, tokenHash: string) {
   return db.doc(`collectorCredentials/${tokenHash}`);
 }
 
-export function validateNodeExporterEndpoint(value: unknown): void {
+export function validateNodeExporterEndpoint(value: unknown, exporterType: 'node_exporter' | 'windows_exporter' = 'node_exporter'): void {
   if (typeof value !== 'string' || value.length > 2048) {
     throw new HttpError(400, 'Endpoint do Node Exporter inválido.');
   }
@@ -203,6 +203,7 @@ export function validateNodeExporterEndpoint(value: unknown): void {
   }
   const port = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80');
   const hostname = endpoint.hostname.toLowerCase();
+  const expectedPort = exporterType === 'windows_exporter' ? '9182' : '9100';
   if (
     !['http:', 'https:'].includes(endpoint.protocol) ||
     endpoint.username ||
@@ -210,7 +211,7 @@ export function validateNodeExporterEndpoint(value: unknown): void {
     endpoint.search ||
     endpoint.hash ||
     endpoint.pathname !== '/metrics' ||
-    !['9100', '443'].includes(port) ||
+    ![expectedPort, '443'].includes(port) ||
     (port === '443' && endpoint.protocol !== 'https:') ||
     hostname === '169.254.169.254' ||
     hostname.startsWith('169.254.') ||
@@ -218,7 +219,7 @@ export function validateNodeExporterEndpoint(value: unknown): void {
     hostname === 'metadata.google.internal' ||
     hostname === 'metadata.azure.internal'
   ) {
-    throw new HttpError(400, 'Endpoint do Node Exporter viola a política de protocolo, porta ou destino.');
+    throw new HttpError(400, 'Endpoint do exporter viola a política de protocolo, porta ou destino.');
   }
 }
 
@@ -228,7 +229,7 @@ function ensureOwner(
 ): DocumentData {
   if (!integrationSnapshot.exists) throw new HttpError(401, 'Integração removida ou não autorizada.');
   const data = getRecord(integrationSnapshot.data());
-  if (data.userId !== identity.userId || data.type !== 'node_exporter') {
+  if (data.userId !== identity.userId || !['node_exporter', 'windows_exporter'].includes(String(data.type))) {
     throw new HttpError(403, 'A integração não pertence ao proprietário da credencial.');
   }
   return data;
@@ -295,10 +296,10 @@ export function createFirestoreCollectorRepository(db: Firestore): CollectorRepo
         if (!integrationSnapshot.exists) throw new HttpError(404, 'Integração não encontrada.');
         const integration = getRecord(integrationSnapshot.data());
         if (integration.userId !== userId) throw new HttpError(403, 'Integração não pertence ao usuário autenticado.');
-        if (integration.type !== 'node_exporter') {
-          throw new HttpError(400, 'A ingestão ainda suporta somente Node Exporter.');
+        if (integration.type !== 'node_exporter' && integration.type !== 'windows_exporter') {
+          throw new HttpError(400, 'A ingestão suporta somente Node Exporter e Windows Exporter.');
         }
-        validateNodeExporterEndpoint(integration.baseUrl);
+        validateNodeExporterEndpoint(integration.baseUrl, integration.type);
         const previousState = getRecord(stateSnapshot.data());
         const lastRotation = previousState.rotatedAt;
         if (lastRotation instanceof Timestamp && issuedAt.getTime() - lastRotation.toMillis() < MIN_PROVISION_INTERVAL_MS) {
