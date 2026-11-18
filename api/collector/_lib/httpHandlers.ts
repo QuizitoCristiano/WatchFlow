@@ -141,7 +141,7 @@ function requireCollectorToken(request: ApiRequest): string {
 async function handleError(
   response: ApiResponse,
   error: unknown,
-  captureUnexpectedError?: (error: unknown) => Promise<void>,
+  captureUnexpectedError?: (error: unknown) => Promise<void | boolean>,
 ): Promise<void> {
   if (error instanceof HttpError) {
     send(response, error.statusCode, { error: error.message });
