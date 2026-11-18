@@ -45,7 +45,7 @@ O arquivo `.env.local` deve ficar na raiz e permanecer fora do Git. O `.gitignor
 
 ## Privacidade
 
-- `sendDefaultPii` permanece desativado no backend.
+- O SDK não habilita envio automático de PII; a configuração não ativa `sendDefaultPii`.
 - E-mail, IP, username e ID do usuário são removidos.
 - Cookies, corpo da requisição e campos de ambiente são removidos.
 - Cabeçalhos com authorization, cookie, token, secret, password e api-key são filtrados.
